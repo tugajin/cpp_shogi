@@ -25,7 +25,12 @@ enum Square : int {
     SQ_91, SQ_92, SQ_93, SQ_94, SQ_95, SQ_96, SQ_97, SQ_98, SQ_99, SQ_NONE = -1 };
 enum File   : int { File_1, File_2, File_3, File_4, File_5, File_6, File_7, File_8, File_9 };
 enum Rank   : int { Rank_1, Rank_2, Rank_3, Rank_4, Rank_5, Rank_6, Rank_7, Rank_8, Rank_9 };
-enum Side   : int { BLACK, WHITE};
+enum Side   : int { BLACK, WHITE };
+
+enum Piece : int { PieceNone, Pawn,   Lance,  Knight,  Silver,  Bishop,  Rook, Gold, 
+                       King, PPawn, PLance, PKnight, PSilver, PBishop, PRook,  };
+
+enum Piece_Side : int { Empty = PIECE_SIDE_SIZE };
 
 enum Inc : int {
     Inc_N  = -1,

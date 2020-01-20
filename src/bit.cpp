@@ -14,6 +14,118 @@ std::array<Bitboard, SIDE_SIZE> g_middle; //4~9
 Bitboard G_ALL_ONE_BB;
 std::array<std::array<Bitboard, 1 << 9>, SIDE_SIZE> g_double_pawn_mask;
 
+constexpr std::array<int, SQUARE_SIZE> g_lance_shift = { 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 19, 19, 19, 19, 19, 19, 19,
+    19, 19, 28, 28, 28, 28, 28, 28, 28, 28, 28, 37, 37, 37, 37, 37, 37, 37,
+    37, 37, 46, 46, 46, 46, 46, 46, 46, 46, 46, 55, 55, 55, 55, 55, 55, 55,
+    55, 55, 1, 1, 1, 1, 1, 1, 1, 1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, };
+
+typedef std::array<std::array<bit::Bitboard, SQUARE_SIZE>, SIDE_SIZE> bw_square_t;
+bw_square_t g_pawn_attacks;
+bw_square_t g_knight_attacks;
+bw_square_t g_silver_attacks;
+bw_square_t g_gold_attacks;
+std::array<bit::Bitboard, SQUARE_SIZE> g_king_attacks;
+std::array<std::array<std::array<bit::Bitboard, 128>, SQUARE_SIZE>, SIDE_SIZE> g_lance_attacks;
+
+static void valid_set(bit::Bitboard &bb, File f, Rank r) {
+
+    if (is_valid(f, r)) {
+      auto sq = square_make(f, r);
+      bb |= sq;
+    }
+  }
+
+static bit::Bitboard init_pawn_attacks(Side sd, File f, Rank r) {
+
+    bit::Bitboard bb;
+    bb.init();
+
+    auto opposit = (sd == BLACK) ? 1 : -1;
+    auto file = f;
+    auto rank = r + (-1) * opposit;
+    valid_set(bb, file, rank);
+
+    return bb;
+  }
+static bit::Bitboard init_knight_attacks(Side sd, File f, Rank r) {
+
+    bit::Bitboard bb;
+    bb.init();
+
+    auto opposit = (sd == BLACK) ? 1 : -1;
+    auto file = f + (-1);
+    auto rank = r + (-1) * 2 * opposit;
+    valid_set(bb, file, rank);
+
+    file = f + 1;
+    rank = r + (-1) * 2 * opposit;
+    valid_set(bb, file, rank);
+
+    return bb;
+  }
+static bit::Bitboard init_silver_attacks(Side sd, File f, Rank r) {
+
+    bit::Bitboard bb;
+    bb.init();
+
+    auto opposit = (sd == BLACK) ? 1 : -1;
+    auto file = f + (-1);
+    auto rank = r + (-1) * opposit;
+    valid_set(bb, file, rank);
+
+    file = f;
+    rank = r + (-1) * opposit;
+    valid_set(bb, file, rank);
+
+    file = f + 1;
+    rank = r + (-1) * opposit;
+    valid_set(bb, file, rank);
+
+    file = f + (-1);
+    rank = r + 1 * opposit;
+    valid_set(bb, file, rank);
+
+    file = f + 1;
+    rank = r + 1 * opposit;
+    valid_set(bb, file, rank);
+
+    return bb;
+  }
+static bit::Bitboard init_gold_attacks(Side sd, File f, Rank r) {
+
+    bit::Bitboard bb;
+    bb.init();
+
+    auto opposit = (sd == BLACK) ? 1 : -1;
+    auto file = f + -1;
+    auto rank = r + -1 * opposit;
+    valid_set(bb, file, rank);
+
+    file = f;
+    rank = r + (-1) * opposit;
+    valid_set(bb, file, rank);
+
+    file = f + 1;
+    rank = r + (-1) * opposit;
+    valid_set(bb, file, rank);
+
+    file = f + (-1);
+    rank = r;
+    valid_set(bb, file, rank);
+
+    file = f + 1;
+    rank = r;
+    valid_set(bb, file, rank);
+
+    file = f;
+    rank = r + 1 * opposit;
+    valid_set(bb, file, rank);
+
+    return bb;
+}
+
+
 void init() {
     //mask init
     SQUARE_FOREACH(i){
@@ -134,6 +246,19 @@ void init() {
         }
         g_double_pawn_mask[BLACK][index] &= ~g_rank_mask[Rank_1];
         g_double_pawn_mask[WHITE][index] &= ~g_rank_mask[Rank_9];
+    }
+    //init attack
+        //attack table
+    SQUARE_FOREACH(sq) {
+      SIDE_FOREACH(sd) {
+        auto file = square_file(sq);
+        auto rank = square_rank(sq);
+        g_pawn_attacks[sd][sq] = init_pawn_attacks(sd, file, rank);
+        g_knight_attacks[sd][sq] = init_knight_attacks(sd, file, rank);
+        g_silver_attacks[sd][sq] = init_silver_attacks(sd, file, rank);
+        g_gold_attacks[sd][sq] = init_gold_attacks(sd, file, rank);
+      }
+      g_king_attacks[sq] = g_gold_attacks[BLACK][sq] | g_gold_attacks[WHITE][sq];
     }
 }
 
