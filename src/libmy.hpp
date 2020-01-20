@@ -63,7 +63,7 @@ std::string timestamp();
 class TeeStream {
     public:
     TeeStream() {
-        ofs_.open("./log.log");
+        ofs_.open("./log.log", std::ios::app);
         ofs_ << "LOG_START " + timestamp() << std::endl;
     }
     template<typename T>

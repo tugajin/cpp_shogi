@@ -19,8 +19,13 @@ void init() {
     SQUARE_FOREACH(i){
       g_mask[i].init();
       (!bit::Bitboard::select(i)) ?
-        g_mask[i].set(0, (1ull << i)) :
-        g_mask[i].set(1, (1ull << (i - 63)));
+        g_mask[i].select_set(0, (1ull << i)) :
+        g_mask[i].select_set(1, (1ull << (i - 63)));
+    }
+    //all_one
+    G_ALL_ONE_BB .init();
+    SQUARE_FOREACH(sq){
+        G_ALL_ONE_BB.set(sq);
     }
     //rank mask init
     //file_mask init
@@ -129,11 +134,6 @@ void init() {
         }
         g_double_pawn_mask[BLACK][index] &= ~g_rank_mask[Rank_1];
         g_double_pawn_mask[WHITE][index] &= ~g_rank_mask[Rank_9];
-    }
-    //all_one
-    G_ALL_ONE_BB .init();
-    SQUARE_FOREACH(sq){
-        G_ALL_ONE_BB.set(sq);
     }
 }
 
