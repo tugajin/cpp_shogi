@@ -38,10 +38,10 @@ enum Inc : int {
     Inc_SE =  Inc_S + Inc_E,
 };
 
-OverloadEnumOperators(Square);
-OverloadEnumOperators(File);
-OverloadEnumOperators(Rank);
-OverloadEnumOperators(Side);
+OverloadEnumOperators(Square)
+OverloadEnumOperators(File)
+OverloadEnumOperators(Rank)
+OverloadEnumOperators(Side)
 
 enum class Key : uint64;
 enum class Move : uint32;
