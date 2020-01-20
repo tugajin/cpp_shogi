@@ -196,6 +196,26 @@ inline bool Bitboard::is_set(const int sq) const {
 
 inline Bitboard operator ~ (const Bitboard& bb) { return bb ^ G_ALL_ONE_BB; }
 
+  inline bit::Bitboard index_to_occ(const int index, const int bits,
+      const bit::Bitboard &bb) {
+    bit::Bitboard ret_bb;
+    bit::Bitboard mask = bb;
+    ret_bb.init();
+
+    assert(bits == mask.pop_cnt());
+    for (auto i = 0; i < bits; i++) {
+      const auto sq = mask.lsb();
+      if (index & (1 << i)) {
+        ret_bb |= sq;
+      }
+    }
+    return ret_bb;
+  }
+  inline uint64 occ_to_index(const bit::Bitboard &bb, const bit::Bitboard &mask) {
+    return ml::pext(bb.merge(), mask.merge());
+  }
+
+
 void init();
 void test();
 

@@ -125,7 +125,6 @@ static bit::Bitboard init_gold_attacks(Side sd, File f, Rank r) {
     return bb;
 }
 
-
 void init() {
     //mask init
     SQUARE_FOREACH(i){

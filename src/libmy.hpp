@@ -174,7 +174,7 @@ namespace ml {
 
    inline int bit_first (uint64 b) { assert(b != 0); return __builtin_ctzll(b); }
    inline int bit_count (uint64 b) { return __builtin_popcountll(b); }
-#if BMI
+#if 1
    inline uint64 pext (uint64 a, uint64 b) { return __builtin_ia32_pext_di(a, b); }
    inline uint64 pdep (uint64 a, uint64 b) { return __builtin_ia32_pdep_di(a, b); }
 #endif
