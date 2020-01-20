@@ -124,7 +124,7 @@ static void usi_loop() {
             tt::Gtt.clear();
         } else if(command == "go") {
             //TODO
-        } else if(command == "stoop") {
+        } else if(command == "stop") {
             //no-op
         } else if (command == "test") {
             bit::test();
