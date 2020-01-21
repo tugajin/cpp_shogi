@@ -4,29 +4,27 @@
 namespace bit {
 
 std::array<Bitboard, SQUARE_SIZE> g_mask;
-std::array<Bitboard, SQUARE_SIZE> g_rook_mask;
-std::array<Bitboard, SQUARE_SIZE> g_bishop_mask;
-std::array<Bitboard, FILE_SIZE> g_file_mask;
-std::array<Bitboard, RANK_SIZE> g_rank_mask;
+std::array<Bitboard, SQUARE_SIZE> g_diag1_mask;
+std::array<Bitboard, SQUARE_SIZE> g_diag2_mask;
+std::array<Bitboard, SQUARE_SIZE> g_file_mask;
+std::array<Bitboard, SQUARE_SIZE> g_rank_mask;
 
 std::array<Bitboard, SIDE_SIZE> g_prom; //1~3
 std::array<Bitboard, SIDE_SIZE> g_middle; //4~9
 Bitboard G_ALL_ONE_BB;
 std::array<std::array<Bitboard, 1 << 9>, SIDE_SIZE> g_double_pawn_mask;
 
-constexpr std::array<int, SQUARE_SIZE> g_lance_shift = { 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 19, 19, 19, 19, 19, 19, 19,
-    19, 19, 28, 28, 28, 28, 28, 28, 28, 28, 28, 37, 37, 37, 37, 37, 37, 37,
-    37, 37, 46, 46, 46, 46, 46, 46, 46, 46, 46, 55, 55, 55, 55, 55, 55, 55,
-    55, 55, 1, 1, 1, 1, 1, 1, 1, 1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, };
-
-typedef std::array<std::array<bit::Bitboard, SQUARE_SIZE>, SIDE_SIZE> bw_square_t;
-bw_square_t g_pawn_attacks;
 bw_square_t g_knight_attacks;
 bw_square_t g_silver_attacks;
 bw_square_t g_gold_attacks;
-std::array<bit::Bitboard, SQUARE_SIZE> g_king_attacks;
-std::array<std::array<std::array<bit::Bitboard, 128>, SQUARE_SIZE>, SIDE_SIZE> g_lance_attacks;
+
+std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_file_attack;
+std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_rank_attack;
+std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_diag1_attack;
+std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_diag2_attack;
+
+bw_square_t g_lance_mask;
+
 
 static void valid_set(bit::Bitboard &bb, File f, Rank r) {
 
@@ -36,18 +34,6 @@ static void valid_set(bit::Bitboard &bb, File f, Rank r) {
     }
   }
 
-static bit::Bitboard init_pawn_attacks(Side sd, File f, Rank r) {
-
-    bit::Bitboard bb;
-    bb.init();
-
-    auto opposit = (sd == BLACK) ? 1 : -1;
-    auto file = f;
-    auto rank = r + (-1) * opposit;
-    valid_set(bb, file, rank);
-
-    return bb;
-  }
 static bit::Bitboard init_knight_attacks(Side sd, File f, Rank r) {
 
     bit::Bitboard bb;
@@ -125,6 +111,7 @@ static bit::Bitboard init_gold_attacks(Side sd, File f, Rank r) {
     return bb;
 }
 
+
 void init() {
     //mask init
     SQUARE_FOREACH(i){
@@ -196,16 +183,20 @@ void init() {
         }
       }
     };
-    for (auto &bb : g_rook_mask) {
-        bb.init();
+    SQUARE_FOREACH(sq) {
+      g_file_mask[sq].init();
+      g_rank_mask[sq].init();
+      g_diag1_mask[sq].init();
+      g_diag2_mask[sq].init();
+      g_lance_mask[BLACK][sq].init();
+      g_lance_mask[WHITE][sq].init();
     }
-    for (auto &bb : g_bishop_mask) {
-        bb.init();
-    }
-    init_func(g_rook_mask, { 0, 0 }, { -1, 1 }, false);
-    init_func(g_rook_mask, { -1, 1 }, { 0, 0 }, false);
-    init_func(g_bishop_mask, { 1, 1 }, { -1, 1 }, true);
-    init_func(g_bishop_mask, { -1, -1 }, { -1, 1 }, true);
+    init_func(g_file_mask, { 0, 0 }, { -1, 1 }, false);
+    init_func(g_lance_mask[BLACK], { 0, 0 }, { -1, 0 }, false);
+    init_func(g_lance_mask[WHITE], { 0, 0 }, { 0, 1 }, false);
+    init_func(g_rank_mask, { -1, 1 }, { 0, 0 }, false);
+    init_func(g_diag1_mask, { 1, 1 }, { -1, 1 }, true);
+    init_func(g_diag2_mask, { -1, -1 }, { -1, 1 }, true);
 
     //prom middle
     g_prom[BLACK].init();
@@ -247,17 +238,45 @@ void init() {
         g_double_pawn_mask[WHITE][index] &= ~g_rank_mask[Rank_9];
     }
     //init attack
-        //attack table
+    //attack table
     SQUARE_FOREACH(sq) {
       SIDE_FOREACH(sd) {
         auto file = square_file(sq);
         auto rank = square_rank(sq);
-        g_pawn_attacks[sd][sq] = init_pawn_attacks(sd, file, rank);
         g_knight_attacks[sd][sq] = init_knight_attacks(sd, file, rank);
         g_silver_attacks[sd][sq] = init_silver_attacks(sd, file, rank);
         g_gold_attacks[sd][sq] = init_gold_attacks(sd, file, rank);
       }
-      g_king_attacks[sq] = g_gold_attacks[BLACK][sq] | g_gold_attacks[WHITE][sq];
+    }
+    //init file rank attack table
+    //lance
+    for (auto sq = 0u; sq < g_lance_attacks[0].size(); sq++) {
+      for (auto index = 0u; index < g_lance_attacks[0][sq].size(); index++) {
+        //black
+        auto file = square::file(sq);
+        auto rank = square::rank(sq);
+        //black
+        auto inc_r = -1;
+        g_lance_attacks[side::BLACK][sq][index].init();
+        for (auto r = rank + inc_r; square::is_valid_rank(r); r += inc_r) {
+          const auto sq2 = square::make(file, r);
+          g_lance_attacks[side::BLACK][sq][index] |= sq2;
+          if ((index << 1) & (1 << r)) {
+            break;
+          }
+        }
+        //white
+        inc_r = 1;
+        g_lance_attacks[side::WHITE][sq][index].init();
+        for (auto r = rank + inc_r; square::is_valid_rank(r); r += inc_r) {
+          const auto sq2 = square::make(file, r);
+          g_lance_attacks[side::WHITE][sq][index] |= sq2;
+          if ((index << 1) & (1 << r)) {
+            break;
+          }
+        }
+
+      }
     }
 }
 

@@ -164,15 +164,27 @@ class Bitboard {
   };
 
 extern std::array<Bitboard, SQUARE_SIZE> g_mask;
-extern std::array<Bitboard, SQUARE_SIZE> g_rook_mask;
-extern std::array<Bitboard, SQUARE_SIZE> g_bishop_mask;
-extern std::array<Bitboard, FILE_SIZE> g_file_mask;
-extern std::array<Bitboard, RANK_SIZE> g_rank_mask;
+extern std::array<Bitboard, SQUARE_SIZE> g_diag1_mask;
+extern std::array<Bitboard, SQUARE_SIZE> g_diag2_mask;
+extern std::array<Bitboard, SQUARE_SIZE> g_file_mask;
+extern std::array<Bitboard, SQUARE_SIZE> g_rank_mask;
 
 extern std::array<Bitboard, SIDE_SIZE> g_prom; //1~3
 extern std::array<Bitboard, SIDE_SIZE> g_middle; //4~9
 extern Bitboard G_ALL_ONE_BB;
 extern std::array<std::array<Bitboard, 1 << 9>, SIDE_SIZE> g_double_pawn_mask;
+
+typedef std::array<std::array<bit::Bitboard, SQUARE_SIZE>, SIDE_SIZE> bw_square_t;
+
+extern bw_square_t g_knight_attacks;
+extern bw_square_t g_silver_attacks;
+extern bw_square_t g_gold_attacks;
+extern std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_file_attack;
+extern std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_rank_attack;
+extern std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_diag1_attack;
+extern std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_diag2_attack;
+
+extern bw_square_t g_lance_mask;
 
 inline Bitboard Bitboard::operator &=(const int xy) {
     *this &= g_mask[xy];
@@ -214,7 +226,6 @@ inline Bitboard operator ~ (const Bitboard& bb) { return bb ^ G_ALL_ONE_BB; }
   inline uint64 occ_to_index(const bit::Bitboard &bb, const bit::Bitboard &mask) {
     return ml::pext(bb.merge(), mask.merge());
   }
-
 
 void init();
 void test();
