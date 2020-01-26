@@ -3,4 +3,8 @@ namespace pos {
 void init() {
 
  }
+
+}
+Pos::Pos() {
+     
 }

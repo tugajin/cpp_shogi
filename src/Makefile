@@ -4,7 +4,7 @@
 EXE = shogi
 
 OBJS = attack.o bit.o common.o eval.o sfen.o game.o gen.o \
-       hash.o libmy.o list.o main.o math.o move.o \
+       hash.o libmy.o list.o main.o math.o move.o hand.o\
        pos.o score.o search.o sort.o thread.o tt.o util.o var.o \
 
 # rules

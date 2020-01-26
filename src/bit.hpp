@@ -22,6 +22,9 @@ class Bitboard {
         };
     public:
         Bitboard() {}
+        Bitboard(uint64 u0, uint64 u1) {
+            this->set(u0,u1);
+        }
         Bitboard &operator = (const Bitboard &rhs) {
             _mm_store_si128(&this->m_, rhs.m_);
             return *this;
@@ -79,6 +82,9 @@ class Bitboard {
         }
         void select_set(const int index, const uint64 u) {
             (!index) ? select_set<0>(u) : select_set<1>(u);
+        }
+        uint64 select_p(const int index) const {
+            return (!index) ? p<0>() : p<1>();
         }
         void init() {
             set(0ull,0ull);
@@ -161,28 +167,31 @@ class Bitboard {
         constexpr static int select(const int xy) {
             return static_cast<int>(xy >= 63);
         }
-  };
+};
 
 extern std::array<Bitboard, SQUARE_SIZE> g_mask;
 extern std::array<Bitboard, SQUARE_SIZE> g_diag1_mask;
 extern std::array<Bitboard, SQUARE_SIZE> g_diag2_mask;
-extern std::array<Bitboard, SQUARE_SIZE> g_file_mask;
-extern std::array<Bitboard, SQUARE_SIZE> g_rank_mask;
+extern std::array<Bitboard, FILE_SIZE> g_file_mask;
+extern std::array<Bitboard, RANK_SIZE> g_rank_mask;
 
 extern std::array<Bitboard, SIDE_SIZE> g_prom; //1~3
 extern std::array<Bitboard, SIDE_SIZE> g_middle; //4~9
 extern Bitboard G_ALL_ONE_BB;
 extern std::array<std::array<Bitboard, 1 << 9>, SIDE_SIZE> g_double_pawn_mask;
+extern std::array<int,SQUARE_SIZE> g_file_shift;
 
 typedef std::array<std::array<bit::Bitboard, SQUARE_SIZE>, SIDE_SIZE> bw_square_t;
 
 extern bw_square_t g_knight_attacks;
 extern bw_square_t g_silver_attacks;
 extern bw_square_t g_gold_attacks;
-extern std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_file_attack;
-extern std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_rank_attack;
-extern std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_diag1_attack;
-extern std::array<std::array<bit::Bitboard,128>, SQUARE_SIZE> g_diag2_attack;
+extern std::array<std::array<uint64,128>, FILE_SIZE> g_file_attack;
+extern std::array<std::array<bit::Bitboard,128>, RANK_SIZE> g_rank_attack;
+extern std::array<bit::Bitboard,1856+1> g_diag1_attack;
+extern std::array<bit::Bitboard,1856+1> g_diag2_attack;
+extern std::array<int,SQUARE_SIZE> g_diag1_offset;
+extern std::array<int,SQUARE_SIZE> g_diag2_offset;
 
 extern bw_square_t g_lance_mask;
 
@@ -208,24 +217,69 @@ inline bool Bitboard::is_set(const int sq) const {
 
 inline Bitboard operator ~ (const Bitboard& bb) { return bb ^ G_ALL_ONE_BB; }
 
-  inline bit::Bitboard index_to_occ(const int index, const int bits,
-      const bit::Bitboard &bb) {
-    bit::Bitboard ret_bb;
-    bit::Bitboard mask = bb;
-    ret_bb.init();
-
-    assert(bits == mask.pop_cnt());
-    for (auto i = 0; i < bits; i++) {
-      const auto sq = mask.lsb();
-      if (index & (1 << i)) {
-        ret_bb |= sq;
-      }
-    }
-    return ret_bb;
-  }
-  inline uint64 occ_to_index(const bit::Bitboard &bb, const bit::Bitboard &mask) {
+inline uint64 occ_to_index(const bit::Bitboard &bb, const bit::Bitboard &mask) {
     return ml::pext(bb.merge(), mask.merge());
+}
+
+inline bit::Bitboard get_diag1_attack(const Square sq, const bit::Bitboard &occ) {
+    return bit::g_diag1_attack[bit::g_diag1_offset[sq]
+      + occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq])];
+}
+inline bit::Bitboard get_diag2_attack(const Square sq, const bit::Bitboard &occ) {
+    return bit::g_diag2_attack[bit::g_diag2_offset[sq]
+      + occ_to_index(occ & bit::g_diag2_mask[sq], bit::g_diag2_mask[sq])];
+}
+
+inline bit::Bitboard get_file_attack(const Square sq, const bit::Bitboard &occ) {
+    if(sq <= SQ_79) {
+        auto index = (occ.p<0>() >> bit::g_file_shift[sq]) & 0x7f;
+        return bit::Bitboard(bit::g_file_attack[sq][index],0ull);
+    } else {
+        auto index = (occ.p<1>() >> bit::g_file_shift[sq]) & 0x7f;
+        return bit::Bitboard(0ull,bit::g_file_attack[sq][index]);
+    }
+}
+
+inline bit::Bitboard get_rank_attack(const Square sq, const bit::Bitboard &occ) {
+    return bit::g_rank_attack[sq][occ_to_index(occ & bit::g_rank_mask[sq], bit::g_rank_mask[sq])];
+}
+inline bit::Bitboard get_rook_attack(const Square sq, const bit::Bitboard &occ) {
+    return get_rank_attack(sq,occ) | get_file_attack(sq,occ);
+}
+inline bit::Bitboard get_bishop_attack(const Square sq, const bit::Bitboard &occ) {
+    return get_diag1_attack(sq,occ) | get_diag2_attack(sq,occ);
+}
+inline bit::Bitboard get_lance_attack(const int sd, const Square sq, const bit::Bitboard &occ) {
+    return get_file_attack(sq,occ) & bit::g_lance_mask[sd][sq];
   }
+template<int sd> bit::Bitboard get_pawn_attack(const bit::Bitboard pawn) {
+    return (sd == BLACK) ? pawn >> 1 : pawn << 1;
+}
+inline bit::Bitboard get_knight_attack(const int sd, const Square sq) {
+    return bit::g_knight_attacks[sd][sq];
+}
+inline bit::Bitboard get_silver_attack(const int sd, const Square sq) {
+    return bit::g_silver_attacks[sd][sq];
+}
+inline bit::Bitboard get_gold_attack(const int sd, const Square sq) {
+    return bit::g_gold_attacks[sd][sq];
+}
+inline bit::Bitboard get_king_attack(const Square sq) {
+    return get_gold_attack(BLACK,sq) | get_gold_attack(WHITE,sq);
+}
+inline bit::Bitboard get_prook_attack(const Square sq, const bit::Bitboard &occ) {
+    return (get_rook_attack(sq, occ) | get_king_attack(sq));
+}
+inline bit::Bitboard get_pbishop_attack(const Square sq, const bit::Bitboard &occ) {
+    return (get_bishop_attack(sq, occ) | get_king_attack(sq));
+}
+inline bit::Bitboard get_plus_attack(const Square sq) {
+    return get_gold_attack(BLACK, sq) & get_gold_attack(WHITE, sq);
+}
+inline bit::Bitboard get_x_attack(const Square sq) {
+    return get_silver_attack(BLACK, sq) & get_silver_attack(WHITE, sq);
+}
+
 
 void init();
 void test();

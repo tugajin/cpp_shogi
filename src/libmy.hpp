@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <sstream>
 
 // constants
 
@@ -142,42 +143,43 @@ namespace ml {
 
 namespace ml {
 
-   // math
+// math
 
-   uint64 rand_int_64 ();
+uint64 rand_int_64 ();
 
-   int  round (double x);
+int  round (double x);
 
-   int  div       (int a, int b);
-   int  div_round (int a, int b);
+int  div       (int a, int b);
+int  div_round (int a, int b);
 
-   bool is_power_2 (int64 n);
-   int  log_2      (int64 n);
-
-   inline uint64 bit       (int n) { return uint64(1) << n; }
-   inline uint64 bit_mask  (int n) { return bit(n) - 1; }
-
-   inline void bit_set   (uint64 & b, int n) { b |=  bit(n); }
-   inline void bit_clear (uint64 & b, int n) { b &= ~bit(n); }
-   inline bool bit_has   (uint64   b, int n) { return (b & bit(n)) != 0; }
+bool is_power_2 (int64 n);
+int  log_2      (int64 n);
 
 #ifdef _MSC_VER
 
-   inline int bit_first (uint64 b) { assert(b != 0); unsigned long i; _BitScanForward64(&i, b); return i; }
-   inline int bit_count (uint64 b) { return int(__popcnt64(b)); }
+inline int bit_first (uint64 b) { assert(b != 0); unsigned long i; _BitScanForward64(&i, b); return i; }
+inline int bit_count (uint64 b) { return int(__popcnt64(b)); }
 #if BMI
-   inline uint64 pext (uint64 a, uint64 b) { return _pext_u64(a, b); }
-   inline uint64 pdep (uint64 a, uint64 b) { return _pdep_u64(a, b); }
+inline uint64 pext (uint64 a, uint64 b) { return _pext_u64(a, b); }
+inline uint64 pdep (uint64 a, uint64 b) { return _pdep_u64(a, b); }
 #endif
 
 #else // assume GCC/Clang
 
-   inline int bit_first (uint64 b) { assert(b != 0); return __builtin_ctzll(b); }
-   inline int bit_count (uint64 b) { return __builtin_popcountll(b); }
+inline int bit_first (uint64 b) { assert(b != 0); return __builtin_ctzll(b); }
+inline int bit_count (uint64 b) { return __builtin_popcountll(b); }
 #if 1
-   inline uint64 pext (uint64 a, uint64 b) { return __builtin_ia32_pext_di(a, b); }
-   inline uint64 pdep (uint64 a, uint64 b) { return __builtin_ia32_pdep_di(a, b); }
+inline uint64 pext (uint64 a, uint64 b) { return __builtin_ia32_pext_di(a, b); }
+inline uint64 pdep (uint64 a, uint64 b) { return __builtin_ia32_pdep_di(a, b); }
 #endif
+
+template<class T> std::string to_string(T x) {
+    std::stringstream ss;
+    ss << x;
+    return ss.str();
+}
+
+std::string rtrim(const std::string s);
 
 #endif
 }
