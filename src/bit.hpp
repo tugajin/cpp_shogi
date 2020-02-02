@@ -9,6 +9,7 @@
 #include "common.hpp"
 
 #include <array>
+#include <bitset>
 
 namespace bit {
 
@@ -106,25 +107,25 @@ class Bitboard {
             }
             return num;
         }
-        template<bool is_del = true> int lsb_right() {
+        template<bool is_del = true> Square lsb_right() {
             assert(!is_empty());
             const auto ret = (ml::bit_first(this->p<0>()));
             if (is_del) {
                 p_[0] &= p_[0] - 1;
             }
             assert(ret >= 0 && ret <= 63);
-            return ret;
+            return Square(ret);
         }
-        template<bool is_del = true> int lsb_left() {
+        template<bool is_del = true> Square lsb_left() {
             assert(!is_empty());
             const auto ret = (ml::bit_first(this->p<1>()));
             if (is_del) {
                 p_[1] &= p_[1] - 1;
             }
             assert(ret >= 0 && ret <= 17);
-            return (ret + 63);
+            return Square(ret + 63);
         }
-        template<bool is_del = true> int lsb() {
+        template<bool is_del = true> Square lsb() {
             assert(!is_empty());
             if (this->p<0>()) {
                 return lsb_right<is_del>();
@@ -179,7 +180,16 @@ extern std::array<Bitboard, SIDE_SIZE> g_prom; //1~3
 extern std::array<Bitboard, SIDE_SIZE> g_middle; //4~9
 extern Bitboard G_ALL_ONE_BB;
 extern std::array<std::array<Bitboard, 1 << 9>, SIDE_SIZE> g_double_pawn_mask;
-extern std::array<int,SQUARE_SIZE> g_file_shift;
+const std::array<int, SQUARE_SIZE> g_file_shift = { 
+  1, 1, 1, 1, 1, 1, 1,1, 1, 
+  10, 10, 10, 10, 10, 10, 10, 10, 10, 
+  19, 19, 19, 19, 19, 19, 19,19, 19, 
+  28, 28, 28, 28, 28, 28, 28, 28, 28, 
+  37, 37, 37, 37, 37, 37, 37,37, 37, 
+  46, 46, 46, 46, 46, 46, 46, 46, 46, 
+  55, 55, 55, 55, 55, 55, 55,55, 55, 
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 
+  10, 10, 10, 10, 10, 10, 10, 10, 10, };
 
 typedef std::array<std::array<bit::Bitboard, SQUARE_SIZE>, SIDE_SIZE> bw_square_t;
 
@@ -222,10 +232,17 @@ inline uint64 occ_to_index(const bit::Bitboard &bb, const bit::Bitboard &mask) {
 }
 
 inline bit::Bitboard get_diag1_attack(const Square sq, const bit::Bitboard &occ) {
+    std::cout<<(occ & bit::g_diag1_mask[sq])<<std::endl;
+    std::cout<<std::bitset<7>(occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq]))<<std::endl;
+    std::cout<<"index:"<<bit::g_diag1_offset[sq]+ occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq])<<std::endl;
+    std::cout<<"index2:"<<bit::g_diag1_offset[sq]<<std::endl;
+    std::cout<<"index3:"<<(occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq]))<<std::endl;
     return bit::g_diag1_attack[bit::g_diag1_offset[sq]
       + occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq])];
 }
 inline bit::Bitboard get_diag2_attack(const Square sq, const bit::Bitboard &occ) {
+    std::cout<<(occ & bit::g_diag2_mask[sq])<<std::endl;
+    std::cout<<std::bitset<7>(occ_to_index(occ & bit::g_diag2_mask[sq], bit::g_diag2_mask[sq]))<<std::endl;
     return bit::g_diag2_attack[bit::g_diag2_offset[sq]
       + occ_to_index(occ & bit::g_diag2_mask[sq], bit::g_diag2_mask[sq])];
 }
@@ -233,15 +250,21 @@ inline bit::Bitboard get_diag2_attack(const Square sq, const bit::Bitboard &occ)
 inline bit::Bitboard get_file_attack(const Square sq, const bit::Bitboard &occ) {
     if(sq <= SQ_79) {
         auto index = (occ.p<0>() >> bit::g_file_shift[sq]) & 0x7f;
-        return bit::Bitboard(bit::g_file_attack[sq][index],0ull);
+        auto rank = square_rank(sq);
+        return bit::Bitboard(bit::g_file_attack[rank][index]<<(g_file_shift[sq]-1),0ull);
     } else {
         auto index = (occ.p<1>() >> bit::g_file_shift[sq]) & 0x7f;
-        return bit::Bitboard(0ull,bit::g_file_attack[sq][index]);
+        auto rank = square_rank(sq);
+        return bit::Bitboard(0ull,bit::g_file_attack[rank][index]<<(g_file_shift[sq]-1));
     }
 }
 
 inline bit::Bitboard get_rank_attack(const Square sq, const bit::Bitboard &occ) {
-    return bit::g_rank_attack[sq][occ_to_index(occ & bit::g_rank_mask[sq], bit::g_rank_mask[sq])];
+    auto file = square_file(sq);
+    auto rank = square_rank(sq);
+    auto u = (occ.p<0>() >> 9) + (occ.p<1>() << 54);
+    uint64 index = ml::pext(u,0b1000000001000000001000000001000000001000000001000000001<<rank);
+    return (bit::g_rank_attack[file][index])<<rank;
 }
 inline bit::Bitboard get_rook_attack(const Square sq, const bit::Bitboard &occ) {
     return get_rank_attack(sq,occ) | get_file_attack(sq,occ);

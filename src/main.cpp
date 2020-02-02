@@ -128,6 +128,7 @@ static void usi_loop() {
             //no-op
         } else if (command == "test") {
             bit::test();
+            pos::test();
         } else if(command == "quit") {
             std::exit(EXIT_SUCCESS);
         }

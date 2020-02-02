@@ -29,9 +29,9 @@ enum Rank   : int { Rank_1, Rank_2, Rank_3, Rank_4, Rank_5, Rank_6, Rank_7, Rank
 enum Side   : int { BLACK, WHITE };
 
 enum Piece : int { PieceNone, Pawn,   Lance,  Knight,  Silver,  Bishop,  Rook, Gold, 
-                       King, PPawn, PLance, PKnight, PSilver, PBishop, PRook,  };
+                       King, PPawn, PLance, PKnight, PSilver, PBishop, PRook, PieceProm = 8,};
 
-enum Piece_Side : int { Empty = PIECE_SIDE_SIZE };
+enum PieceSide : int { Empty = PIECE_SIDE_SIZE, PieceSideProm = 8, };
 
 enum Inc : int {
     Inc_N  = -1,
@@ -46,22 +46,59 @@ enum Inc : int {
 
 const std::string PieceChar = ". P L N S B R G K +P+L+N+S+B+R+G+";
 const std::string PieceSfenChar =  ". P L N S B R G K +P+L+N+S+B+R+G+.p l n s b r g k +p+l+n+s+b+r+g+k";
+const std::string SideChar = "bw";
 
-
-inline std::string piece_to_char(const int pc) {
+inline std::string piece_to_char(const Piece pc) {
     return PieceChar.substr(pc * 2, 2);
 }
 
+inline std::string piece_side_to_char(const PieceSide pc) {
+    return PieceSfenChar.substr(pc * 2, 2);
+}
+
+inline Piece piece_prom(const Piece p) {
+    return Piece(p + PieceProm);
+}
+inline Piece piece_unprom(const Piece p) {
+    return Piece(p - PieceProm);
+}
+inline PieceSide piece_side_prom(const PieceSide p) {
+    return PieceSide(p + PieceSideProm);
+}
+inline PieceSide piece_side_unprom(const PieceSide p) {
+    return PieceSide(p - PieceSideProm);
+}
+
+inline Piece piece_side_piece(const PieceSide p) {
+    return Piece(p & 0xf);
+}
+
+inline Side piece_side_side(const PieceSide p) {
+    return Side((p >> 4) & 1);
+}
+
+inline PieceSide piece_side_make(const Piece p, const Side sd) {
+    return PieceSide(p | (sd << 4));
+}
+
+inline Side flip_turn(const Side sd) {
+    return Side(sd ^ 1);
+}
 
 OverloadEnumOperators(Square)
 OverloadEnumOperators(File)
 OverloadEnumOperators(Rank)
 OverloadEnumOperators(Side)
 OverloadEnumOperators(Piece)
+OverloadEnumOperators(PieceSide)
+
 
 enum class Key : uint64;
 enum class Move : uint32;
-enum class Hand : uint32;
+
+inline Key& operator ^= (Key& lhs, const Key rhs) { return lhs  = static_cast<Key>(static_cast<uint64>(lhs) ^ static_cast<uint64>(rhs)); } 
+
+OverloadEnumOperators(Key);
 
 inline constexpr Square square_make(const File f, const Rank r) {
     return Square(r + f * FILE_SIZE);
@@ -95,7 +132,10 @@ std::string sq_to_string(const Square sq);
 #define SIDE_FOREACH(sd) for(auto sd = BLACK; sd < SIDE_SIZE; ++sd)
 #define RANK_FOREACH(r) for(auto r = Rank_1; r < RANK_SIZE; ++r)
 #define FILE_FOREACH(f) for(auto f = File_1; f < FILE_SIZE; ++f)
+#define FILE_FOREACH_REV(f) for(auto f = File_9; f >= File_1; --f)
 #define PIECE_FOREACH(p) for(auto p = Pawn; p <= PRook; p++)
-
+#define PIECE_SIDE_FOREACH(p) for(auto p = PieceSide(0); p < PieceSide(PIECE_SIDE_SIZE); p++)
 
 #endif
+
+

@@ -14,16 +14,6 @@ std::array<Bitboard, SIDE_SIZE> g_prom; //1~3
 std::array<Bitboard, SIDE_SIZE> g_middle; //4~9
 bit::Bitboard G_ALL_ONE_BB;
 std::array<std::array<bit::Bitboard, 1 << 9>, SIDE_SIZE> g_double_pawn_mask;
-const std::array<int, SQUARE_SIZE> g_lance_shift = { 
-  1, 1, 1, 1, 1, 1, 1,1, 1, 
-  10, 10, 10, 10, 10, 10, 10, 10, 10, 
-  19, 19, 19, 19, 19, 19, 19,19, 19, 
-  28, 28, 28, 28, 28, 28, 28, 28, 28, 
-  37, 37, 37, 37, 37, 37, 37,37, 37, 
-  46, 46, 46, 46, 46, 46, 46, 46, 46, 
-  55, 55, 55, 55, 55, 55, 55,55, 55, 
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 
-  10, 10, 10, 10, 10, 10, 10, 10, 10, };
 
 bw_square_t g_knight_attacks;
 bw_square_t g_silver_attacks;
@@ -354,7 +344,7 @@ void init() {
     for(auto index = 0ull; index < max_index; index++) {
       auto occ = index_to_occ(index,g_diag1_mask[sq]);
       //Tee<<"index:"<<std::bitset<9>(index<<1)<<std::endl;
-      g_diag1_attack[g_diag1_offset[sq] + index] = calc_slider_att(sq,occ,true);
+      g_diag1_attack[g_diag1_offset[sq] + occ_to_index(occ,g_diag1_mask[sq])] = calc_slider_att(sq,occ,true);
       //Tee<<g_diag1_attack[g_diag1_offset[sq] + index]<<std::endl;
     }
     diag1_offset += max_index;
@@ -363,9 +353,9 @@ void init() {
     g_diag2_offset[sq] = diag2_offset;
     for(auto index = 0ull; index < max_index; index++) {
       auto occ = index_to_occ(index,g_diag2_mask[sq]);
-      g_diag2_attack[g_diag2_offset[sq] + index] = calc_slider_att(sq,occ,false);
+      g_diag2_attack[g_diag2_offset[sq] + occ_to_index(occ,g_diag2_mask[sq])] = calc_slider_att(sq,occ,false);
       //Tee<<"index:"<<std::bitset<9>(index<<1)<<std::endl;
-      Tee<<g_diag2_attack[g_diag2_offset[sq] + index]<<std::endl;
+      //Tee<<g_diag2_attack[g_diag2_offset[sq] + index]<<std::endl;
 
     }
     diag2_offset += max_index;

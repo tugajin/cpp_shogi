@@ -3,6 +3,8 @@
 
 #include "common.hpp"
 #include "bit.hpp"
+#include "hand.hpp"
+#include "hash.hpp"
 
 using namespace bit;
 
@@ -20,8 +22,8 @@ private:
     Key key_;
     uint32 hand_b_;
 public:
-    Pos();
-    Pos(Side turn, Bitboard piece_side[]);
+    Pos(){};
+    Pos(Side turn, Bitboard piece_side[], int hand[]);
     Pos do_move(Move mv) const;
     Side turn() const { return this->turn_; }
     Bitboard empties() const { return ~this->all_; }
@@ -45,16 +47,74 @@ public:
     uint32 hand_b() const { return this->hand_b_; }
     int ply() const { return this->ply_; }
     Hand hand(const Side sd) const { return this->hand_[sd]; }
+    friend std::ostream& operator<<(std::ostream& os, const Pos& b) {
+        if(b.turn() == BLACK) {
+            os << "BLACK" << std::endl;
+        } else {
+            os << "WHITE" << std::endl;
+        }
+        
+        os << "key:" << uint64(b.key()) << std::endl;
+        os << "ply:" << b.ply() << std::endl;
+        //os <<b.out_sfen()<<std::endl;
+        os << hand_to_string(b.hand(WHITE)) << std::endl;
+        RANK_FOREACH(rank){
+            if (!rank) {
+                os << "  ";
+                FILE_FOREACH_REV(file){
+                    os << file + 1 << " ";
+                }
+                os << "\n";
+            }
+            FILE_FOREACH_REV(file){
+                if (file == FILE_SIZE - 1) {
+                    os << char(rank + 'a') << ":";
+                }
+                const auto sq = square_make(file, rank);
+                const auto pc = b.piece(sq);
+                if (pc == PieceNone) {
+                    os << ". ";
+                } else {
+                    const auto sd = b.side(sq);
+                    const auto p32 = piece_side_make(pc, sd);
+                    os << piece_side_to_char(p32);
+                }
+            }
+            os << "\n";
+        }
+    os << hand_to_string(b.hand(BLACK)) << std::endl;
+    return os;
+}
+
 private:
     void clear();
-    void update();
-    void switch_turn();
+    void update() {
+        this->all_ = this->side_[BLACK] | this->side_[WHITE];
+    }
+    void switch_turn() {
+        this->turn_ = flip_turn(this->turn_);
+        this->key_ ^= hash::key_turn();
+    }
+    void add_piece(const Piece pc, const Side sd, const Square sq) {
+        this->piece_[pc].set(sq);
+        this->side_[sd].set(sq);
+        this->square_[sq] = pc;
+        this->key_ ^= hash::key_piece(pc,sd,sq);
+    }
+    void remove_piece(const Piece pc, const Side sd, const Square sq) {
+        this->piece_[pc].clear(sq);
+        this->side_[sd].clear(sq);
+        this->square_[sq] = PieceNone;
+        this->key_ ^= hash::key_piece(pc,sd,sq);
+    }
 };
 
 namespace pos {
 
-void init();
+extern Pos gStart;
 
+void init();
+void test();
 }
 
 #endif

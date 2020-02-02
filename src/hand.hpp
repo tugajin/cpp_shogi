@@ -3,6 +3,10 @@
 
 #include "common.hpp"
 
+enum class Hand : uint32;
+
+const Hand HAND_NONE = Hand(0);
+
 //handの構成
 //     rook      bishop      gold       silver     knight      lance      pawn
 //1bit 2bit 1bit 2bit 1bit   3bit 1bit  3bit 1bit  3bit  1bit  3bit 1bit  5bit
@@ -22,27 +26,27 @@ inline int pc_to_hp(const Piece pc) {
     assert(piece::is_valid_piece(pc));
     return pc - 1;
 }
-inline int num(const uint32 hand, const Piece pc) {
+inline int num(const Hand hand, const Piece pc) {
     const int hp = pc_to_hp(pc);
-    return (hand & hand_mask[hp]) >> hand_shift[hp];
+    return (uint32(hand) & hand_mask[hp]) >> hand_shift[hp];
 }
-inline bool has(const uint32 hand, const Piece pc) {
+inline bool has(const Hand hand, const Piece pc) {
     const int hp = pc_to_hp(pc);
-    return (hand & hand_mask[hp]) != 0;
+    return (uint32(hand) & hand_mask[hp]) != 0;
 }
 
-template<bool inc> int hand_change(const uint32 hand, const Piece pc) {
+template<bool inc> Hand hand_change(const Hand hand, const Piece pc, const int num = 1) {
     const int flag = (inc) ? 1 : -1;
-    return hand + flag * hand_inc[pc_to_hp(pc)];
+    return Hand(uint32(hand) + (flag * hand_inc[pc_to_hp(pc)] * num));
 }
-inline bool hand_is_empty(const uint32 hand) {
-    return hand == 0;
+inline bool hand_is_empty(const Hand hand) {
+    return hand == HAND_NONE;
 }
-inline bool is_superior(const uint32 hand1, const uint32 hand2) {
+inline bool is_superior(const Hand hand1, const Hand hand2) {
     static constexpr uint32 hand_overflow_mask = hand_mask[0] | hand_mask[1] | hand_mask[2] | hand_mask[3] | hand_mask[4] | hand_mask[5] | hand_mask[6];
-    return ((hand1 - hand2) & hand_overflow_mask) == 0;
+    return ((uint32(hand1) - uint32(hand2)) & hand_overflow_mask) == 0;
 }
 
-std::string hp_to_string(const uint32 hand);
+std::string hand_to_string(const Hand hand);
 
 #endif
