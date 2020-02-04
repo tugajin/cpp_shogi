@@ -205,6 +205,12 @@ extern std::array<int,SQUARE_SIZE> g_diag2_offset;
 
 extern bw_square_t g_lance_mask;
 
+extern Bitboard gBetween[638];
+extern Bitboard gBehind[393];
+
+extern int gBetweenIndex[SQUARE_SIZE][SQUARE_SIZE];
+extern int gBehindIndex[SQUARE_SIZE][SQUARE_SIZE];
+
 inline Bitboard Bitboard::operator &=(const int xy) {
     *this &= g_mask[xy];
     return *this;
@@ -301,6 +307,10 @@ inline bit::Bitboard get_plus_attack(const Square sq) {
 }
 inline bit::Bitboard get_x_attack(const Square sq) {
     return get_silver_attack(BLACK, sq) & get_silver_attack(WHITE, sq);
+}
+
+inline bool line_is_empty(const Square from, const Square to, const bit::Bitboard &bb) {
+    return !(gBetween[gBetweenIndex[from][to]] & bb);
 }
 
 

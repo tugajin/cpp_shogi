@@ -28,6 +28,11 @@ std::array<int,SQUARE_SIZE> g_diag2_offset;
 
 bw_square_t g_lance_mask;
 
+Bitboard gBetween[638];
+Bitboard gBehind[393];
+int gBetweenIndex[SQUARE_SIZE][SQUARE_SIZE];
+int gBehindIndex[SQUARE_SIZE][SQUARE_SIZE];
+
 static void valid_set(bit::Bitboard &bb, File f, Rank r) {
 
     if (is_valid(f, r)) {
@@ -361,6 +366,76 @@ void init() {
     diag2_offset += max_index;
     //Tee<<"offset:"<<diag2_offset<<" : "<<g_diag2_attack.size()<<std::endl;
   }
+  //init between table
+  SQUARE_FOREACH(sq1){
+    SQUARE_FOREACH(sq2){
+      gBetweenIndex[sq1][sq2] = gBehindIndex[sq1][sq2] = 0;
+    }
+  }
+  auto between_sq = 0;
+  auto behind_sq = 0;
+  SQUARE_FOREACH(from) {
+    SQUARE_FOREACH(to) {
+      auto from_f = square_file(from);
+      auto from_r = square_rank(from);
+      auto to_f = square_file(to);
+      auto to_r = square_rank(to);
+      Bitboard between_bb;
+      Bitboard behind_bb;
+      between_bb.init();
+      behind_bb.init();
+      gBetweenIndex[from][to] = 0;
+      gBehindIndex[from][to] = 0;
+      int inc[8][2] = {{1,0,},{-1,0},{0,-1},{0,1},{1,1},{-1,-1},{1,-1},{-1,1}};
+      for(auto inc1 : inc) {
+        File f;
+        Rank r;
+        for(f = from_f + inc1[0],r = from_r + inc1[1]; is_valid(f,r); f += inc1[0],r += inc1[1] ) {
+          if(f == to_f && r == to_r) {
+            //between
+            for(f = from_f + inc1[0],r = from_r + inc1[1];; f += inc1[0],r += inc1[1]) {
+              if (f == to_f && r == to_r) { break; }
+              auto sq = square_make(File(f),Rank(r));
+              between_bb.set(sq);
+            }
+            //behind
+            for(f = to_f + inc1[0],r = to_r + inc1[1]; is_valid(f,r) ; f += inc1[0],r += inc1[1]) {
+              auto sq = square_make(File(f),Rank(r));
+              behind_bb.set(sq);
+            }
+            goto loop_end;
+          }
+        }
+      }
+      loop_end:
+      
+      auto found_flag = false;
+      for(auto i = 0; i < between_sq; i++) {
+        if(between_bb == gBetween[i]) {
+          found_flag = true;
+          break;
+        }
+      }
+      if(!found_flag) {
+        gBetween[between_sq] = between_bb;
+        gBetweenIndex[from][to] = between_sq++;
+      }
+      found_flag = false;
+      for(auto i = 0; i < behind_sq; i++) {
+        if(behind_bb == gBehind[i]) {
+          found_flag = true;
+          break;
+        }
+      }
+      if(!found_flag) {
+        gBehind[behind_sq] = behind_bb;
+        gBehindIndex[from][to] = behind_sq++;
+      }
+    }
+  }
+  Tee<<"between:"<<between_sq<<std::endl;
+  Tee<<"behind:"<<behind_sq<<std::endl;
+  
 }
 
 void test() {
