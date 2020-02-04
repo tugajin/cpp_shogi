@@ -210,21 +210,8 @@ void init() {
           bb_list[sq] &= ~g_file_mask[File_9];
           bb_list[sq] &= ~g_rank_mask[Rank_1];
           bb_list[sq] &= ~g_rank_mask[Rank_9];
-        } else {
-        if(square_file(sq) != File_1) {
-          bb_list[sq] &= ~g_file_mask[File_1];
-        }
-        if(square_file(sq) != File_9) {
-          bb_list[sq] &= ~g_file_mask[File_9];
-        }
-        if(square_rank(sq) != Rank_1) {
-          bb_list[sq] &= ~g_rank_mask[Rank_1];
-        }
-        if(square_rank(sq) != Rank_9) {
-          bb_list[sq] &= ~g_rank_mask[Rank_9];
         }
       }
-    }
   };
   SQUARE_FOREACH(sq) {
     g_diag1_mask[sq].init();

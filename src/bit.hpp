@@ -278,20 +278,24 @@ inline bit::Bitboard get_rook_attack(const Square sq, const bit::Bitboard &occ) 
 inline bit::Bitboard get_bishop_attack(const Square sq, const bit::Bitboard &occ) {
     return get_diag1_attack(sq,occ) | get_diag2_attack(sq,occ);
 }
-inline bit::Bitboard get_lance_attack(const int sd, const Square sq, const bit::Bitboard &occ) {
+inline bit::Bitboard get_lance_attack(const Side sd, const Square sq, const bit::Bitboard &occ) {
     return get_file_attack(sq,occ) & bit::g_lance_mask[sd][sq];
-  }
-template<int sd> bit::Bitboard get_pawn_attack(const bit::Bitboard pawn) {
-    return (sd == BLACK) ? pawn >> 1 : pawn << 1;
 }
-inline bit::Bitboard get_knight_attack(const int sd, const Square sq) {
+inline bit::Bitboard get_knight_attack(const Side sd, const Square sq) {
     return bit::g_knight_attacks[sd][sq];
 }
-inline bit::Bitboard get_silver_attack(const int sd, const Square sq) {
+inline bit::Bitboard get_silver_attack(const Side sd, const Square sq) {
     return bit::g_silver_attacks[sd][sq];
 }
-inline bit::Bitboard get_gold_attack(const int sd, const Square sq) {
+inline bit::Bitboard get_gold_attack(const Side sd, const Square sq) {
     return bit::g_gold_attacks[sd][sq];
+}
+inline bit::Bitboard get_pawn_attack(const Side sd, const Square sq) {
+    //歩は数が多いから専用のテーブル用意したほうがいいかも
+    return get_gold_attack(sd,sq) & bit::g_lance_mask[sd][sq];
+}
+template<Side sd> bit::Bitboard get_pawn_attack(const bit::Bitboard pawn) {
+    return (sd == BLACK) ? pawn >> 1 : pawn << 1;
 }
 inline bit::Bitboard get_king_attack(const Square sq) {
     return get_gold_attack(BLACK,sq) | get_gold_attack(WHITE,sq);
@@ -313,6 +317,47 @@ inline bool line_is_empty(const Square from, const Square to, const bit::Bitboar
     return !(gBetween[gBetweenIndex[from][to]] & bb);
 }
 
+inline Bitboard between(const Square from, const Square to) {
+    return gBetween[gBetweenIndex[from][to]];
+}
+
+inline Bitboard behind(const Square from, const Square to) {
+    return gBehind[gBehindIndex[from][to]];
+}
+
+template<Piece pc>Bitboard piece_attacks(const Side sd, const Square from, const Bitboard & pieces) {
+    switch(pc) {
+        case Pawn : return get_pawn_attack(sd,from);
+        case Knight : return get_knight_attack(sd,from);
+        case Silver: return get_silver_attack(sd,from);
+        case Gold : 
+        case PPawn : 
+        case PLance : 
+        case PKnight : 
+        case PSilver : return get_gold_attack(sd,from);
+        case King : return get_king_attack(from);
+        case Rook : return get_rook_attack(from,pieces);
+        case Bishop : return get_bishop_attack(from,pieces);
+        case PRook: return get_prook_attack(from,pieces);
+        case PBishop : return get_pbishop_attack(from,pieces);
+        case PLance : return get_lance_attack(sd,from,pieces);
+        default : return Bitboard(0ull,0ull);
+    }
+}
+template<Piece pc>Bitboard piece_attacks(const Side sd, const Square from) {
+    switch(pc) {
+        case Pawn : return get_pawn_attack(sd,from);
+        case Knight : return get_knight_attack(sd,from);
+        case Silver: return get_silver_attack(sd,from);
+        case Gold : 
+        case PPawn : 
+        case PLance : 
+        case PKnight : 
+        case PSilver : return get_gold_attack(sd,from);
+        case King : return get_king_attack(from);
+        default : return Bitboard(0ull,0ull);
+    }
+}
 
 void init();
 void test();
