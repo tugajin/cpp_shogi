@@ -9,7 +9,7 @@ class MoveScore {
 
 private :
 
-   int pair_;
+   int64 pair_;
 
 public :
 
@@ -20,9 +20,9 @@ public :
     }
     MoveScore (Move mv, int sc) {
         assert(mv != move::None);
-        assert(int(mv) >= 0 && int(mv) < (1 << 15));
-        assert(std::abs(sc) < (1 << 15));
-        pair_ = (sc << 16) | int(mv);
+        assert(int(mv) >= 0 && int(mv) < (1 << 31));
+        assert(std::abs(sc) < (1 << 31));
+        pair_ = (int64(sc) << 32) | int(mv);
     }
 
     friend bool operator < (MoveScore m0, MoveScore m1) {
@@ -30,15 +30,15 @@ public :
     }
 
     void set_score (int sc) {
-        assert(std::abs(sc) < (1 << 15));
-        pair_ = (sc << 16) | uint16(pair_);
+        assert(std::abs(sc) < (1 << 31));
+        pair_ = (int64(sc) << 32) | uint32(pair_);
     }
 
     Move move  () const {
-        return Move(uint16(pair_));
+        return Move(uint32(pair_));
     }
     int  score () const {
-        return pair_ >> 16;
+        return pair_ >> 32;
     }
 };
 
@@ -46,7 +46,7 @@ class List {
 
 private :
 
-   static const int Size = 600;
+   static constexpr int Size = 600;
 
    ml::Array<MoveScore, Size> pair_;
 
@@ -90,11 +90,11 @@ public :
 
         // insert sort (stable)
 
-        pair_.add(MoveScore(move::MOVE_NULL, -((1 << 15) - 1))); // HACK: sentinel
+        pair_.add(MoveScore(move::MOVE_NULL, -((1 << 31) - 1))); // HACK: sentinel
 
         for (int i = size - 2; i >= 0; i--) {
 
-            MoveScore pair = pair_[i];
+            auto pair = pair_[i];
 
             int j;
 
@@ -110,11 +110,11 @@ public :
    }
 
    int size  () const {
-        return pair_.size();
+       return pair_.size();
    }
    Move move  (int i) const {
-          assert(i >= 0 && i < size());
-   return pair_[i].move();
+        assert(i >= 0 && i < size());
+        return pair_[i].move();
    }
    int  score (int i) const {
         assert(i >= 0 && i < size());
@@ -129,7 +129,7 @@ public :
 namespace list {
 
 inline int  find (const List & list, Move mv){
-  for (int i = 0; i < list.size(); i++) {
+  for (auto i = 0; i < list.size(); ++i) {
       if (list[i] == mv) return i;
    }
 
@@ -139,5 +139,6 @@ inline int  find (const List & list, Move mv){
 inline bool has (const List & list, Move mv) {
     return find(list, mv) >= 0;
 }
+
 }
 #endif //
