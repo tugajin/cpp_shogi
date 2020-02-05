@@ -116,8 +116,16 @@ bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pi
     return false;
 }
 
-bool is_pinned(const Pos &pos, const Square king, const Square sq, const Side sd);
-Square pinned_by(const Pos &pos, const Square king, const Square sq, const Side sd);
-bit::Bitboard pins(const Pos &pos, const Square king);
+bool is_pinned(const Pos &pos, const Square king, const Square sq, const Side sd) {
 
-bool is_mate_with_pawn_drop(const Square to, const Pos &pos);
+}
+Square pinned_by(const Pos &pos, const Square king, const Square sq, const Side sd) {
+
+}
+bit::Bitboard pins(const Pos &pos, const Square king) {
+
+}
+
+bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
+    
+}
