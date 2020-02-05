@@ -33,7 +33,7 @@ TeeStream Tee;
 
 static void usi_loop();
 
-int main(int argc, char **argv) {
+int main(int /*argc*/, char **/*argv*/) {
 
     math::init();
     bit::init();

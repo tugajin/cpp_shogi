@@ -5,7 +5,7 @@
 namespace move {
 
 Move from_usi(const std::string &s, const Pos &pos) {
-    Move(0);
+    return Move(0);
 }
 
 std::string move_to_usi(const Move mv) {

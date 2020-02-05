@@ -24,6 +24,9 @@ Pos::Pos(Side turn, Bitboard piece_side[], int hand[]) {
         auto sd = piece_side_side(ps);
         this->hand_[sd] = hand_change<true>(this->hand_[sd],pc,hand[ps]);
     }
+    if(turn == WHITE) {
+        this->switch_turn();
+    }
     this->update();
 }
 void Pos::clear() {

@@ -238,21 +238,13 @@ inline uint64 occ_to_index(const bit::Bitboard &bb, const bit::Bitboard &mask) {
 }
 
 inline bit::Bitboard get_diag1_attack(const Square sq, const bit::Bitboard &occ) {
-    std::cout<<(occ & bit::g_diag1_mask[sq])<<std::endl;
-    std::cout<<std::bitset<7>(occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq]))<<std::endl;
-    std::cout<<"index:"<<bit::g_diag1_offset[sq]+ occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq])<<std::endl;
-    std::cout<<"index2:"<<bit::g_diag1_offset[sq]<<std::endl;
-    std::cout<<"index3:"<<(occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq]))<<std::endl;
     return bit::g_diag1_attack[bit::g_diag1_offset[sq]
       + occ_to_index(occ & bit::g_diag1_mask[sq], bit::g_diag1_mask[sq])];
 }
 inline bit::Bitboard get_diag2_attack(const Square sq, const bit::Bitboard &occ) {
-    std::cout<<(occ & bit::g_diag2_mask[sq])<<std::endl;
-    std::cout<<std::bitset<7>(occ_to_index(occ & bit::g_diag2_mask[sq], bit::g_diag2_mask[sq]))<<std::endl;
     return bit::g_diag2_attack[bit::g_diag2_offset[sq]
       + occ_to_index(occ & bit::g_diag2_mask[sq], bit::g_diag2_mask[sq])];
 }
-
 inline bit::Bitboard get_file_attack(const Square sq, const bit::Bitboard &occ) {
     if(sq <= SQ_79) {
         auto index = (occ.p<0>() >> bit::g_file_shift[sq]) & 0x7f;

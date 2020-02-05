@@ -40,7 +40,7 @@ constexpr uint32 MOVE16_MASK = 0x7FFF;
 
 }
 const Move MOVE_NONE = Move(0);
-const Move MOVE_NULL = Move((1u<<move::BITS+1)-1);
+const Move MOVE_NULL = Move((1u<<(move::BITS+1))-1);
 //move
 inline Move make_move(const Square f, const Square t, const Piece pc, const Piece cp, const bool pp =false) {
     return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT)

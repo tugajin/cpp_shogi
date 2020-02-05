@@ -15,11 +15,10 @@ bit::Bitboard checks(const Pos &pos);
 bool move_is_safe(const Move mv, const Pos &pos);
 bool move_is_win(const Move mv, const Pos &pos);
 
-bool has_attack(const Pos &pos, const Side sd, const Square to);
-bool has_attack(const Pos &pos, const Side sd, const Square to, bit::Bitboard pieces);
+bool has_attack(const Pos &pos, const Side sd, const Square sq);
+bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pieces);
 
 bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);
-bit::Bitboard pseudo_attacks_to(const Pos &pos, const Side sd, const Square sq);
 
 bool is_pinned(const Pos &pos, const Square king, const Square sq, const Side sd);
 Square pinned_by(const Pos &pos, const Square king, const Square sq, const Side sd);
