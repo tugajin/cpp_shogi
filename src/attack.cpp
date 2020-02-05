@@ -38,7 +38,7 @@ bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const b
     attack = get_gold_attack(xd,sq);
     bb |= piece & attack;
     //king
-    piece = pos.pieces(PRook,sd) | pos.pieces(PBishop,sd);
+    piece = pos.pieces(King,sd) | pos.pieces(PRook,sd) | pos.pieces(PBishop,sd);
     attack = get_king_attack(sq);
     bb |= piece & attack;
     //rook rank
@@ -87,7 +87,7 @@ bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pi
     attack = get_knight_attack(xd,sq);
     if(bool(piece & attack)) { return true; }
     //king
-    piece = pos.pieces(PRook,sd) | pos.pieces(PBishop,sd);
+    piece = pos.pieces(King,sd) | pos.pieces(PRook,sd) | pos.pieces(PBishop,sd);
     attack = get_king_attack(sq);
     if(bool(piece & attack)) { return true; }
     //rook rank
