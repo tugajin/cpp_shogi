@@ -10,7 +10,7 @@ const Hand HAND_NONE = Hand(0);
 //handの構成
 //     rook      bishop      gold       silver     knight      lance      pawn
 //1bit 2bit 1bit 2bit 1bit   3bit 1bit  3bit 1bit  3bit  1bit  3bit 1bit  5bit
-                                 //g  p  l  n   s   b   r
+                                //p  l  n   s   b   r   g
 constexpr uint32 hand_shift[] = { 0, 6, 10, 14, 22, 25, 18 };
 
 constexpr uint32 hand_mask[] = { 0x1fu << hand_shift[0], 0x7u << hand_shift[1],
