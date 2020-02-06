@@ -4,6 +4,7 @@
 
 #include "common.hpp"
 #include "libmy.hpp"
+#include "move.hpp"
 
 class MoveScore {
 

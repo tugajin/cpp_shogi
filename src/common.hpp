@@ -22,14 +22,15 @@ enum Square : int {
     SQ_61, SQ_62, SQ_63, SQ_64, SQ_65, SQ_66, SQ_67, SQ_68, SQ_69,
     SQ_71, SQ_72, SQ_73, SQ_74, SQ_75, SQ_76, SQ_77, SQ_78, SQ_79,
     SQ_81, SQ_82, SQ_83, SQ_84, SQ_85, SQ_86, SQ_87, SQ_88, SQ_89,
-    SQ_91, SQ_92, SQ_93, SQ_94, SQ_95, SQ_96, SQ_97, SQ_98, SQ_99, SQ_NONE = -1 };
+    SQ_91, SQ_92, SQ_93, SQ_94, SQ_95, SQ_96, SQ_97, SQ_98, SQ_99, SQ_NONE = -1,
+    SQ_FILE_INC = FILE_SIZE, SQ_RANK_INC = RANK_SIZE, };
 
 enum File   : int { File_1, File_2, File_3, File_4, File_5, File_6, File_7, File_8, File_9 };
 enum Rank   : int { Rank_1, Rank_2, Rank_3, Rank_4, Rank_5, Rank_6, Rank_7, Rank_8, Rank_9 };
 enum Side   : int { BLACK, WHITE };
 
 enum Piece : int { PieceNone, Pawn,   Lance,  Knight,  Silver,  Bishop,  Rook, Gold, 
-                       King, PPawn, PLance, PKnight, PSilver, PBishop, PRook, PieceProm = 8,};
+                       King, PPawn, PLance, PKnight, PSilver, PBishop, PRook, PieceProm = 8, Golds = 15,};
 
 enum PieceSide : int { Empty = PIECE_SIDE_SIZE, PieceSideProm = 8, };
 
@@ -108,6 +109,10 @@ inline constexpr Rank square_rank(const Square sq) {
     return Rank(sq % RANK_SIZE);
 }
 
+template<Side sd> Rank square_rank(const Square sq) {
+    return (sd == BLACK) ? square_rank(sq) : (Rank_9 - square_rank(sq));
+}
+
 inline constexpr File square_file(const Square sq) {
     return File(sq / FILE_SIZE);
 }
@@ -123,6 +128,11 @@ inline constexpr bool is_valid(const int f, const int r) {
 }
 inline constexpr bool is_valid_sq(const int sq) {
     return (sq >= 0) && (sq < SQUARE_SIZE);
+}
+
+template<Side sd> bool square_is_prom(const Square sq) {
+    const auto rank = square_rank(sq);
+    return (sd == BLACK) ? (rank <= Rank_3) : (rank >= Rank_7);
 }
 
 Square sq_from_string(const std::string& s);
