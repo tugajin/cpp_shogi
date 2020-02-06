@@ -42,10 +42,18 @@ constexpr uint32 MOVE16_MASK = 0x7FFF;
 const Move MOVE_NONE = Move(0);
 const Move MOVE_NULL = Move((1u<<(move::BITS+1))-1);
 //move
-inline Move make_move(const Square f, const Square t, const Piece pc, const Piece cp, const bool pp =false) {
+inline Move make_move(const Square f, const Square t, const Piece pc, const Piece cp, const bool pp) {
     return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT)
       | (cp << move::CAP_SHIFT) | (static_cast<int>(pp) << move::PROM_SHIFT));
 }
+inline Move make_move(const Square f, const Square t, const Piece pc, const Piece cp) {
+    return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT)
+      | (cp << move::CAP_SHIFT));
+}
+inline Move make_move(const Square f, const Square t, const Piece pc) {
+    return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT));
+}
+
 //drop
 inline Move make_drop_move(const int t, const int pc) {
     return Move((SQUARE_SIZE << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT));
