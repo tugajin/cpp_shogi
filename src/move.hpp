@@ -55,7 +55,7 @@ inline Move make_move(const Square f, const Square t, const Piece pc) {
 }
 
 //drop
-inline Move make_drop_move(const int t, const int pc) {
+inline Move make_move(const Square t, const Piece pc) {
     return Move((SQUARE_SIZE << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT));
 }
 inline Square move_from(const Move mv) {

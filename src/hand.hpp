@@ -26,11 +26,11 @@ inline int pc_to_hp(const Piece pc) {
     assert(piece::is_valid_piece(pc));
     return pc - 1;
 }
-inline int num(const Hand hand, const Piece pc) {
+inline int hand_num(const Hand hand, const Piece pc) {
     const int hp = pc_to_hp(pc);
     return (uint32(hand) & hand_mask[hp]) >> hand_shift[hp];
 }
-inline bool has(const Hand hand, const Piece pc) {
+inline bool hand_has(const Hand hand, const Piece pc) {
     const int hp = pc_to_hp(pc);
     return (uint32(hand) & hand_mask[hp]) != 0;
 }
@@ -42,7 +42,7 @@ template<bool inc> Hand hand_change(const Hand hand, const Piece pc, const int n
 inline bool hand_is_empty(const Hand hand) {
     return hand == HAND_NONE;
 }
-inline bool is_superior(const Hand hand1, const Hand hand2) {
+inline bool hand_is_superior(const Hand hand1, const Hand hand2) {
     static constexpr uint32 hand_overflow_mask = hand_mask[0] | hand_mask[1] | hand_mask[2] | hand_mask[3] | hand_mask[4] | hand_mask[5] | hand_mask[6];
     return ((uint32(hand1) - uint32(hand2)) & hand_overflow_mask) == 0;
 }

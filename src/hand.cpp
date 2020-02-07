@@ -8,7 +8,7 @@ std::string hand_to_string(const Hand hand) {
         break;
       }
       s += ml::rtrim(piece_to_char(pc)) + "/"
-        + ml::to_string(num(hand, pc)) + " ";
+        + ml::to_string(hand_num(hand, pc)) + " ";
     }
     return s;
 }

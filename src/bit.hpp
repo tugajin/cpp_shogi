@@ -72,6 +72,10 @@ class Bitboard {
         bool operator !=(const Bitboard& rhs) const {
             return !(*this == rhs);
         }
+        Bitboard& operator += (const Bitboard& b1) { 
+            this->m_ = _mm_add_epi64(this->m_, b1.m_); 
+            return *this; 
+        } 
         template<int index>uint64 p() const {
             return (uint64)(_mm_extract_epi64(this->m_,index));
         }
@@ -157,6 +161,9 @@ class Bitboard {
         }
         Bitboard operator ^(const int xy) const {
             return Bitboard(*this) ^= xy;
+        }
+        Bitboard operator + (const Bitboard& rhs) const { 
+            return Bitboard(*this) += rhs; 
         }
         void clear(const Square sq) {
             assert(is_set(sq));

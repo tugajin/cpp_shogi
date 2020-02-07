@@ -2,6 +2,7 @@
 #include "bit.hpp"
 #include "pos.hpp"
 #include "list.hpp"
+#include "attack.hpp"
 
 enum MoveType {
     TACTICAL, QUIET, DROP, EVASION,
@@ -73,28 +74,28 @@ template<Piece pc, MoveType mt, Side sd>void add_lance_knight_move(List & ml, co
     }
 }
 template<bool has_knight, bool has_lance, bool has_pawn, Side sd, int num>
-    void add_drop_move(List & ml, const Pos & pos,const bit::Bitboard & target, const int p[]) {
+    void add_drop_move(List & ml, const Pos & pos,const bit::Bitboard & target, const Piece p[]) {
       if (has_pawn) {
         //pawn
-        const auto mask = bit::g_rank_mask[square::RANK_1]
-                        | bit::g_rank_mask[square::RANK_2]
-                        | bit::g_rank_mask[square::RANK_3]
-                        | bit::g_rank_mask[square::RANK_4]
-                        | bit::g_rank_mask[square::RANK_5]
-                        | bit::g_rank_mask[square::RANK_6]
-                        | bit::g_rank_mask[square::RANK_7]
-                        | bit::g_rank_mask[square::RANK_8];
-        auto pawn = bd.pieces(Pawn, sd) + mask;
+        const auto mask = bit::g_rank_mask[Rank_1]
+                        | bit::g_rank_mask[Rank_2]
+                        | bit::g_rank_mask[Rank_3]
+                        | bit::g_rank_mask[Rank_4]
+                        | bit::g_rank_mask[Rank_5]
+                        | bit::g_rank_mask[Rank_6]
+                        | bit::g_rank_mask[Rank_7]
+                        | bit::g_rank_mask[Rank_8];
+        auto pawn = pos.pieces(Pawn, sd) + mask;
         const auto index = (uint32) (ml::pext(pawn.p<0>(),bit::g_rank_mask[Rank_9].p<0>())
-                                  + (ml::pext(pawn.p<1>(),bit::g_rank_mask[Rank_9].p(1)) << 7));
+                                  + (ml::pext(pawn.p<1>(),bit::g_rank_mask[Rank_9].p<1>()) << 7));
         //std::cout<<"index:"<<index<<std::endl;
         //std::cout<<bit::g_double_pawn_mask[sd][index]<<std::endl;
         auto pawn_target = target & bit::g_double_pawn_mask[sd][index];
         const auto mate_with_sq = (sd == BLACK) ?
-          bd.king(flip_turn(sd)) - SQ_RANK_INC :
-          bd.king(flip_turn(sd)) + SQ_RANK_INC;
+          pos.king(flip_turn(sd)) - SQ_RANK_INC :
+          pos.king(flip_turn(sd)) + SQ_RANK_INC;
         if (pawn_target.is_set(mate_with_sq)
-            && is_mate_with_pawn_drop(mate_with_sq, bd)) {
+            && is_mate_with_pawn_drop(mate_with_sq, pos)) {
           pawn_target.clear(mate_with_sq);
         }
         while (bool(pawn_target)) {
@@ -104,72 +105,67 @@ template<bool has_knight, bool has_lance, bool has_pawn, Side sd, int num>
       }
 
       //rank1
-      bit::Bitboard rank_1 = target
-        & bit::g_rank_mask[square::side_rank<sd>(square::RANK_1)];
-      while (!rank_1.is_empty()) {
+      bit::Bitboard rank_1 = target & bit::g_rank_mask[square_rank<sd>(Rank_1)];
+      while (bool(rank_1)) {
         const auto to = rank_1.lsb();
         for (auto i = 0; i < num; i++) {
-          ml.add(move::make(to, p[i]));
+          ml.add(move::make_move(to, p[i]));
         }
       }
 
       //rank2
-      bit::Bitboard rank_2 = target
-        & bit::g_rank_mask[square::side_rank<sd>(square::RANK_2)];
-      while (!rank_2.is_empty()) {
+      bit::Bitboard rank_2 = target & bit::g_rank_mask[square_rank<sd>(Rank_2)];
+      while (bool(rank_2)) {
         const auto to = rank_2.lsb();
         for (auto i = 0; i < num; i++) {
-          ml.add(move::make(to, p[i]));
+          ml.add(move::make_move(to, p[i]));
         }
         if (has_lance) {
-          ml.add(move::make(to, piece::LANCE));
+          ml.add(move::make_move(to, Lance));
         }
       }
 
       //rank3~rank9
       bit::Bitboard rank_39 = target
-        & ~(bit::g_rank_mask[square::side_rank<sd>(square::RANK_1)]
-            | bit::g_rank_mask[square::side_rank<sd>(square::RANK_2)]);
-      while (!rank_39.is_empty()) {
+        & ~(bit::g_rank_mask[square_rank<sd>(Rank_1)]
+            | bit::g_rank_mask[square_rank<sd>(Rank_2)]);
+      while (bool(rank_39)) {
         const auto to = rank_39.lsb();
         for (auto i = 0; i < num; i++) {
-          ml.add(move::make(to, p[i]));
+          ml.add(move::make_move(to, p[i]));
         }
         if (has_lance) {
-          ml.add(move::make(to, piece::LANCE));
+          ml.add(move::make_move(to, Lance));
         }
         if (has_knight) {
-          ml.add(move::make(to, piece::KNIGHT));
+          ml.add(move::make_move(to, Lance));
         }
       }
     }
-  template<int sd>
-    void add_drop_move(List & ml, const board::Board & bd,
-        const bit::Bitboard & target) {
+  template<Side sd>
+    void add_drop_move(List & ml, const Pos & pos, const bit::Bitboard & target) {
 
-      assert(bd.is_ok());
-
-      const auto hand = bd.hand(sd);
+      const auto hand = pos.hand(sd);
       auto status = 0;
-      int piece_list[4] = { };
-      int * p = piece_list;
-
-      (hand::has(hand, piece::PAWN)) ? status += 1 : status;
-      (hand::has(hand, piece::LANCE)) ? status += 2 : status;
-      (hand::has(hand, piece::KNIGHT)) ? status += 4 : status;
-      (hand::has(hand, piece::SILVER)) ?
-        status += 8, (*p++) = piece::SILVER : status;
-      (hand::has(hand, piece::GOLD)) ? status += 8, (*p++) = piece::GOLD : status;
-      (hand::has(hand, piece::BISHOP)) ?
-        status += 8, (*p++) = piece::BISHOP : status;
-      (hand::has(hand, piece::ROOK)) ? status += 8, (*p++) = piece::ROOK : status;
+      Piece piece_list[4] = { };
+      Piece * p = piece_list;
+      
+      (hand_has(hand, Pawn)) ? status += 1 : status;
+      (hand_has(hand, Lance)) ? status += 2 : status;
+      (hand_has(hand, Knight)) ? status += 4 : status;
+      (hand_has(hand, Silver)) ?
+        status += 8, (*p++) = Silver : status;
+      (hand_has(hand, Gold)) ? status += 8, (*p++) = Gold : status;
+      (hand_has(hand, Bishop)) ?
+        status += 8, (*p++) = Bishop : status;
+      (hand_has(hand, Rook)) ? status += 8, (*p++) = Rook : status;
 
 #define ADD_DROP_MOVE(n) {\
   constexpr auto knight_flag = (n & (1 << 2)) != 0;\
   constexpr auto lance_flag  = (n & (1 << 1)) != 0;\
   constexpr auto pawn_flag   = (n & (1 << 0)) != 0;\
   constexpr auto num = n >> 3;\
-  add_drop_move<knight_flag,lance_flag,pawn_flag,sd,num>(ml,bd,target,piece_list); \
+  add_drop_move<knight_flag,lance_flag,pawn_flag,sd,num>(ml,pos,target,piece_list); \
   break;\
 }
       switch (status) {
@@ -178,85 +174,85 @@ template<bool has_knight, bool has_lance, bool has_pawn, Side sd, int num>
         case 1:
           ADD_DROP_MOVE(1)
         case 2:
-            ADD_DROP_MOVE(2)
+          ADD_DROP_MOVE(2)
         case 3:
-              ADD_DROP_MOVE(3)
+          ADD_DROP_MOVE(3)
         case 4:
-                ADD_DROP_MOVE(4)
+          ADD_DROP_MOVE(4)
         case 5:
-                  ADD_DROP_MOVE(5)
+          ADD_DROP_MOVE(5)
         case 6:
-                    ADD_DROP_MOVE(6)
+          ADD_DROP_MOVE(6)
         case 7:
-                      ADD_DROP_MOVE(7)
+          ADD_DROP_MOVE(7)
         case 8:
-                        ADD_DROP_MOVE(8)
+          ADD_DROP_MOVE(8)
         case 9:
-                          ADD_DROP_MOVE(9)
+          ADD_DROP_MOVE(9)
         case 10:
-                            ADD_DROP_MOVE(10)
+          ADD_DROP_MOVE(10)
         case 11:
-                              ADD_DROP_MOVE(11)
+          ADD_DROP_MOVE(11)
         case 12:
-                                ADD_DROP_MOVE(12)
+          ADD_DROP_MOVE(12)
         case 13:
-                                  ADD_DROP_MOVE(13)
+          ADD_DROP_MOVE(13)
         case 14:
-                                    ADD_DROP_MOVE(14)
+          ADD_DROP_MOVE(14)
         case 15:
-                                      ADD_DROP_MOVE(15)
+          ADD_DROP_MOVE(15)
         case 16:
-                                        ADD_DROP_MOVE(16)
+          ADD_DROP_MOVE(16)
         case 17:
-                                          ADD_DROP_MOVE(17)
+          ADD_DROP_MOVE(17)
         case 18:
-                                            ADD_DROP_MOVE(18)
+          ADD_DROP_MOVE(18)
         case 19:
-                                              ADD_DROP_MOVE(19)
+          ADD_DROP_MOVE(19)
         case 20:
-                                                ADD_DROP_MOVE(20)
+          ADD_DROP_MOVE(20)
         case 21:
-                                                  ADD_DROP_MOVE(21)
+          ADD_DROP_MOVE(21)
         case 22:
-                                                    ADD_DROP_MOVE(22)
+          ADD_DROP_MOVE(22)
         case 23:
-                                                      ADD_DROP_MOVE(23)
+          ADD_DROP_MOVE(23)
         case 24:
-                                                        ADD_DROP_MOVE(24)
+          ADD_DROP_MOVE(24)
         case 25:
-                                                          ADD_DROP_MOVE(25)
+          ADD_DROP_MOVE(25)
         case 26:
-                                                            ADD_DROP_MOVE(26)
+          ADD_DROP_MOVE(26)
         case 27:
-                                                              ADD_DROP_MOVE(27)
+          ADD_DROP_MOVE(27)
         case 28:
-                                                                ADD_DROP_MOVE(28)
+          ADD_DROP_MOVE(28)
         case 29:
-                                                                  ADD_DROP_MOVE(29)
+          ADD_DROP_MOVE(29)
         case 30:
-                                                                    ADD_DROP_MOVE(30)
+          ADD_DROP_MOVE(30)
         case 31:
-                                                                      ADD_DROP_MOVE(31)
+          ADD_DROP_MOVE(31)
         case 32:
-                                                                        ADD_DROP_MOVE(32)
+          ADD_DROP_MOVE(32)
         case 33:
-                                                                          ADD_DROP_MOVE(33)
+          ADD_DROP_MOVE(33)
         case 34:
-                                                                            ADD_DROP_MOVE(34)
+          ADD_DROP_MOVE(34)
         case 35:
-                                                                              ADD_DROP_MOVE(35)
+          ADD_DROP_MOVE(35)
         case 36:
-                                                                                ADD_DROP_MOVE(36)
+          ADD_DROP_MOVE(36)
         case 37:
-                                                                                  ADD_DROP_MOVE(37)
+          ADD_DROP_MOVE(37)
         case 38:
-                                                                                    ADD_DROP_MOVE(38)
+          ADD_DROP_MOVE(38)
         case 39:
-                                                                                      ADD_DROP_MOVE(39)
+          ADD_DROP_MOVE(39)
         case 40:
-                                                                                        ADD_DROP_MOVE(40)
+          ADD_DROP_MOVE(40)
         default:
-                                                                                          assert(false);
+          assert(false);
       }
 #undef ADD_DROP_MOVE
 }
@@ -264,15 +260,81 @@ template<bool has_knight, bool has_lance, bool has_pawn, Side sd, int num>
 void gen_legals(List &list, const Pos &pos) {
 
 }
-void gen_moves(List &list, const Pos &pos) {
+template<MoveType mt, Side sd>
+void gen_moves(List & ml, const Pos & pos, const bit::Bitboard &checks) {
 
-}
-void gen_moves(List &list, const Pos &pos, const bit::Bitboard &checks) {
+  constexpr auto xd = flip_turn(sd);
+  bit::Bitboard target, target2;
+  switch (mt) {
+    case TACTICAL:
+      target = pos.pieces(xd);
+      target2 = target | (~pos.pieces(sd) & bit::g_prom[sd]);
+      break;
+    case QUIET:
+      target = ~pos.pieces();
+      target2 = target & bit::g_middle[sd];
+      break;
+    case DROP:
+      target = ~pos.pieces();
+      break;
+    case EVASION: {
+      //取れるなら取ってしまったほうがいい気がする
+      target = ~pos.pieces(sd);
+      add_king_move<mt, sd>(ml, pos, target);
+      if (checks.pop_cnt() == 2) {
+        return;
+      }
+      assert(checks.pop_cnt() == 1);
+      auto check_bb = checks;
+      const auto checker_sq = check_bb.lsb<false>();
+      target = target2 = between(checker_sq,pos.king(sd));
+      target.set(checker_sq);//capture checker
+      add_pawn_move<mt, sd>(ml, pos, target);
+      add_lance_knight_move<Lance, mt, sd>(ml, pos, target);
+      add_lance_knight_move<Knight, mt, sd>(ml, pos, target);
+      add_silver_move<mt, sd>(ml, pos, target);
+      add_noprom_move<Golds, mt, sd>(ml, pos, target);
+      add_bishop_rook_move<Bishop, mt, sd>(ml, pos, target);
+      add_bishop_rook_move<Rook, mt, sd>(ml, pos, target);
+      add_noprom_move<PBishop, mt, sd>(ml, pos, target);
+      add_noprom_move<PRook, mt, sd>(ml, pos, target);
 
+      add_drop_move<sd>(ml, pos, target2);
+      return;
+    }
+    default:
+      assert(false);
+      break;
+  }
+  switch (mt) {
+    case DROP:
+      add_drop_move<sd>(ml, pos, target);
+      break;
+    default:
+      add_pawn_move<mt, sd>(ml, pos, target2);
+      add_lance_knight_move<Lance, mt, sd>(ml, pos, target);
+      add_lance_knight_move<Knight, mt, sd>(ml, pos, target);
+      add_silver_move<mt, sd>(ml, pos, target);
+      add_noprom_move<Golds, mt, sd>(ml, pos, target);
+      add_king_move<mt, sd>(ml, pos, target);
+      add_bishop_rook_move<Bishop, mt, sd>(ml, pos, target);
+      add_bishop_rook_move<Rook, mt, sd>(ml, pos, target);
+      add_noprom_move<PBishop, mt, sd>(ml, pos, target);
+      add_noprom_move<PRook, mt, sd>(ml, pos, target);
+      break;
+  }
 }
-void gen_evasions(List &list, const Pos &pos, const bit::Bitboard &checks) {
+template<Side sd>void gen_moves(List &list, const Pos &pos) {
+  gen_moves<sd>(list,pos,checks(pos));
+}
+template<Side sd>void gen_moves(List &list, const Pos &pos, const bit::Bitboard &checks) {
+  if(!checks) {
+    gen_moves<TACTICAL,sd>(list,pos);
+    gen_moves<QUIET,sd>(list,pos);
+    gen_moves<DROP,sd>(list,pos);
+  } else {
+    gen_moves<EVASION,sd>(list,pos,checks);
+  }
+}
 
-}
-void gen_captures(List &list, const Pos &pos) {
 
-}
