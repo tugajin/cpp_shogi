@@ -46,6 +46,10 @@ inline bool hand_is_superior(const Hand hand1, const Hand hand2) {
     return ((uint32(hand1) - uint32(hand2)) & hand_overflow_mask) == 0;
 }
 
+inline uint32 hand_to_val(const Hand hand) {
+    return uint32(hand);
+}
+
 std::string hand_to_string(const Hand hand);
 
 #endif

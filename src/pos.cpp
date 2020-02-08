@@ -4,10 +4,6 @@
 #include "sfen.hpp"
 #include "bit.hpp"
 
-namespace pos {
-void init() {
-}
-}
 Pos::Pos(Side turn, Bitboard piece_side[], int hand[]) {
     this->clear();
     PIECE_SIDE_FOREACH(ps) {
@@ -43,11 +39,50 @@ void Pos::clear() {
         sq = PieceNone;
     }
     this->last_move_ = move::MOVE_NONE;
+    this->cap_sq_ = SQ_NONE;
     this->key_ = Key(0ULL);
     this->hand_b_ = 0u;
 
 }
+Pos Pos::succ(const Move move) const {
+    const auto to = move::move_to(move);
+    const auto sd = this->turn();
+    const auto xd = flip_turn(sd);
+    auto pos = *this;
+    pos.ply_ = this->ply_+1;
+    pos.last_move_ = move;
+    const auto pc = move::move_piece(move);
+    if(move::move_is_drop(move)) {
+        pos.hand_[sd] = hand_change<false>(pos.hand_[sd],pc);
+        pos.add_piece(pc,sd,to);
+    } else {
+        const auto from = move::move_from(move);
+        const auto cap = move::move_cap(move);
+        const auto prom = move::move_is_prom(move);
+        if(cap != PieceNone) {
+            pos.remove_piece(cap,xd,to);
+            pos.cap_sq_ = to;
+            const auto unprom_cap = piece_unprom(cap);
+            pos.hand_[sd] = hand_change<true>(pos.hand_[sd],unprom_cap);
+        }
+        pos.remove_piece(pc,sd,from);
+        if(prom) { 
+            pos.add_piece(piece_prom(pc),sd,to);
+        } else {
+            pos.add_piece(pc,sd,to);
+        }
+    }
+    pos.switch_turn();
+    pos.update();
+    return pos;
+}
 namespace pos {
+
+Pos gStart;
+
+void init() {
+    gStart = pos_from_sfen(START_SFEN);
+}
 
 void test() {
     Tee<<"start test pos\n";

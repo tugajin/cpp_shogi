@@ -50,6 +50,7 @@ public:
     uint32 hand_b() const { return this->hand_b_; }
     int ply() const { return this->ply_; }
     Hand hand(const Side sd) const { return this->hand_[sd]; }
+    Pos succ(const Move move)const;
     friend std::ostream& operator<<(std::ostream& os, const Pos& b) {
         if(b.turn() == BLACK) {
             os << "BLACK" << std::endl;
@@ -93,6 +94,7 @@ private:
     void clear();
     void update() {
         this->all_ = this->side_[BLACK] | this->side_[WHITE];
+        this->hand_b_ = hand_to_val(this->hand_[BLACK]);
     }
     void switch_turn() {
         this->turn_ = flip_turn(this->turn_);
