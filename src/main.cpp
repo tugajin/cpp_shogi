@@ -121,7 +121,7 @@ static void usi_loop() {
             game.init(pos_from_sfen(sfen));
             std::stringstream ss(moves);
             while(ss >> arg) {
-                game.add_move(move::from_usi(arg,game.pos));
+                game.add_move(move::from_usi(arg,game.pos()));
             }
             si.init();
         } else if (command == "usinewgame") {
