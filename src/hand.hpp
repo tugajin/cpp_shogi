@@ -23,7 +23,6 @@ constexpr uint32 hand_inc[] = { 1u << hand_shift[0], 1u << hand_shift[1],
                                 1u << hand_shift[6] };
 
 inline int pc_to_hp(const Piece pc) {
-    assert(piece::is_valid_piece(pc));
     return pc - 1;
 }
 inline int hand_num(const Hand hand, const Piece pc) {

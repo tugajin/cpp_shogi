@@ -81,37 +81,37 @@ bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pi
     //gold
     piece = pos.golds(sd);
     attack = get_gold_attack(xd,sq);
-    if(bool(piece & attack)) { return true; }
+    if((piece & attack)) { return true; }
     //silver
     piece = pos.pieces(Silver,sd);
     attack = get_knight_attack(xd,sq);
-    if(bool(piece & attack)) { return true; }
+    if((piece & attack)) { return true; }
     //king
     piece = pos.pieces(King,sd) | pos.pieces(PRook,sd) | pos.pieces(PBishop,sd);
     attack = get_king_attack(sq);
-    if(bool(piece & attack)) { return true; }
+    if((piece & attack)) { return true; }
     //rook rank
     piece = pos.pieces(Rook,sd) | pos.pieces(PRook,sd);
     attack = get_rank_attack(sq,pieces);
-    if(bool(piece & attack)) { return true; }
+    if((piece & attack)) { return true; }
     //rook lance file
     piece |= pos.pieces(Lance,sd) & g_lance_mask[xd][sq];
     attack = get_file_attack(sq,pieces);
-    if(bool(piece & attack)) { return true; }
+    if((piece & attack)) { return true; }
     //bishop
     piece = pos.pieces(Bishop,sd) | pos.pieces(PBishop,sd);
     attack = get_bishop_attack(sq,pieces);
-    if(bool(piece & attack)) { return true; }
+    if((piece & attack)) { return true; }
 
     //knight
     piece = pos.pieces(Knight,sd);
     attack = get_knight_attack(xd,sq);
-    if(bool(piece & attack)) { return true; }
+    if((piece & attack)) { return true; }
 
     //pawn
     piece = pos.pieces(Pawn,sd);
     attack = get_pawn_attack(xd,sq);
-    if(bool(piece & attack)) { return true; }
+    if((piece & attack)) { return true; }
     
     return false;
 }

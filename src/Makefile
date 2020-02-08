@@ -30,8 +30,12 @@ CXXFLAGS += -std=c++14 -fno-rtti
 
 # optimisation
 
-CXXFLAGS += -O3 -mpopcnt -mbmi2 -msse4.2 -mavx2 -DBMI
-LDFLAGS  += -O3 -mpopcnt -mbmi2 -msse4.2 -mavx2 -DBMI
+#CXXFLAGS += -O3 -mpopcnt -mbmi2 -msse4.2 -mavx2 -DBMI -DDEBUG
+#LDFLAGS  += -O3 -mpopcnt -mbmi2 -msse4.2 -mavx2 -DBMI
+
+CXXFLAGS += -g -mpopcnt -mbmi2 -msse4.2 -mavx2 -DBMI -DDEBUG -fstandalone-debug
+LDFLAGS  += -g -mpopcnt -mbmi2 -msse4.2 -mavx2 -DBMI
+
 
 CXXFLAGS += -flto
 LDFLAGS  += -flto

@@ -2,7 +2,6 @@
 #define GAME_HPP
 
 #include "pos.hpp"
-#include "move.hpp"
 
 class Game {
     public:

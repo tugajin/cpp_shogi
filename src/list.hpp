@@ -20,9 +20,9 @@ public :
     explicit MoveScore (Move mv) : MoveScore(mv, 0) {   
     }
     MoveScore (Move mv, int sc) {
-        assert(mv != move::None);
-        assert(int(mv) >= 0 && int(mv) < (1 << 31));
-        assert(std::abs(sc) < (1 << 31));
+        assert(mv != move::MOVE_NONE);
+        assert(uint64(mv) >= 0 && uint64(mv) < (1 << 31));
+        assert(std::abs(sc) < (uint64(1) << 31));
         pair_ = (int64(sc) << 32) | int(mv);
     }
 
@@ -42,6 +42,15 @@ public :
         return pair_ >> 32;
     }
 };
+
+
+namespace list {
+
+inline int  find (const List & list, Move mv);
+
+inline bool has (const List & list, Move mv);
+
+}
 
 class List {
 
@@ -125,6 +134,14 @@ public :
    Move operator [] (int i) const {
        return move(i);
    }
+
+    friend std::ostream& operator<<(std::ostream& os, const List& list) {
+        for(auto i = 0; i < list.size(); i++) {
+            os<<std::setw(3)<<i<<":"<<move::move_to_string(list.move(i))<<std::endl;
+        }
+        return os;
+    }
+
 };
 
 namespace list {
@@ -142,4 +159,6 @@ inline bool has (const List & list, Move mv) {
 }
 
 }
+
+
 #endif //

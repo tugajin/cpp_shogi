@@ -41,11 +41,15 @@ int main(int /*argc*/, char **/*argv*/) {
     pos::init();
     var::init();
 
+#ifdef DEBUG
+    Tee<<"test start\n";
+    gen::test();
+#else
     listen_input();
     var::update();
 
     usi_loop();
-    
+#endif
     return EXIT_SUCCESS;
 }
 
@@ -127,8 +131,9 @@ static void usi_loop() {
         } else if(command == "stop") {
             //no-op
         } else if (command == "test") {
-            bit::test();
-            pos::test();
+           // bit::test();
+           // pos::test();
+          //  gen::test();
         } else if(command == "quit") {
             std::exit(EXIT_SUCCESS);
         }

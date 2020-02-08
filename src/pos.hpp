@@ -37,7 +37,7 @@ public:
         return Square(sq);
     }
     Bitboard golds(Side sd) const {
-        return pieces(Gold,sd) | pieces(PPawn,sd) | pieces(PLance,sd) | pieces(PKnight,sd) | pieces(PSilver,sd);
+        return (pieces(sd) & (pieces(Gold) | pieces(PPawn) | pieces(PLance) | pieces(PKnight) | pieces(PSilver)));
     }
     bool is_empty(const Square sq) const { return this->square_[sq] == PieceNone; }
     bool is_piece(const Square sq, Piece pc) const { return this->square_[sq] == pc; }

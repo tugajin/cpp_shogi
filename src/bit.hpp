@@ -47,7 +47,7 @@ class Bitboard {
             return *this;
         }
         Bitboard operator >>=(const int i) {
-            this->m_ = _mm_slli_epi64(this->m_, i);
+            this->m_ = _mm_srli_epi64(this->m_, i);
             return *this;
         }
         Bitboard operator &(const Bitboard& rhs) const {
@@ -112,7 +112,7 @@ class Bitboard {
             return num;
         }
         template<bool is_del = true> Square lsb_right() {
-            assert(!is_empty());
+            assert(bool(*this));
             const auto ret = (ml::bit_first(this->p<0>()));
             if (is_del) {
                 p_[0] &= p_[0] - 1;
@@ -121,7 +121,7 @@ class Bitboard {
             return Square(ret);
         }
         template<bool is_del = true> Square lsb_left() {
-            assert(!is_empty());
+            assert(bool(*this));
             const auto ret = (ml::bit_first(this->p<1>()));
             if (is_del) {
                 p_[1] &= p_[1] - 1;
@@ -130,7 +130,7 @@ class Bitboard {
             return Square(ret + 63);
         }
         template<bool is_del = true> Square lsb() {
-            assert(!is_empty());
+            assert(bool(*this));
             if (this->p<0>()) {
                 return lsb_right<is_del>();
             }
@@ -330,6 +330,7 @@ template<Piece pc>Bitboard piece_attacks(const Side sd, const Square from, const
         case Knight : return get_knight_attack(sd,from);
         case Silver: return get_silver_attack(sd,from);
         case Gold : 
+        case Golds:
         case PPawn : 
         case PLance : 
         case PKnight : 
@@ -339,21 +340,7 @@ template<Piece pc>Bitboard piece_attacks(const Side sd, const Square from, const
         case Bishop : return get_bishop_attack(from,pieces);
         case PRook: return get_prook_attack(from,pieces);
         case PBishop : return get_pbishop_attack(from,pieces);
-        case PLance : return get_lance_attack(sd,from,pieces);
-        default : return Bitboard(0ull,0ull);
-    }
-}
-template<Piece pc>Bitboard piece_attacks(const Side sd, const Square from) {
-    switch(pc) {
-        case Pawn : return get_pawn_attack(sd,from);
-        case Knight : return get_knight_attack(sd,from);
-        case Silver: return get_silver_attack(sd,from);
-        case Gold : 
-        case PPawn : 
-        case PLance : 
-        case PKnight : 
-        case PSilver : return get_gold_attack(sd,from);
-        case King : return get_king_attack(from);
+        case Lance : return get_lance_attack(sd,from,pieces);
         default : return Bitboard(0ull,0ull);
     }
 }

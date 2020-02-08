@@ -52,6 +52,7 @@ Pos pos_from_sfen(const std::string &s) {
     if(s[i] != '\0') {
         turn = Side(find(s[i++],SideChar));
     }
+    if(s[i] == ' ') { i++; }
     int hand[PIECE_SIDE_SIZE] = {};
     auto num = 0;
     while (true) {

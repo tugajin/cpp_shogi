@@ -24,8 +24,6 @@ Move from_usi(const std::string &s, const Pos &pos);
 //xxxxxxxx xxxxxxxx xx111111 1xxxxxxx  starting square(drop move = square::SIZE + piece)
 //xxxxxxxx xxxxxxxx x1xxxxxx xxxxxxxx  flag for promotion
 
-namespace move {
-
 constexpr int TO_SHIFT = 0;
 constexpr int FROM_SHIFT = 7;
 constexpr int PROM_SHIFT = 14;
@@ -38,7 +36,6 @@ constexpr int MASK = SIZE - 1;
 
 constexpr uint32 MOVE16_MASK = 0x7FFF;
 
-}
 const Move MOVE_NONE = Move(0);
 const Move MOVE_NULL = Move((1u<<(move::BITS+1))-1);
 //move
@@ -77,6 +74,7 @@ inline bool move_is_drop(const Move mv) {
     return move_from(mv) >= SQUARE_SIZE;
 }
 std::string move_to_usi(const Move mv);
+std::string move_to_string(const Move mv);
 
 }
 

@@ -134,11 +134,12 @@ bit::Bitboard index_to_occ(const int index, const bit::Bitboard &bb) {
 bit::Bitboard calc_slider_att(const Square sq, const bit::Bitboard &occ,const bool is_diag1) {
     bit::Bitboard ret_bb;
     ret_bb.init();
-    std::array<std::array<int, 2>, 2> diag1_dir_list = { { { -1, 1 }, { 1, -1 } } };
-    std::array<std::array<int, 2>, 2> diag2_dir_list = { { { -1, 1 }, { -1, 1 } } };
-    for (auto i = 0; i < 4; i++) {
-      const auto dir_file = (is_diag1) ? diag1_dir_list[0][i] : diag2_dir_list[0][i];
-      const auto dir_rank = (is_diag1) ? diag1_dir_list[1][i] : diag2_dir_list[1][i];
+                                 // diag1   diag2
+    int file_dir_list[2][2] = {  { 1, -1}, {-1, 1} };
+    int rank_dir_list[2][2] = {  {-1,  1}, {-1, 1} };
+    for (auto i = 0; i < 2; i++) {
+      const auto dir_file = (is_diag1) ? file_dir_list[0][i] : file_dir_list[1][i];
+      const auto dir_rank = (is_diag1) ? rank_dir_list[0][i] : rank_dir_list[1][i];
       const auto file = square_file(sq);
       const auto rank = square_rank(sq);
       auto f = file + dir_file;
