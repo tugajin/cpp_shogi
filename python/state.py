@@ -51,6 +51,15 @@ class Action:
     piece =  EMPTY
     prom = False
 
+    def __init__(self):
+        self.clear()
+    
+    def clear(self):
+        self.move_from = -1
+        self.move_to = -1
+        self.prom = EMPTY
+        self.prom = False
+
     @staticmethod
     def make_square(file,rank):
         return file + (rank*9)
@@ -92,6 +101,14 @@ class State:
     turn =  BLACK
     hand = [0]*PIECE_NUM
 
+    def __init__(self):
+        self.clear()
+
+    def clear(self):
+        self.pos =  [EMPTY]*SQUARE_SIZE
+        self.turn = BLACK
+        self.hand = [0]*PIECE_NUM
+
     @staticmethod
     def sfen_to_piece(s):
         piece = SFEN_PIECE.find(s)
@@ -110,6 +127,7 @@ class State:
         return p + 8
 
     def load_sfen(self, sfen_string):
+        self.clear()
         sfen_list = list(sfen_string)
         sfen_len = len(sfen_list)
         list_sp = 0
