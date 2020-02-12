@@ -1,6 +1,63 @@
 #include <string>
 #include "move.hpp"
 #include "pos.hpp"
+#include "attack.hpp"
+
+bool pseudo_is_legal(const Move mv, const Pos &pos) {
+  assert(mv != move::MOVE_NONE);
+  assert(mv != move::MOVE_NULL);
+  if(move::move_is_drop(mv)) {
+    return true;
+  }
+  const auto from = move::move_from(mv);
+  const auto to = move::move_to(mv);
+  const auto pc = move::move_piece(mv);
+  const auto sd = pos.turn();
+  const auto xd  = flip_turn(sd);
+  const auto king = pos.king(sd);
+  auto pieces = pos.pieces();
+  
+  pieces.clear(from);
+  pieces.set(to);
+
+  //king move
+  if (pc == King) {
+    return has_attack(pos,xd,to,pieces);
+  }
+  //pinned piece
+  auto beyond = bit::beyond(king,from);
+
+  auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(xd);
+  while(b) {
+    const auto ds = b.lsb();
+    const auto piece =  pos.piece(ds);
+    if(ds != to && piece_attack<Bishop>(xd,ds,king,pieces)) {
+      return false;
+    }
+  }
+  b = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(xd);
+  while(b) {
+    const auto ds = b.lsb();
+    const auto piece =  pos.piece(ds);
+    if(ds != to && piece_attack<Rook>(xd,ds,king,pieces)) {
+      return false;
+    }
+  }
+  b = pos.pieces(Lance,xd) & g_lance_mask[sd][king];
+  if(b) {
+    const auto ds = b.lsb<false>();
+    if(ds != to && line_is_empty(ds,king,pieces)) {
+      return false;
+    }
+  }
+
+  return true;
+
+}
+
+bool is_check(const Move mv, const Pos &pos) {
+
+}
 
 namespace move {
 

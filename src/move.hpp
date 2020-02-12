@@ -78,4 +78,8 @@ std::string move_to_string(const Move mv);
 
 }
 
+bool pseudo_is_legal(const Move mv, const Pos &pos);
+bool is_check(const Move mv, const Pos &pos);
+
+
 #endif

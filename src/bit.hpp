@@ -213,10 +213,10 @@ extern std::array<int,SQUARE_SIZE> g_diag2_offset;
 extern bw_square_t g_lance_mask;
 
 extern Bitboard gBetween[638];
-extern Bitboard gBehind[393];
+extern Bitboard gBeyond[393];
 
 extern int gBetweenIndex[SQUARE_SIZE][SQUARE_SIZE];
-extern int gBehindIndex[SQUARE_SIZE][SQUARE_SIZE];
+extern int gBeyondIndex[SQUARE_SIZE][SQUARE_SIZE];
 
 inline Bitboard Bitboard::operator &=(const int xy) {
     *this &= g_mask[xy];
@@ -252,6 +252,12 @@ inline bit::Bitboard get_diag2_attack(const Square sq, const bit::Bitboard &occ)
     return bit::g_diag2_attack[bit::g_diag2_offset[sq]
       + occ_to_index(occ & bit::g_diag2_mask[sq], bit::g_diag2_mask[sq])];
 }
+inline bit::Bitboard get_pseudo_diag1_attack(const Square sq) {
+    return bit::g_diag1_attack[bit::g_diag1_offset[sq]];
+}
+inline bit::Bitboard get_pseudo_diag2_attack(const Square sq) {
+    return bit::g_diag2_attack[bit::g_diag2_offset[sq]];
+}
 inline bit::Bitboard get_file_attack(const Square sq, const bit::Bitboard &occ) {
     if(sq <= SQ_79) {
         auto index = (occ.p<0>() >> bit::g_file_shift[sq]) & 0x7f;
@@ -263,6 +269,15 @@ inline bit::Bitboard get_file_attack(const Square sq, const bit::Bitboard &occ) 
         return bit::Bitboard(0ull,bit::g_file_attack[rank][index]<<(g_file_shift[sq]-1));
     }
 }
+inline bit::Bitboard get_pseudo_file_attack(const Square sq) {
+    if(sq <= SQ_79) {
+        auto rank = square_rank(sq);
+        return bit::Bitboard(bit::g_file_attack[rank][0]<<(g_file_shift[sq]-1),0ull);
+    } else {
+        auto rank = square_rank(sq);
+        return bit::Bitboard(0ull,bit::g_file_attack[rank][0]<<(g_file_shift[sq]-1));
+    }
+}
 
 inline bit::Bitboard get_rank_attack(const Square sq, const bit::Bitboard &occ) {
     auto file = square_file(sq);
@@ -271,14 +286,29 @@ inline bit::Bitboard get_rank_attack(const Square sq, const bit::Bitboard &occ) 
     uint64 index = ml::pext(u,0b1000000001000000001000000001000000001000000001000000001<<rank);
     return (bit::g_rank_attack[file][index])<<rank;
 }
+
+inline bit::Bitboard get_pseudo_rank_attack(const Square sq) {
+    auto file = square_file(sq);
+    auto rank = square_rank(sq);
+    return (bit::g_rank_attack[file][0])<<rank;
+}
 inline bit::Bitboard get_rook_attack(const Square sq, const bit::Bitboard &occ) {
     return get_rank_attack(sq,occ) | get_file_attack(sq,occ);
+}
+inline bit::Bitboard get_pseudo_rook_attack(const Square sq) {
+    return get_pseudo_rank_attack(sq) | get_pseudo_file_attack(sq);
 }
 inline bit::Bitboard get_bishop_attack(const Square sq, const bit::Bitboard &occ) {
     return get_diag1_attack(sq,occ) | get_diag2_attack(sq,occ);
 }
+inline bit::Bitboard get_pseudo_bishop_attack(const Square sq) {
+    return get_pseudo_diag1_attack(sq) | get_pseudo_diag2_attack(sq);
+}
 inline bit::Bitboard get_lance_attack(const Side sd, const Square sq, const bit::Bitboard &occ) {
     return get_file_attack(sq,occ) & bit::g_lance_mask[sd][sq];
+}
+inline bit::Bitboard get_pseudo_lance_attack(const Side sd, const Square sq) {
+    return bit::g_lance_mask[sd][sq];
 }
 inline bit::Bitboard get_knight_attack(const Side sd, const Square sq) {
     return bit::g_knight_attacks[sd][sq];
@@ -302,8 +332,14 @@ inline bit::Bitboard get_king_attack(const Square sq) {
 inline bit::Bitboard get_prook_attack(const Square sq, const bit::Bitboard &occ) {
     return (get_rook_attack(sq, occ) | get_king_attack(sq));
 }
+inline bit::Bitboard get_pseudo_prook_attack(const Square sq) {
+    return (get_pseudo_rook_attack(sq) | get_king_attack(sq));
+}
 inline bit::Bitboard get_pbishop_attack(const Square sq, const bit::Bitboard &occ) {
     return (get_bishop_attack(sq, occ) | get_king_attack(sq));
+}
+inline bit::Bitboard get_pseudo_pbishop_attack(const Square sq) {
+    return (get_pseudo_bishop_attack(sq) | get_king_attack(sq));
 }
 inline bit::Bitboard get_plus_attack(const Square sq) {
     return get_gold_attack(BLACK, sq) & get_gold_attack(WHITE, sq);
@@ -320,10 +356,29 @@ inline Bitboard between(const Square from, const Square to) {
     return gBetween[gBetweenIndex[from][to]];
 }
 
-inline Bitboard behind(const Square from, const Square to) {
-    return gBehind[gBehindIndex[from][to]];
+inline Bitboard beyond(const Square from, const Square to) {
+    return gBeyond[gBeyondIndex[from][to]];
 }
-
+template<Piece pc>Bitboard piece_pseudo_attacks(const Side sd, const Square from) {
+    switch(pc) {
+        case Pawn : return get_pawn_attack(sd,from);
+        case Knight : return get_knight_attack(sd,from);
+        case Silver: return get_silver_attack(sd,from);
+        case Gold : 
+        case Golds:
+        case PPawn : 
+        case PLance : 
+        case PKnight : 
+        case PSilver : return get_gold_attack(sd,from);
+        case King : return get_king_attack(from);
+        case Rook : return get_pseudo_rook_attack(from);
+        case Bishop : return get_pseudo_bishop_attack(from);
+        case PRook: return get_pseudo_prook_attack(from);
+        case PBishop : return get_pseudo_pbishop_attack(from);
+        case Lance : return get_pseudo_lance_attack(sd,from);
+        default : return Bitboard(0ull,0ull);
+    }
+}
 template<Piece pc>Bitboard piece_attacks(const Side sd, const Square from, const Bitboard & pieces) {
     switch(pc) {
         case Pawn : return get_pawn_attack(sd,from);
@@ -344,6 +399,13 @@ template<Piece pc>Bitboard piece_attacks(const Side sd, const Square from, const
         default : return Bitboard(0ull,0ull);
     }
 }
+template<Piece pc>bool piece_pseudo_attack(const Side sd, const Square from, const Square to) {
+    return piece_pseudo_attacks<pc>(sd,from).is_set(to);
+}
+template<Piece pc>bool piece_attack(const Side sd, const Square from, const Square to, const Bitboard & pieces) {
+    return piece_pseudo_attack<pc>(sd,from,to) && line_is_empty(from,to,pieces);
+}
+
 
 void init();
 void test();

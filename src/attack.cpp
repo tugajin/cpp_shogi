@@ -38,11 +38,11 @@ bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const b
     attack = get_gold_attack(xd,sq);
     bb |= piece & attack;
     //king
-    piece = pos.pieces(King,sd) | pos.pieces(PRook,sd) | pos.pieces(PBishop,sd);
+    piece = (pos.pieces(King) | pos.pieces(PRook) | pos.pieces(PBishop)) & pos.pieces(sd);
     attack = get_king_attack(sq);
     bb |= piece & attack;
     //rook rank
-    piece = pos.pieces(Rook,sd) | pos.pieces(PRook,sd);
+    piece = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(sd);
     attack = get_rank_attack(sq,pieces);
     bb |= piece & attack;
     //rook lance file
@@ -50,15 +50,15 @@ bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const b
     attack = get_file_attack(sq,pieces);
     bb |= piece & attack;
     //bishop
-    piece = pos.pieces(Bishop,sd) | pos.pieces(PBishop,sd);
+    piece = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(sd);
     attack = get_bishop_attack(sq,pieces);
     bb |= piece & attack;
 
     return bb;
 }
 bit::Bitboard checks(const Pos &pos) {
-    const auto sd = pos.turn();
-    const auto xd = flip_turn(sd);
+    const auto xd = pos.turn();
+    const auto sd = flip_turn(xd);
     const auto king = pos.king(xd);
     const auto pieces = pos.pieces();
     return attacks_to(pos,sd,king,pieces);
@@ -87,11 +87,11 @@ bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pi
     attack = get_knight_attack(xd,sq);
     if((piece & attack)) { return true; }
     //king
-    piece = pos.pieces(King,sd) | pos.pieces(PRook,sd) | pos.pieces(PBishop,sd);
+    piece = (pos.pieces(King) | pos.pieces(PRook) | pos.pieces(PBishop)) & pos.pieces(sd);
     attack = get_king_attack(sq);
     if((piece & attack)) { return true; }
     //rook rank
-    piece = pos.pieces(Rook,sd) | pos.pieces(PRook,sd);
+    piece = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(sd);
     attack = get_rank_attack(sq,pieces);
     if((piece & attack)) { return true; }
     //rook lance file
@@ -99,7 +99,7 @@ bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pi
     attack = get_file_attack(sq,pieces);
     if((piece & attack)) { return true; }
     //bishop
-    piece = pos.pieces(Bishop,sd) | pos.pieces(PBishop,sd);
+    piece = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(sd);
     attack = get_bishop_attack(sq,pieces);
     if((piece & attack)) { return true; }
 

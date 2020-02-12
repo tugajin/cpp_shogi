@@ -372,6 +372,13 @@ namespace gen {
             gen_moves<BLACK>(list,pos);
             Tee<<list<<std::endl;
         }
+        {
+            Pos pos = pos_from_sfen("k8/4l4/9/9/9/4K4/9/9/9 b 10PLKSGBR 1");
+            Tee<<pos<<std::endl;
+            List list;
+            gen_moves<BLACK>(list,pos);
+            Tee<<list<<std::endl;
+        }
     }
 
 }

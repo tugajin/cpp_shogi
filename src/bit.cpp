@@ -29,9 +29,11 @@ std::array<int,SQUARE_SIZE> g_diag2_offset;
 bw_square_t g_lance_mask;
 
 Bitboard gBetween[638];
-Bitboard gBehind[393];
+Bitboard gBeyond[393];
+
 int gBetweenIndex[SQUARE_SIZE][SQUARE_SIZE];
-int gBehindIndex[SQUARE_SIZE][SQUARE_SIZE];
+int gBeyondIndex[SQUARE_SIZE][SQUARE_SIZE];
+
 
 static void valid_set(bit::Bitboard &bb, File f, Rank r) {
 
@@ -296,9 +298,6 @@ void init() {
         }
       }
       g_file_attack[rank][index] = bb.p<0>();
-      //Tee<<"rank : "<<rank<<std::endl;
-      //Tee<<"index:"<<std::bitset<9>(index<<1)<<std::endl;
-      //Tee<<bb<<std::endl;
     }
   }
   //init rank attack table
@@ -323,9 +322,6 @@ void init() {
         }
       }
       g_rank_attack[file][index] = bb;
-      //Tee<<"file : "<<file<<std::endl;
-      //Tee<<"index:"<<std::bitset<9>(index<<1)<<std::endl;
-      //Tee<<bb<<std::endl;
     }
   }
   auto diag1_offset = 0;
@@ -333,35 +329,28 @@ void init() {
   SQUARE_FOREACH(sq) {
     auto max_index = 1ull << g_diag1_mask[sq].pop_cnt();
     g_diag1_offset[sq] = diag1_offset;
-    //Tee<<"sq is "<<sq<<std::endl;
     for(auto index = 0ull; index < max_index; index++) {
       auto occ = index_to_occ(index,g_diag1_mask[sq]);
-      //Tee<<"index:"<<std::bitset<9>(index<<1)<<std::endl;
       g_diag1_attack[g_diag1_offset[sq] + occ_to_index(occ,g_diag1_mask[sq])] = calc_slider_att(sq,occ,true);
-      //Tee<<g_diag1_attack[g_diag1_offset[sq] + index]<<std::endl;
     }
     diag1_offset += max_index;
-    //Tee<<"offset:"<<diag1_offset<<" : "<<g_diag1_attack.size()<<std::endl;
     max_index = 1ull << g_diag2_mask[sq].pop_cnt();
     g_diag2_offset[sq] = diag2_offset;
     for(auto index = 0ull; index < max_index; index++) {
       auto occ = index_to_occ(index,g_diag2_mask[sq]);
       g_diag2_attack[g_diag2_offset[sq] + occ_to_index(occ,g_diag2_mask[sq])] = calc_slider_att(sq,occ,false);
-      //Tee<<"index:"<<std::bitset<9>(index<<1)<<std::endl;
-      //Tee<<g_diag2_attack[g_diag2_offset[sq] + index]<<std::endl;
 
     }
     diag2_offset += max_index;
-    //Tee<<"offset:"<<diag2_offset<<" : "<<g_diag2_attack.size()<<std::endl;
   }
   //init between table
   SQUARE_FOREACH(sq1){
     SQUARE_FOREACH(sq2){
-      gBetweenIndex[sq1][sq2] = gBehindIndex[sq1][sq2] = 0;
+      gBetweenIndex[sq1][sq2] = gBeyondIndex[sq1][sq2] = 0;
     }
   }
   auto between_sq = 0;
-  auto behind_sq = 0;
+  auto beyond_sq = 0;
   SQUARE_FOREACH(from) {
     SQUARE_FOREACH(to) {
       auto from_f = square_file(from);
@@ -369,11 +358,11 @@ void init() {
       auto to_f = square_file(to);
       auto to_r = square_rank(to);
       Bitboard between_bb;
-      Bitboard behind_bb;
+      Bitboard beyond_bb;
       between_bb.init();
-      behind_bb.init();
+      beyond_bb.init();
       gBetweenIndex[from][to] = 0;
-      gBehindIndex[from][to] = 0;
+      gBeyondIndex[from][to] = 0;
       int inc[8][2] = {{1,0,},{-1,0},{0,-1},{0,1},{1,1},{-1,-1},{1,-1},{-1,1}};
       for(auto inc1 : inc) {
         File f;
@@ -386,10 +375,10 @@ void init() {
               auto sq = square_make(File(f),Rank(r));
               between_bb.set(sq);
             }
-            //behind
+            //beyond
             for(f = to_f + inc1[0],r = to_r + inc1[1]; is_valid(f,r) ; f += inc1[0],r += inc1[1]) {
               auto sq = square_make(File(f),Rank(r));
-              behind_bb.set(sq);
+              beyond_bb.set(sq);
             }
             goto loop_end;
           }
@@ -409,20 +398,20 @@ void init() {
         gBetweenIndex[from][to] = between_sq++;
       }
       found_flag = false;
-      for(auto i = 0; i < behind_sq; i++) {
-        if(behind_bb == gBehind[i]) {
+      for(auto i = 0; i < beyond_sq; i++) {
+        if(beyond_bb == gBeyond[i]) {
           found_flag = true;
           break;
         }
       }
       if(!found_flag) {
-        gBehind[behind_sq] = behind_bb;
-        gBehindIndex[from][to] = behind_sq++;
+        gBeyond[beyond_sq] = beyond_bb;
+        gBeyondIndex[from][to] = beyond_sq++;
       }
     }
   }
   Tee<<"between:"<<between_sq<<std::endl;
-  Tee<<"behind:"<<behind_sq<<std::endl;
+  Tee<<"beyond:"<<beyond_sq<<std::endl;
   
 }
 
