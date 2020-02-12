@@ -47,6 +47,9 @@ SFEN_RANK = "abcdefghi"
 class ActionList:
     action_list = []
     def init(self,s):
+    """
+    初期化する。action_listにactionが格納される
+    """
         a_list = s.split()
         for sfen_str in a_list:
             action = Action()
@@ -61,9 +64,15 @@ class Action:
     score = -9999999
 
     def __init__(self):
+    """
+    コンストラクタ
+    """
         self.clear()
     
     def clear(self):
+    """
+    初期化
+    """
         self.move_from = -1
         self.move_to = -1
         self.prom = EMPTY
@@ -72,17 +81,29 @@ class Action:
 
     @staticmethod
     def make_square(file,rank):
+    """
+    縦(file)、横(rank)からStateクラスのposにアクセスするためのindexに変換する。
+    """
         return file + (rank*9)
     
     @staticmethod
     def sfen_to_file(s):
+    """
+    文字列からfileに変換する。
+    """
         return SFEN_FILE.find(s)
 
     @staticmethod
     def sfen_to_rank(s):
+    """
+    文字列からrankに変換する。
+    """
         return SFEN_RANK.find(s)
     
     def load_sfen(self,sfen_string):
+    """
+    文字列からaction形式に変換する
+    """
         self.clear()
         sfen = sfen_string.split(":")
         s = sfen[0]
@@ -107,6 +128,9 @@ class Action:
             self.prom = (len(s.strip()) == 5)
 
     def out(self):
+    """
+    actionの中身を表示する。デバッグ用
+    """
         s = str(self.move_from) + ":" + str(self.move_to) + ":" + str(self.piece) + ":" + str(self.prom) + ":" + str(self.score)
         return s
 
@@ -116,15 +140,24 @@ class State:
     hand = [0]*PIECE_NUM
 
     def __init__(self):
+    """
+    コンストラクタ
+    """
         self.clear()
 
     def clear(self):
+    """
+    初期化
+    """
         self.pos =  [EMPTY]*SQUARE_SIZE
         self.turn = BLACK
         self.hand = [0]*PIECE_NUM
 
     @staticmethod
     def sfen_to_piece(s):
+    """
+    文字列から駒(piece)に変換する
+    """
         piece = SFEN_PIECE.find(s)
         if piece == -1:
             return EMPTY
@@ -133,14 +166,23 @@ class State:
     
     @staticmethod
     def piece_to_sfen(p):
+    """
+    pieceから文字列に変換する
+    """
         piece = SFEN_PIECE[(2*p):(2*p)+2]
         return  piece
 
     @staticmethod
     def piece_prom(p):
+    """
+    pieceを成った駒にします
+    """
         return p + 8
 
     def load_sfen(self, sfen_string):
+    """
+    文字列からstateに変換します。
+    """
         self.clear()
         sfen_list = list(sfen_string)
         sfen_len = len(sfen_list)
@@ -194,6 +236,9 @@ class State:
                 self.hand[piece] = num
 
     def out(self):
+    """
+    stateを文字列に変換します（デバッグ用）。
+    """
         s = ""
         if self.turn == BLACK:
             s += "BLACK"
@@ -213,6 +258,9 @@ class State:
         return s
 
     def out_sfen(self):
+    """
+    stateを文字列(sfen形式)に変換します。
+    """
         s = ""
         num = 0
         pos_num = 0
