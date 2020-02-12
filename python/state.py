@@ -44,12 +44,21 @@ SFEN_PIECE =  ". P L N S B R G K +P+L+N+S+B+R+G+.p l n s b r g k +p+l+n+s+b+r+g+
 SFEN_FILE = "987654321"
 SFEN_RANK = "abcdefghi"
 
+class ActionList:
+    action_list = []
+    def init(self,s):
+        a_list = s.split()
+        for sfen_str in a_list:
+            action = Action()
+            action.load_sfen(sfen_str)
+            self.action_list.append(action)
 
 class Action:
     move_from = -1
     move_to = -1
     piece =  EMPTY
     prom = False
+    score = -9999999
 
     def __init__(self):
         self.clear()
@@ -59,6 +68,7 @@ class Action:
         self.move_to = -1
         self.prom = EMPTY
         self.prom = False
+        self.score = -9999999
 
     @staticmethod
     def make_square(file,rank):
@@ -72,20 +82,24 @@ class Action:
     def sfen_to_rank(s):
         return SFEN_RANK.find(s)
     
-    def  load_sfen(self,s):
+    def load_sfen(self,sfen_string):
+        self.clear()
+        sfen = sfen_string.split(":")
+        s = sfen[0]
+        self.score = float(sfen[-1])
         # drop move
-        if s[0] == '*':
-            to_file = self.sfen_to_file(s[1:2])
-            to_rank = self.sfen_to_rank(s[2:3])
+        if s[1] == '*':
+            to_file = self.sfen_to_file(s[2])
+            to_rank = self.sfen_to_rank(s[3])
             self.move_to = self.make_square(to_file,to_rank)
-            self.piece =  State.sfen_to_piece(s[3:4])
+            self.piece =  State.sfen_to_piece(s[0])
 
             self.prom = False
         else:
-            from_file = self.sfen_to_file(s[0:1])
-            from_rank = self.sfen_to_rank(s[1:2])
-            to_file = self.sfen_to_file(s[2:3])
-            to_rank = self.sfen_to_rank(s[3:4])
+            from_file = self.sfen_to_file(s[0])
+            from_rank = self.sfen_to_rank(s[1])
+            to_file = self.sfen_to_file(s[2])
+            to_rank = self.sfen_to_rank(s[3])
 
             self.move_from =   self.make_square(from_file,from_rank)
             self.move_to =  self.make_square(to_file,to_rank)
@@ -93,7 +107,7 @@ class Action:
             self.prom = (len(s.strip()) == 5)
 
     def out(self):
-        s = str(self.move_from) + ":" + str(self.move_to) + ":" + str(self.piece) + ":" + str(self.prom)
+        s = str(self.move_from) + ":" + str(self.move_to) + ":" + str(self.piece) + ":" + str(self.prom) + ":" + str(self.score)
         return s
 
 class State:
@@ -240,7 +254,7 @@ class State:
 if  __name__ == '__main__':
     
     # 外部のプログラムを実行する
-    proc = subprocess.run(["./shogi"],stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    proc = subprocess.run(["./shogi","init"],stdout = subprocess.PIPE, stderr = subprocess.PIPE)
     result = proc.stdout.decode("utf8")
     
     #結果をpythonで読み込む
@@ -249,13 +263,12 @@ if  __name__ == '__main__':
     print(state.out())
     print(state.out_sfen())
 
-    #手の場合
-    action = Action()
-    #動かす手
-    action.load_sfen("9i9c+")
-    print(action.out())
-    #打つ手
-    action.load_sfen("*9iP")
-    print(action.out())
-    
+    # 外部のプログラムを実行する
+    proc = subprocess.run(["./shogi","think"],stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    result = proc.stdout.decode("utf8")
+    a_list = ActionList()
+    a_list.init(result)
+    for action in a_list.action_list:
+        print(action.out())
+        
 
