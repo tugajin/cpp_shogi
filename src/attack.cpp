@@ -126,6 +126,14 @@ bit::Bitboard pins(const Pos &pos, const Square king) {
     return Bitboard(0,0);
 }
 
-bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
+template<Side sd>bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
     return false;
 }
+bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
+  return pos.turn() == BLACK ? is_mate_with_pawn_drop<BLACK>(to,pos)
+                             : is_mate_with_pawn_drop<WHITE>(to,pos);
+}
+
+template bool is_mate_with_pawn_drop<BLACK>(const Square to, const Pos &pos);
+template bool is_mate_with_pawn_drop<WHITE>(const Square to, const Pos &pos);
+
