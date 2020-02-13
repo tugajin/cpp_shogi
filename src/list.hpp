@@ -21,8 +21,8 @@ public :
     }
     MoveScore (Move mv, int sc) {
         assert(mv != move::MOVE_NONE);
-        assert(uint64(mv) >= 0 && uint64(mv) < (1 << 31));
-        assert(std::abs(sc) < (uint64(1) << 31));
+        assert(uint64(mv) >= 0 && uint64(mv) < (uint64(1) << 31));
+        assert(uint64(std::abs(sc)) < (uint64(1) << 31));
         pair_ = (int64(sc) << 32) | int(mv);
     }
 
@@ -31,7 +31,7 @@ public :
     }
 
     void set_score (int sc) {
-        assert(std::abs(sc) < (1 << 31));
+        assert(uint64(std::abs(sc)) < (uint64(1) << 31));
         pair_ = (int64(sc) << 32) | uint32(pair_);
     }
 

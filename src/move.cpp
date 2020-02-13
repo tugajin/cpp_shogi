@@ -3,6 +3,8 @@
 #include "pos.hpp"
 #include "attack.hpp"
 
+namespace move {
+
 bool pseudo_is_legal(const Move mv, const Pos &pos) {
   assert(mv != move::MOVE_NONE);
   assert(mv != move::MOVE_NULL);
@@ -27,18 +29,16 @@ bool pseudo_is_legal(const Move mv, const Pos &pos) {
   //pinned piece
   auto beyond = bit::beyond(king,from);
 
-  auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(xd);
+  auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(xd) & beyond;
   while(b) {
     const auto ds = b.lsb();
-    const auto piece =  pos.piece(ds);
     if(ds != to && piece_attack<Bishop>(xd,ds,king,pieces)) {
       return false;
     }
   }
-  b = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(xd);
+  b = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(xd) & beyond;
   while(b) {
     const auto ds = b.lsb();
-    const auto piece =  pos.piece(ds);
     if(ds != to && piece_attack<Rook>(xd,ds,king,pieces)) {
       return false;
     }
@@ -56,10 +56,8 @@ bool pseudo_is_legal(const Move mv, const Pos &pos) {
 }
 
 bool is_check(const Move mv, const Pos &pos) {
-
+  return false;
 }
-
-namespace move {
 
 Move from_usi(const std::string &s, const Pos &pos) {
     return Move(0);

@@ -6,9 +6,7 @@
 #include "attack.hpp"
 #include "sfen.hpp"
 
-enum MoveType {
-    TACTICAL, QUIET, DROP, EVASION,
-};
+
 
 template<Piece pc, MoveType mt, Side sd>void add_noprom_move(List & ml, const Pos & pos,const bit::Bitboard & target) {
     auto piece =(pc == Golds) ? pos.golds(sd) : pos.pieces(pc, sd);
@@ -260,11 +258,19 @@ template<bool has_knight, bool has_lance, bool has_pawn, Side sd, int num>
 #undef ADD_DROP_MOVE
 }
 
-void gen_legals(List &list, const Pos &pos) {
-
+template<Side sd>void gen_legals(List &list, const Pos &pos) {
+  List tmp;
+  gen_moves<sd>(tmp,pos);
+  list.clear();
+  for(auto i = 0; i < tmp.size(); i++) {
+    const auto mv = tmp[i];
+    if(move::pseudo_is_legal(mv,pos)) {
+      list.add(mv);
+    }
+  }
 }
 template<MoveType mt, Side sd>
-void gen_moves(List & ml, const Pos & pos, const bit::Bitboard &checks) {
+void gen_moves(List & ml, const Pos & pos, const bit::Bitboard *checks) {
 
   constexpr auto xd = flip_turn(sd);
   bit::Bitboard target, target2;
@@ -284,11 +290,12 @@ void gen_moves(List & ml, const Pos & pos, const bit::Bitboard &checks) {
       //取れるなら取ってしまったほうがいい気がする
       target = ~pos.pieces(sd);
       add_king_move<mt, sd>(ml, pos, target);
-      if (checks.pop_cnt() == 2) {
+      assert(checks != nullptr);
+      if (checks->pop_cnt() == 2) {
         return;
       }
-      assert(checks.pop_cnt() == 1);
-      auto check_bb = checks;
+      assert(checks->pop_cnt() == 1);
+      auto check_bb = *checks;
       const auto checker_sq = check_bb.lsb<false>();
       target = target2 = between(checker_sq,pos.king(sd));
       target.set(checker_sq);//capture checker
@@ -328,10 +335,11 @@ void gen_moves(List & ml, const Pos & pos, const bit::Bitboard &checks) {
   }
 }
 template<Side sd>void gen_moves(List &list, const Pos &pos) {
-  gen_moves<sd>(list,pos,checks(pos));
+  const auto chk = checks(pos);
+  gen_moves<sd>(list,pos,&chk);
 }
-template<Side sd>void gen_moves(List &list, const Pos &pos, const bit::Bitboard &checks) {
-  if(!checks) {
+template<Side sd>void gen_moves(List &list, const Pos &pos, const bit::Bitboard *checks) {
+  if(!(*checks)) {
     gen_moves<TACTICAL,sd>(list,pos,checks);
     gen_moves<QUIET,sd>(list,pos,checks);
     gen_moves<DROP,sd>(list,pos,checks);
@@ -339,20 +347,24 @@ template<Side sd>void gen_moves(List &list, const Pos &pos, const bit::Bitboard 
     gen_moves<EVASION,sd>(list,pos,checks);
   }
 }
-template void gen_moves<BLACK>(List & ml, const Pos & pos, const bit::Bitboard &checks);
-template void gen_moves<WHITE>(List & ml, const Pos & pos, const bit::Bitboard &checks);
 
-template void gen_moves<TACTICAL, BLACK>(List & ml, const Pos & pos, const bit::Bitboard &checks);
-template void gen_moves<TACTICAL, WHITE>(List & ml, const Pos & pos, const bit::Bitboard &checks);
+template void gen_moves<BLACK>(List & ml, const Pos & pos);
+template void gen_moves<WHITE>(List & ml, const Pos & pos);
 
-template void gen_moves<QUIET, BLACK>(List & ml, const Pos & pos, const bit::Bitboard &checks);
-template void gen_moves<QUIET, WHITE>(List & ml, const Pos & pos, const bit::Bitboard &checks);
+template void gen_moves<BLACK>(List & ml, const Pos & pos, const bit::Bitboard *checks);
+template void gen_moves<WHITE>(List & ml, const Pos & pos, const bit::Bitboard *checks);
 
-template void gen_moves<DROP, BLACK>(List & ml, const Pos & pos, const bit::Bitboard &checks);
-template void gen_moves<DROP, WHITE>(List & ml, const Pos & pos, const bit::Bitboard &checks);
+template void gen_moves<TACTICAL, BLACK>(List & ml, const Pos & pos, const bit::Bitboard *checks);
+template void gen_moves<TACTICAL, WHITE>(List & ml, const Pos & pos, const bit::Bitboard *checks);
 
-template void gen_moves<EVASION, BLACK>(List & ml, const Pos & pos, const bit::Bitboard &checks);
-template void gen_moves<EVASION, WHITE>(List & ml, const Pos & pos, const bit::Bitboard &checks);
+template void gen_moves<QUIET, BLACK>(List & ml, const Pos & pos, const bit::Bitboard *checks);
+template void gen_moves<QUIET, WHITE>(List & ml, const Pos & pos, const bit::Bitboard *checks);
+
+template void gen_moves<DROP, BLACK>(List & ml, const Pos & pos, const bit::Bitboard *checks);
+template void gen_moves<DROP, WHITE>(List & ml, const Pos & pos, const bit::Bitboard *checks);
+
+template void gen_moves<EVASION, BLACK>(List & ml, const Pos & pos, const bit::Bitboard *checks);
+template void gen_moves<EVASION, WHITE>(List & ml, const Pos & pos, const bit::Bitboard *checks);
 
 
 namespace gen {

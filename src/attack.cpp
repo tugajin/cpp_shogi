@@ -1,7 +1,7 @@
 #include "attack.hpp"
 #include "pos.hpp"
 
-static bool can_play(const Pos &pos) {
+static bool can_play(const Pos &/*pos*/) {
     //todo
     return true;
 }
@@ -63,11 +63,11 @@ bit::Bitboard checks(const Pos &pos) {
     const auto pieces = pos.pieces();
     return attacks_to(pos,sd,king,pieces);
 }
-bool move_is_safe(const Move mv, const Pos &pos) {
+bool move_is_safe(const Move /*mv*/, const Pos &/*pos*/) {
     //todo
     return true;
 }
-bool move_is_win(const Move mv, const Pos &pos) {
+bool move_is_win(const Move /*mv*/, const Pos &/*pos*/) {
     //todo
     return true;
 }
@@ -116,13 +116,14 @@ bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pi
     return false;
 }
 
-bool is_pinned(const Pos &pos, const Square king, const Square sq, const Side sd) {
+bool is_pinned(const Pos &/*pos*/, const Square /*king*/, const Square /*sq*/, const Side /*sd*/) {
     return false;
 }
-Square pinned_by(const Pos &pos, const Square king, const Square sq, const Side sd) {
+Square pinned_by(const Pos &/*pos*/, const Square /*king*/, const Square /*sq*/, const Side /*sd*/) {
+
     return SQ_11;
 }
-bit::Bitboard pins(const Pos &pos, const Square king) {
+bit::Bitboard pins(const Pos &/*pos*/, const Square /*king*/) {
     return Bitboard(0,0);
 }
 

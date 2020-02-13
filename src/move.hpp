@@ -73,13 +73,14 @@ inline bool move_is_prom(const Move mv) {
 inline bool move_is_drop(const Move mv) {
     return move_from(mv) >= SQUARE_SIZE;
 }
+
+bool pseudo_is_legal(const Move mv, const Pos &pos);
+bool is_check(const Move mv, const Pos &pos);
 std::string move_to_usi(const Move mv);
 std::string move_to_string(const Move mv);
 
 }
 
-bool pseudo_is_legal(const Move mv, const Pos &pos);
-bool is_check(const Move mv, const Pos &pos);
 
 
 #endif
