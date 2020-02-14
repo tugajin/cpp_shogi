@@ -18,7 +18,7 @@ bool move_is_win(const Move mv, const Pos &pos);
 bool has_attack(const Pos &pos, const Side sd, const Square sq);
 bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pieces);
 
-bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);
+template<bool skip_king,bool skip_pawn>bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);
 
 bool is_pinned(const Pos &pos, const Square king, const Square sq, const Side sd);
 Square pinned_by(const Pos &pos, const Square king, const Square sq, const Side sd);

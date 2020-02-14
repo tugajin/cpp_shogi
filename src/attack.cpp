@@ -17,14 +17,16 @@ bool is_mate(const Pos &pos) {
 bool in_check(const Pos &pos) {
     return bool(checks(pos));
 }
-bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces) {
+template<bool skip_king, bool skip_pawn>bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces) {
     Bitboard bb(0ull,0ull);
     Bitboard attack,piece;
     const auto xd = flip_turn(sd);
-    //pawn
-    piece = pos.pieces(Pawn,sd);
-    attack = get_pawn_attack(xd,sq);
-    bb |= piece & attack;
+    if(skip_pawn) {
+        //pawn
+        piece = pos.pieces(Pawn,sd);
+        attack = get_pawn_attack(xd,sq);
+        bb |= piece & attack;
+    }
     //knight
     piece = pos.pieces(Knight,sd);
     attack = get_knight_attack(xd,sq);
@@ -38,7 +40,11 @@ bit::Bitboard attacks_to(const Pos &pos, const Side sd, const Square sq, const b
     attack = get_gold_attack(xd,sq);
     bb |= piece & attack;
     //king
-    piece = (pos.pieces(King) | pos.pieces(PRook) | pos.pieces(PBishop)) & pos.pieces(sd);
+    if(skip_king) {
+        piece = (pos.pieces(King) | pos.pieces(PRook) | pos.pieces(PBishop)) & pos.pieces(sd);
+    } else {
+        piece = (pos.pieces(PRook) | pos.pieces(PBishop)) & pos.pieces(sd);
+    }
     attack = get_king_attack(sq);
     bb |= piece & attack;
     //rook rank
@@ -61,7 +67,7 @@ bit::Bitboard checks(const Pos &pos) {
     const auto sd = flip_turn(xd);
     const auto king = pos.king(xd);
     const auto pieces = pos.pieces();
-    return attacks_to(pos,sd,king,pieces);
+    return attacks_to<false,false>(pos,sd,king,pieces);
 }
 bool move_is_safe(const Move /*mv*/, const Pos &/*pos*/) {
     //todo
@@ -138,3 +144,7 @@ bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
 template bool is_mate_with_pawn_drop<BLACK>(const Square to, const Pos &pos);
 template bool is_mate_with_pawn_drop<WHITE>(const Square to, const Pos &pos);
 
+template bit::Bitboard attacks_to<true,true>(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);
+template bit::Bitboard attacks_to<true,false>(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);
+template bit::Bitboard attacks_to<false,true>(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);
+template bit::Bitboard attacks_to<false,false>(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);
