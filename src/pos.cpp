@@ -24,6 +24,7 @@ Pos::Pos(Side turn, Bitboard piece_side[], int hand[]) {
         this->switch_turn();
     }
     this->update();
+    assert(is_ok());
 }
 void Pos::clear() {
     for(auto &piece : this->piece_) {
@@ -45,6 +46,9 @@ void Pos::clear() {
 
 }
 Pos Pos::succ(const Move move) const {
+    
+    assert(is_ok());
+    
     const auto to = move::move_to(move);
     const auto sd = this->turn();
     const auto xd = flip_turn(sd);
@@ -74,8 +78,69 @@ Pos Pos::succ(const Move move) const {
     }
     pos.switch_turn();
     pos.update();
+    assert(pos.is_ok());
     return pos;
 }
+
+bool Pos::is_ok() const {
+    if(!hand_is_ok(this->hand_[BLACK])) {
+        Tee<<"black hand error";
+        return false;
+    }
+    if(!hand_is_ok(this->hand_[WHITE])) {
+        Tee<<"white hand error";
+        return false;
+    }
+    auto tmp_all = this->side_[BLACK] | this->side_[WHITE];
+    if(tmp_all != this->all_) {
+        Tee<<"all error";
+        Tee<<tmp_all<<std::endl;
+        Tee<<this->all_<<std::endl;
+        return false;
+    }
+    PIECE_FOREACH(pc) {
+        auto bb = this->piece_[pc];
+        while(bb) {
+            auto sq = bb.lsb();
+            if(!this->all_.is_set(sq)) {
+                Tee<<"piece -> all error"<<std::endl;
+                Tee<<pc<<std::endl;
+                Tee<<sq<<std::endl;
+                Tee<<this->piece_[pc]<<std::endl;
+                return false;
+            }
+            if(this->square_[sq] != pc) {
+                Tee<<"pc error"<<std::endl;
+                Tee<<this->square_[sq]<<std::endl;
+                Tee<<pc<<std::endl;
+                Tee<<sq<<std::endl;
+                return false;
+            }
+        }
+    }
+    while(tmp_all) {
+        const auto sq = tmp_all.lsb();
+        if(this->square_[sq] == PieceNone) {
+            Tee<<"sq error"<<std::endl;
+            Tee<<this->square_[sq]<<std::endl;
+            Tee<<sq<<std::endl;
+            return false;
+        }
+    }
+    if(this->ply_ < 0) {
+        Tee<<"ply error"<<std::endl;
+        Tee<<this->ply_<<std::endl;
+        return false;
+    }
+    if(uint32(this->hand_[BLACK]) != this->hand_b_) {
+        Tee<<"hand_b error"<<std::endl;
+        Tee<<uint32(this->hand_[BLACK])<<std::endl;
+        Tee<<this->hand_b_<<std::endl;
+        return false;
+    }
+    return true;
+}
+
 namespace pos {
 
 Pos gStart;

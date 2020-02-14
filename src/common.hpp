@@ -65,10 +65,16 @@ inline PieceSide sfen_to_piece_side(const std::string s) {
     return PieceSide(PieceSfenChar.find(s)/2);
 }
 
+inline bool piece_is_ok(const Piece p) {
+    return (p >= Pawn) && (p <= PRook);
+}
+
 inline Piece piece_prom(const Piece p) {
+    assert(p == Pawn || p == Lance || p == Knight || p == Silver || p == Bishop || p == Rook);
     return Piece(p + PieceProm);
 }
 inline Piece piece_unprom(const Piece p) {
+    assert(p == PPawn || p == PLance || p == PKnight || p == PSilver || p == PBishop || p == PRook);
     return Piece(p - PieceProm);
 }
 inline PieceSide piece_side_prom(const PieceSide p) {
@@ -151,8 +157,8 @@ std::string sq_to_string(const Square sq);
 #define RANK_FOREACH(r) for(auto r = Rank_1; r < RANK_SIZE; ++r)
 #define FILE_FOREACH(f) for(auto f = File_1; f < FILE_SIZE; ++f)
 #define FILE_FOREACH_REV(f) for(auto f = File_9; f >= File_1; --f)
-#define PIECE_FOREACH(p) for(auto p = Pawn; p <= PRook; p++)
-#define PIECE_SIDE_FOREACH(p) for(auto p = PieceSide(0); p < PieceSide(PIECE_SIDE_SIZE); p++)
+#define PIECE_FOREACH(p) for(auto p = Pawn; p <= PRook; ++p)
+#define PIECE_SIDE_FOREACH(p) for(auto p = PieceSide(0); p < PieceSide(PIECE_SIDE_SIZE); ++p)
 
 #endif
 

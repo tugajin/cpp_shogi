@@ -405,6 +405,26 @@ template<Piece pc>bool piece_pseudo_attack(const Side sd, const Square from, con
 template<Piece pc>bool piece_attack(const Side sd, const Square from, const Square to, const Bitboard & pieces) {
     return piece_pseudo_attack<pc>(sd,from,to) && line_is_empty(from,to,pieces);
 }
+inline bool piece_attack(const Piece pc,const Side sd, const Square from, const Square to, const Bitboard & pieces) {
+    switch(pc) {
+        case Pawn : return piece_attack<Pawn>(sd,from,to,pieces);
+        case Knight : return piece_attack<Knight>(sd,from,to,pieces);
+        case Silver: return piece_attack<Silver>(sd,from,to,pieces);
+        case Gold : 
+        case Golds:
+        case PPawn : 
+        case PLance : 
+        case PKnight : 
+        case PSilver : return piece_attack<Gold>(sd,from,to,pieces);
+        case King : return piece_attack<King>(sd,from,to,pieces);
+        case Rook : return piece_attack<Rook>(sd,from,to,pieces);
+        case Bishop : return piece_attack<Bishop>(sd,from,to,pieces);
+        case PRook: return piece_attack<PRook>(sd,from,to,pieces);
+        case PBishop : return  piece_attack<PBishop>(sd,from,to,pieces);
+        case Lance : return piece_attack<Lance>(sd,from,to,pieces);
+        default : return false;
+    }
+}
 
 
 void init();

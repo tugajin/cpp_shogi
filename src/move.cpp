@@ -6,8 +6,9 @@
 namespace move {
 
 bool pseudo_is_legal(const Move mv, const Pos &pos) {
-  assert(mv != move::MOVE_NONE);
-  assert(mv != move::MOVE_NULL);
+  
+  assert(move_is_ok(mv,pos));
+
   if(move::move_is_drop(mv)) {
     return true;
   }
@@ -56,7 +57,56 @@ bool pseudo_is_legal(const Move mv, const Pos &pos) {
 }
 
 bool is_check(const Move mv, const Pos &pos) {
+  
+  assert(move_is_ok(mv,pos));
+  
+  const auto sd = pos.turn();
+  const auto king = pos.king(flip_turn(sd));
+  const auto to = move_to(mv);
+  auto pieces = pos.pieces();
+  pieces.set(to);
+  auto pc = move_piece(mv);
+  if(move_is_drop(mv)) {
+    //direct check
+    return piece_attack(pc,sd,to,king,pieces);
+  } else {
+    const auto from = move_from(mv);
+    pieces.clear(from);
+    if(move_is_prom(mv)) {
+      pc = piece_prom(pc);
+    } 
+    //direct check
+    if(piece_attack(pc,sd,to,king,pieces)) {
+      return true;
+    }
+
+    //discover check
+    auto beyond = bit::beyond(king,from);
+
+    auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(sd) & beyond;
+    while(b) {
+      const auto ds = b.lsb();
+      if(piece_attack<Bishop>(sd,ds,king,pieces)) {
+        return false;
+      }
+    }
+    b = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(sd) & beyond;
+    while(b) {
+      const auto ds = b.lsb();
+      if(piece_attack<Rook>(sd,ds,king,pieces)) {
+        return false;
+      }
+    }
+    b = pos.pieces(Lance,sd) & g_lance_mask[sd][king];
+    if(b) {
+      const auto ds = b.lsb<false>();
+      if(line_is_empty(ds,king,pieces)) {
+        return false;
+      }
+    }
+  }
   return false;
+
 }
 
 Move from_usi(const std::string &s, const Pos &pos) {
@@ -120,6 +170,98 @@ std::string move_to_string(const Move mv) {
       }
     }
     return s;
+}
+
+bool move_is_ok(const Move mv) {
+  if(mv == MOVE_NONE) {
+    return false;
+  }
+  if(mv == MOVE_NULL) {
+    return false;
+  }
+  const auto from =  move_from(mv);
+  const auto to = move_to(mv);
+  const auto piece = move_piece(mv);
+  const auto cap = move_cap(mv);
+  const auto prom = move_is_prom(mv);
+  const auto is_drop = move_is_drop(mv);
+  if(from == SQUARE_SIZE) {
+    if(!is_drop) {
+      return false;
+    }
+  } else {
+    if(!is_valid_sq(from)) {
+      return false;
+    }
+  }
+  if(!is_valid_sq(to)) {
+    return false;
+  }
+  if(!piece_is_ok(piece)) {
+    return false;
+  }
+  if(cap != PieceNone) {
+    if(!piece_is_ok(cap)) {
+      return false;
+    }
+  }
+  if(prom) {
+    if(piece != Pawn && 
+       piece != Knight && 
+       piece != Lance && 
+       piece != Bishop && 
+       piece != Rook) {
+      return false;
+    }
+  }
+  return true;
+}
+bool move_is_ok(const Move mv, const Pos &pos) {
+  if(!move_is_ok(mv)) { return false; }
+
+  const auto from =  move_from(mv);
+  const auto to = move_to(mv);
+  const auto piece = move_piece(mv);
+  const auto cap = move_cap(mv);
+  const auto prom = move_is_prom(mv);
+  const auto sd = pos.turn();
+
+  if(move_is_drop(mv)) {
+    if(!hand_has(pos.hand(sd),piece)){
+      return false;
+    }
+    if(pos.piece(to) != PieceNone) {
+      return false;
+    }
+  } else {
+    if(pos.piece(from) != piece) {
+      return false;
+    }
+    const auto  side_bb = pos.pieces(sd);
+    if(side_bb.is_set(to)) {
+      return false;
+    }
+  }
+  if(cap == King) {
+    return false;
+  }
+  if(pos.turn() == BLACK) {
+    if(prom) {
+      if(square_is_prom<BLACK>(from) || square_is_prom<BLACK>(to)) {
+      } else {
+        return false;
+      }
+    }
+  } else {
+    if(prom) {
+      if(square_is_prom<WHITE>(from) || square_is_prom<WHITE>(to)) {
+      } else {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 }

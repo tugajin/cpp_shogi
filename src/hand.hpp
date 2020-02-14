@@ -22,6 +22,8 @@ constexpr uint32 hand_inc[] = { 1u << hand_shift[0], 1u << hand_shift[1],
                                 1u << hand_shift[4], 1u << hand_shift[5], 
                                 1u << hand_shift[6] };
 
+constexpr uint32 HAND_OVERFLOW_MASK = ~(hand_mask[0] | hand_mask[1] | hand_mask[2] | hand_mask[3] | hand_mask[4] | hand_mask[5] | hand_mask[6]);
+
 inline int pc_to_hp(const Piece pc) {
     return pc - 1;
 }
@@ -42,8 +44,7 @@ inline bool hand_is_empty(const Hand hand) {
     return hand == HAND_NONE;
 }
 inline bool hand_is_superior(const Hand hand1, const Hand hand2) {
-    static constexpr uint32 hand_overflow_mask = hand_mask[0] | hand_mask[1] | hand_mask[2] | hand_mask[3] | hand_mask[4] | hand_mask[5] | hand_mask[6];
-    return ((uint32(hand1) - uint32(hand2)) & hand_overflow_mask) == 0;
+    return ((uint32(hand1) - uint32(hand2)) & HAND_OVERFLOW_MASK) == 0;
 }
 
 inline uint32 hand_to_val(const Hand hand) {
@@ -51,5 +52,7 @@ inline uint32 hand_to_val(const Hand hand) {
 }
 
 std::string hand_to_string(const Hand hand);
+
+bool hand_is_ok(const Hand hand);
 
 #endif

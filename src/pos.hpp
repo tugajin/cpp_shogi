@@ -51,6 +51,7 @@ public:
     int ply() const { return this->ply_; }
     Hand hand(const Side sd) const { return this->hand_[sd]; }
     Pos succ(const Move move)const;
+    bool is_ok() const;
     friend std::ostream& operator<<(std::ostream& os, const Pos& b) {
         if(b.turn() == BLACK) {
             os << "BLACK" << std::endl;
