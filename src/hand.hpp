@@ -55,4 +55,6 @@ std::string hand_to_string(const Hand hand);
 
 bool hand_is_ok(const Hand hand);
 
+#define HAND_FOREACH(p) for(auto p = Pawn; p <= Gold; ++p)
+
 #endif

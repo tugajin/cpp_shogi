@@ -73,3 +73,42 @@ Pos pos_from_sfen(const std::string &s) {
     }
     return Pos(turn,piece_side,hand);
 }
+
+std::string out_sfen(const  Pos &pos) {
+    std::string s = "";
+    auto num = 0;
+    SQUARE_FOREACH(sq) {
+        const auto pc = pos.piece(sq);
+        if(pc == PieceNone) {
+            num++;
+        } else {
+            if(num) {
+                s += ml::to_string(num);
+            }
+            const auto sd = pos.side(sq);
+            const auto pd = piece_side_make(pc,sd);
+            s += piece_side_to_sfen(pd);
+        }
+        if((sq+1)%9 == 0) {
+            if(num) {
+                s += ml::to_string(num);
+            }
+            s += "/";
+            num = 0;
+        }
+    }
+    s += " ";
+    SIDE_FOREACH(sd) {
+        HAND_FOREACH(pc) {
+            const auto pd = piece_side_make(pc,sd);
+            const auto num = hand_num(pos.hand(sd),pc);
+            if(!num) {
+            } else if(num > 1) {
+                s += ml::to_string(num);
+            }  else {
+                s += piece_side_to_sfen(pd);
+            }
+        }
+    }
+    return s;
+}

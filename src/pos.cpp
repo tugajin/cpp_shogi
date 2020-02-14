@@ -140,6 +140,44 @@ bool Pos::is_ok() const {
     }
     return true;
 }
+std::ostream& operator<<(std::ostream& os, const Pos& b){
+    if(b.turn() == BLACK) {
+        os << "BLACK" << std::endl;
+    } else {
+        os << "WHITE" << std::endl;
+    }
+        
+    os << "key:" << uint64(b.key()) << std::endl;
+    os << "ply:" << b.ply() << std::endl;
+    os <<out_sfen(b)<<std::endl;
+    os << hand_to_string(b.hand(WHITE)) << std::endl;
+    RANK_FOREACH(rank){
+        if (!rank) {
+            os << "  ";
+            FILE_FOREACH_REV(file){
+                os << file + 1 << " ";
+            }
+            os << "\n";
+        }
+        FILE_FOREACH_REV(file){
+            if (file == FILE_SIZE - 1) {
+                os << char(rank + 'a') << ":";
+            }
+            const auto sq = square_make(file, rank);
+            const auto pc = b.piece(sq);
+            if (pc == PieceNone) {
+                os << ". ";
+            } else {
+                const auto sd = b.side(sq);
+                const auto p32 = piece_side_make(pc, sd);
+                os << piece_side_to_sfen(p32);
+            }
+        }
+        os << "\n";
+    }
+    os << hand_to_string(b.hand(BLACK)) << std::endl;
+    return os;
+}
 
 namespace pos {
 
