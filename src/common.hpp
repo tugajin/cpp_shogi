@@ -49,12 +49,20 @@ const std::string PieceChar = ". P L N S B R G K +P+L+N+S+B+R+G+";
 const std::string PieceSfenChar =  ". P L N S B R G K +P+L+N+S+B+R+G+.p l n s b r g k +p+l+n+s+b+r+g+k";
 const std::string SideChar = "bw";
 
-inline std::string piece_to_char(const Piece pc) {
+inline std::string piece_to_sfen(const Piece pc) {
     return PieceChar.substr(pc * 2, 2);
 }
 
-inline std::string piece_side_to_char(const PieceSide pc) {
+inline std::string piece_side_to_sfen(const PieceSide pc) {
     return PieceSfenChar.substr(pc * 2, 2);
+}
+
+inline Piece sfen_to_piece(const std::string s) {
+    return Piece(PieceChar.find(s)/2);
+}
+
+inline PieceSide sfen_to_piece_side(const std::string s) {
+    return PieceSide(PieceSfenChar.find(s)/2);
 }
 
 inline Piece piece_prom(const Piece p) {

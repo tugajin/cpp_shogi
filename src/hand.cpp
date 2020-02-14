@@ -7,7 +7,7 @@ std::string hand_to_string(const Hand hand) {
       if(pc == King) {
         break;
       }
-      s += ml::rtrim(piece_to_char(pc)) + "/"
+      s += ml::rtrim(piece_to_sfen(pc)) + "/"
         + ml::to_string(hand_num(hand, pc)) + " ";
     }
     return s;

@@ -60,7 +60,18 @@ bool is_check(const Move mv, const Pos &pos) {
 }
 
 Move from_usi(const std::string &s, const Pos &pos) {
-    return Move(0);
+    if (std::isdigit(s[0])) { //move
+      const auto from = sq_from_string(s.substr(0, 2));
+      const auto to = sq_from_string(s.substr(2, 2));
+      const auto pc = pos.piece(from);
+      const auto cp = pos.piece(to);
+      const auto prom = s.find("+") != std::string::npos;
+      return move::make_move(from, to, pc, cp, prom);
+    } else { //drop
+      const auto pc = sfen_to_piece(s.substr(0,1));
+      const auto to = sq_from_string(s.substr(2,2));
+      return move::make_move(to, pc);
+    }
 }
 
 std::string move_to_usi(const Move mv) {
@@ -69,7 +80,7 @@ std::string move_to_usi(const Move mv) {
     }
     std::string s = "";
     if (move_is_drop(mv)) {
-      s += ml::rtrim(piece_to_char(move_piece(mv)));
+      s += ml::rtrim(piece_to_sfen(move_piece(mv)));
       s += "*";
       s += sq_to_string(move_to(mv));
     } else {
@@ -92,7 +103,7 @@ std::string move_to_string(const Move mv) {
     std::string s = "";
     if (move_is_drop(mv)) {
       s += "drop:";
-      s += ml::rtrim(piece_to_char(move_piece(mv)));
+      s += ml::rtrim(piece_to_sfen(move_piece(mv)));
       s += " piece:";
       s += sq_to_string(move_to(mv));
     } else {
@@ -101,9 +112,9 @@ std::string move_to_string(const Move mv) {
       s += " to:";
       s += sq_to_string(move_to(mv));
       s += " piece:";
-      s += ml::rtrim(piece_to_char(move_piece(mv)));
+      s += ml::rtrim(piece_to_sfen(move_piece(mv)));
       s += " cap:";
-      s += ml::rtrim(piece_to_char(move_cap(mv)));
+      s += ml::rtrim(piece_to_sfen(move_cap(mv)));
       if (move_is_prom(mv)) {
         s += "+";
       }

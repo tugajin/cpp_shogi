@@ -81,7 +81,7 @@ public:
                 } else {
                     const auto sd = b.side(sq);
                     const auto p32 = piece_side_make(pc, sd);
-                    os << piece_side_to_char(p32);
+                    os << piece_side_to_sfen(p32);
                 }
             }
             os << "\n";
