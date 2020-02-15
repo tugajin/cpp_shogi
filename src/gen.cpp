@@ -347,6 +347,9 @@ template<Side sd>void gen_moves(List &list, const Pos &pos, const bit::Bitboard 
     gen_moves<EVASION,sd>(list,pos,checks);
   }
 }
+void gen_moves(List &list, const Pos &pos) {
+  (pos.turn() == BLACK) ? gen_moves<BLACK>(list,pos) : gen_moves<WHITE>(list,pos);
+}
 
 template void gen_moves<BLACK>(List & ml, const Pos & pos);
 template void gen_moves<WHITE>(List & ml, const Pos & pos);

@@ -16,7 +16,7 @@ private:
     Side turn_;
     Piece square_[SQUARE_SIZE];
     Hand hand_[SIDE_SIZE];
-    int ply_;
+    Ply ply_;
     Move last_move_;
     Square cap_sq_;
     Key key_;

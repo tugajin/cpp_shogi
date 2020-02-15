@@ -1,9 +1,18 @@
 #include "attack.hpp"
 #include "pos.hpp"
+#include "gen.hpp"
+#include "list.hpp"
 
-static bool can_play(const Pos &/*pos*/) {
-    //todo
-    return true;
+static bool can_play(const Pos &pos) {
+    List list;
+    gen_moves(list,pos);
+    for(auto i = 0; i < list.size(); ++i) {
+        const auto mv = list[i];
+        if(move::pseudo_is_legal(mv,pos)) {
+            return true;
+        }
+    }
+    return false;
 }
 static bool in_check(const Pos &pos, const Side sd) {
     return has_attack(pos,flip_turn(sd),pos.king(sd));

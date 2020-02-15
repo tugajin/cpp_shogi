@@ -35,7 +35,7 @@ void Pos::clear() {
     }
     this->all_.init();
     this->turn_ = BLACK;
-    this->ply_ = 0;
+    this->ply_ = Ply(0);
     for(auto & sq : this->square_) {
         sq = PieceNone;
     }
@@ -136,6 +136,20 @@ bool Pos::is_ok() const {
         Tee<<"hand_b error"<<std::endl;
         Tee<<uint32(this->hand_[BLACK])<<std::endl;
         Tee<<this->hand_b_<<std::endl;
+        return false;
+    }
+    auto debug_key = hash::key_turn(this->turn());
+    SQUARE_FOREACH(sq){
+        const auto pc = this->square_[sq];
+        if(pc != PieceNone) {
+            const auto sd = this->side(sq);
+            debug_key ^= hash::key_piece(pc,sd,sq);
+        }
+    }
+    if(this->key_ != debug_key) {
+        Tee<<"key not eq"<<std::endl;
+        Tee<<uint64(debug_key)<<std::endl;
+        Tee<<uint64(this->key_)<<std::endl;
         return false;
     }
     return true;

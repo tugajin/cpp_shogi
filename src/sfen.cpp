@@ -77,19 +77,23 @@ Pos pos_from_sfen(const std::string &s) {
 std::string out_sfen(const  Pos &pos) {
     std::string s = "";
     auto num = 0;
-    SQUARE_FOREACH(sq) {
-        const auto pc = pos.piece(sq);
-        if(pc == PieceNone) {
-            num++;
-        } else {
-            if(num) {
-                s += ml::to_string(num);
+    RANK_FOREACH(r) {
+        FILE_FOREACH_REV(f) {
+            const auto sq = square_make(f,r);
+            const auto pc = pos.piece(sq);
+            if(pc == PieceNone) {
+                num++;
+            } else {
+                if(num) {
+                    s += ml::to_string(num);
+                }
+                const auto sd = pos.side(sq);
+                const auto pd = piece_side_make(pc,sd);
+                s +=   ml::rtrim(piece_side_to_sfen(pd));
+                num = 0;
             }
-            const auto sd = pos.side(sq);
-            const auto pd = piece_side_make(pc,sd);
-            s += piece_side_to_sfen(pd);
         }
-        if((sq+1)%9 == 0) {
+        if(r + 1 != RANK_SIZE) {
             if(num) {
                 s += ml::to_string(num);
             }
@@ -106,7 +110,7 @@ std::string out_sfen(const  Pos &pos) {
             } else if(num > 1) {
                 s += ml::to_string(num);
             }  else {
-                s += piece_side_to_sfen(pd);
+                s += ml::rtrim(piece_side_to_sfen(pd));
             }
         }
     }

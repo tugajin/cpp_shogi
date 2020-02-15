@@ -71,11 +71,10 @@ inline bool piece_is_ok(const Piece p) {
 
 inline Piece piece_prom(const Piece p) {
     assert(p == Pawn || p == Lance || p == Knight || p == Silver || p == Bishop || p == Rook);
-    return Piece(p + PieceProm);
+    return Piece(p | PieceProm);
 }
 inline Piece piece_unprom(const Piece p) {
-    assert(p == PPawn || p == PLance || p == PKnight || p == PSilver || p == PBishop || p == PRook);
-    return Piece(p - PieceProm);
+    return Piece(p & (PieceProm-1));
 }
 inline PieceSide piece_side_prom(const PieceSide p) {
     return PieceSide(p + PieceSideProm);
@@ -110,6 +109,15 @@ OverloadEnumOperators(PieceSide)
 
 enum class Key : uint64;
 enum class Move : uint32;
+
+enum Depth : int;
+enum  Ply : int;
+enum Score : int;
+
+OverloadEnumOperators(Depth)
+OverloadEnumOperators(Ply)
+OverloadEnumOperators(Score)
+
 
 inline Key& operator ^= (Key& lhs, const Key rhs) { return lhs  = static_cast<Key>(static_cast<uint64>(lhs) ^ static_cast<uint64>(rhs)); } 
 

@@ -1,4 +1,4 @@
 #ifndef SCORE_HPP
-#define SCOTE_HPP
+#define SCORE_HPP
 
 #endif
