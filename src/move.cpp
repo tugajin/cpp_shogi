@@ -152,9 +152,10 @@ std::string move_to_string(const Move mv) {
     std::string s = "";
     if (move_is_drop(mv)) {
       s += "drop:";
-      s += ml::rtrim(piece_to_sfen(move_piece(mv)));
-      s += " piece:";
       s += sq_to_string(move_to(mv));
+      s += " piece:";
+      s += ml::rtrim(piece_to_sfen(move_piece(mv)));
+
     } else {
       s += "from:";
       s += sq_to_string(move_from(mv));

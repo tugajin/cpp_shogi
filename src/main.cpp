@@ -44,8 +44,8 @@ int main(int /*argc*/, char **/*argv*/) {
 
 #ifdef DEBUG
     Tee<<"test start\n";
-    //gen::test();
-    search::test();
+    gen::test();
+    //search::test();
     //attack::test();
 #else
     listen_input();

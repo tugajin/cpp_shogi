@@ -139,7 +139,7 @@ template<bool has_knight, bool has_lance, bool has_pawn, Side sd, int num>
           ml.add(move::make_move(to, Lance));
         }
         if (has_knight) {
-          ml.add(move::make_move(to, Lance));
+          ml.add(move::make_move(to, Knight));
         }
       }
     }
@@ -397,6 +397,14 @@ namespace gen {
             List list;
             gen_moves<BLACK>(list,pos);
             Tee<<list<<std::endl;
+        }
+        {
+          Pos pos = pos_from_sfen("lnsgkgsnl/1r7/pppppp1pp/6p2/9/2P6/PP+bPPPPPP/1B3K1R1/L1SG1GSNL w n");
+          Tee<<pos<<std::endl;
+          List list;
+          gen_moves<WHITE>(list,pos);
+          Tee<<list<<std::endl;
+       
         }
     }
 

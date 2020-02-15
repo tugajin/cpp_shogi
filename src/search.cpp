@@ -10,14 +10,20 @@ void SearchInput::init() {
 }
 
 template<Side sd> static uint64 perft(const Pos &pos, Ply ply) {
-    assert(pos.is_ok());
 #ifdef DEBUG
-    if(!is_legal(pos)) {
+    if(!pos.is_ok()) {
+        Tee<<"error\n";
         Tee<<pos<<std::endl;
         Tee<<move::move_to_string(pos.last_move())<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if(!is_legal(pos)) {
+        Tee<<"legal error\n";
+        Tee<<pos<<std::endl;
+        Tee<<move::move_to_string(pos.last_move())<<std::endl;
+        exit(EXIT_FAILURE);
     }
 #endif
-    assert(is_legal(pos));
 
     if(ply <= 0) {
         return 1;
@@ -27,7 +33,15 @@ template<Side sd> static uint64 perft(const Pos &pos, Ply ply) {
     uint64 num = 0;
     for(auto i = 0; i < list.size(); ++i) {
         auto mv = list[i];
-        assert(move::move_is_ok(mv,pos));
+#ifdef DEBUG
+        if(!move::move_is_ok(mv,pos)) {
+        Tee<<"move error\n";
+        Tee<<pos<<std::endl;
+        Tee<<move::move_to_string(mv)<<std::endl;
+        exit(EXIT_FAILURE);
+
+        }
+#endif
         if(!move::pseudo_is_legal(mv,pos)) {
             continue;
         }
@@ -43,7 +57,11 @@ template uint64 perft<WHITE>(const Pos &pos, Ply ply);
 namespace search {
     void test() {
         Pos pos = pos_from_sfen(START_SFEN);
-        auto num = perft<BLACK>(pos,Ply(5));
+        Timer t;
+        t.start();
+        auto num = perft<BLACK>(pos,Ply(6));
+        t.stop();
         std::cout<<num<<std::endl;
+        std::cout<<t.elapsed()<<std::endl;
     }
 }
