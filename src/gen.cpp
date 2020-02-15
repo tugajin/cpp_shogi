@@ -269,6 +269,10 @@ template<Side sd>void gen_legals(List &list, const Pos &pos) {
     }
   }
 }
+void gen_legals(List &list, const Pos &pos) {
+  (pos.turn() == BLACK) ? gen_legals<BLACK>(list,pos)
+                        : gen_legals<WHITE>(list,pos);
+}
 template<MoveType mt, Side sd>
 void gen_moves(List & ml, const Pos & pos, const bit::Bitboard *checks) {
 

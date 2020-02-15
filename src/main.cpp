@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "attack.hpp"
 #include "bit.hpp"
 #include "common.hpp"
 #include "eval.hpp"
@@ -45,6 +46,7 @@ int main(int /*argc*/, char **/*argv*/) {
     Tee<<"test start\n";
     //gen::test();
     search::test();
+    //attack::test();
 #else
     listen_input();
     var::update();

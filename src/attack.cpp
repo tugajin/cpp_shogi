@@ -2,6 +2,7 @@
 #include "pos.hpp"
 #include "gen.hpp"
 #include "list.hpp"
+#include "sfen.hpp"
 
 static bool can_play(const Pos &pos) {
     List list;
@@ -148,6 +149,25 @@ template<Side sd>bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
 bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
   return pos.turn() == BLACK ? is_mate_with_pawn_drop<BLACK>(to,pos)
                              : is_mate_with_pawn_drop<WHITE>(to,pos);
+}
+
+namespace attack {
+    void test() {
+        {
+            /*Pos pos = pos_from_sfen("lnsgkgsnl/1r7/ppppppppb/8p/9/4P3P/PPPP1PPP1/1B5R1/LNSGKGSNL b");
+            Tee<<pos<<std::endl;
+            List list;
+            gen_legals(list,pos);
+            Tee<<list<<std::endl;*/
+        }
+        {
+            Pos pos = pos_from_sfen("lnsgkgsnl/1r7/pppppp1pp/6p2/2b6/8P/PPPPSPPP1/1B3K1R1/LNSG1GSNL b p");
+            Tee<<pos<<std::endl;
+            List list;
+            gen_legals(list,pos);
+            Tee<<list<<std::endl;
+        }
+    }
 }
 
 template bool is_mate_with_pawn_drop<BLACK>(const Square to, const Pos &pos);

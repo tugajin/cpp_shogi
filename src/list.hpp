@@ -62,7 +62,9 @@ private :
 
 public :
 
-    void clear();
+    void clear() {
+        pair_.clear();
+    }
 
     void add (Move mv) {
         assert(!(list::has(*this, mv)));

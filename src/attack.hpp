@@ -26,4 +26,9 @@ bit::Bitboard pins(const Pos &pos, const Square king);
 
 template<Side sd>bool is_mate_with_pawn_drop(const Square to, const Pos &pos);
 bool is_mate_with_pawn_drop(const Square to, const Pos &pos);
+
+namespace attack {
+    void test();
+}
+
 #endif

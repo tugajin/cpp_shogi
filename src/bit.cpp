@@ -390,6 +390,7 @@ void init() {
       for(auto i = 0; i < between_sq; i++) {
         if(between_bb == gBetween[i]) {
           found_flag = true;
+          gBetweenIndex[from][to] = i;  
           break;
         }
       }
@@ -401,6 +402,7 @@ void init() {
       for(auto i = 0; i < beyond_sq; i++) {
         if(beyond_bb == gBeyond[i]) {
           found_flag = true;
+          gBeyondIndex[from][to] = i;
           break;
         }
       }

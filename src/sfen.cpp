@@ -59,6 +59,8 @@ Pos pos_from_sfen(const std::string &s) {
         auto c = s[i++];
         if (c == ' ') {
             break;
+        } else if(c == '\0') {
+            break;
         } else if (c == '-') {
             break;
         } else if (std::isdigit(c)) {
@@ -100,6 +102,12 @@ std::string out_sfen(const  Pos &pos) {
             s += "/";
             num = 0;
         }
+    }
+    s += " ";
+    if (pos.turn() == BLACK) {
+        s += "b";
+    } else {
+        s += "w";
     }
     s += " ";
     SIDE_FOREACH(sd) {

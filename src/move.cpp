@@ -25,11 +25,10 @@ bool pseudo_is_legal(const Move mv, const Pos &pos) {
 
   //king move
   if (pc == King) {
-    return has_attack(pos,xd,to,pieces);
+    return !has_attack(pos,xd,to,pieces);
   }
   //pinned piece
   auto beyond = bit::beyond(king,from);
-
   auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(xd) & beyond;
   while(b) {
     const auto ds = b.lsb();
