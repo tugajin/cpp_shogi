@@ -406,6 +406,14 @@ namespace gen {
           Tee<<list<<std::endl;
        
         }
+        {
+          Pos pos = pos_from_sfen("l6nl/5+P3/3p1S1gk/p1p5P/3n2Sp1/1PPb2P2/P5GS1/R8/LN4bKL w PRG7pnsg");
+          Tee<<pos<<std::endl;
+          List list;
+          gen_moves<WHITE>(list,pos);
+          Tee<<list<<std::endl;
+       
+        }
     }
 
 }

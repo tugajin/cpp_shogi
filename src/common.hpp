@@ -114,6 +114,8 @@ enum Depth : int;
 enum  Ply : int;
 enum Score : int;
 
+typedef float UCTScore;
+
 OverloadEnumOperators(Depth)
 OverloadEnumOperators(Ply)
 OverloadEnumOperators(Score)

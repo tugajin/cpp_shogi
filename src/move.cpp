@@ -55,6 +55,10 @@ bool pseudo_is_legal(const Move mv, const Pos &pos) {
 
 }
 
+bool pseudo_is_legal_debug(const Move mv, const Pos &pos) {
+  return true;
+}
+
 bool is_check(const Move mv, const Pos &pos) {
   
   assert(move_is_ok(mv,pos));
@@ -209,6 +213,7 @@ bool move_is_ok(const Move mv) {
     if(piece != Pawn && 
        piece != Knight && 
        piece != Lance && 
+       piece != Silver &&
        piece != Bishop && 
        piece != Rook) {
       return false;
@@ -217,7 +222,9 @@ bool move_is_ok(const Move mv) {
   return true;
 }
 bool move_is_ok(const Move mv, const Pos &pos) {
-  if(!move_is_ok(mv)) { return false; }
+  if(!move_is_ok(mv)) { 
+    return false; 
+  }
 
   const auto from =  move_from(mv);
   const auto to = move_to(mv);

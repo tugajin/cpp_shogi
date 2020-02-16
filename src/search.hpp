@@ -14,6 +14,7 @@ const Depth DEPTH_MAX  = Depth(128);
 const Ply PLY_ROOT = Ply(0);
 const Ply PLY_MAX = Ply(127);
 const int PLY_SIZE = PLY_MAX + 1;
+constexpr int MAX_LEGAL_MOVES = 600;
 
 class Line {
 private:

@@ -116,7 +116,7 @@ std::string out_sfen(const  Pos &pos) {
             const auto num = hand_num(pos.hand(sd),pc);
             if(!num) {
             } else if(num > 1) {
-                s += ml::to_string(num);
+                s += ml::to_string(num) + ml::rtrim(piece_side_to_sfen(pd));
             }  else {
                 s += ml::rtrim(piece_side_to_sfen(pd));
             }

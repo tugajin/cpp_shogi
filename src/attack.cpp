@@ -31,7 +31,7 @@ template<bool skip_king, bool skip_pawn>bit::Bitboard attacks_to(const Pos &pos,
     Bitboard bb(0ull,0ull);
     Bitboard attack,piece;
     const auto xd = flip_turn(sd);
-    if(skip_pawn) {
+    if(!skip_pawn) {
         //pawn
         piece = pos.pieces(Pawn,sd);
         attack = get_pawn_attack(xd,sq);
@@ -43,14 +43,14 @@ template<bool skip_king, bool skip_pawn>bit::Bitboard attacks_to(const Pos &pos,
     bb |= piece & attack;
     //silver
     piece = pos.pieces(Silver,sd);
-    attack = get_knight_attack(xd,sq);
+    attack = get_silver_attack(xd,sq);
     bb |= piece & attack;
     //gold
     piece = pos.golds(sd);
     attack = get_gold_attack(xd,sq);
     bb |= piece & attack;
     //king
-    if(skip_king) {
+    if(!skip_king) {
         piece = (pos.pieces(King) | pos.pieces(PRook) | pos.pieces(PBishop)) & pos.pieces(sd);
     } else {
         piece = (pos.pieces(PRook) | pos.pieces(PBishop)) & pos.pieces(sd);
@@ -100,7 +100,7 @@ bool has_attack(const Pos &pos, const Side sd, const Square sq, bit::Bitboard pi
     if((piece & attack)) { return true; }
     //silver
     piece = pos.pieces(Silver,sd);
-    attack = get_knight_attack(xd,sq);
+    attack = get_silver_attack(xd,sq);
     if((piece & attack)) { return true; }
     //king
     piece = (pos.pieces(King) | pos.pieces(PRook) | pos.pieces(PBishop)) & pos.pieces(sd);
@@ -154,11 +154,15 @@ bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
 namespace attack {
     void test() {
         {
-            /*Pos pos = pos_from_sfen("lnsgkgsnl/1r7/ppppppppb/8p/9/4P3P/PPPP1PPP1/1B5R1/LNSGKGSNL b");
+            Pos pos = pos_from_sfen("l6nl/5+P2k/3p1S1g1/p1p5p/3n2SpP/1PPb2P2/P5GS1/R5K2/LN3sb1L w RG7png");
+            Tee<<is_legal(pos)<<std::endl;
+        }
+        {
+            Pos pos = pos_from_sfen("lnsgkgsnl/1r7/ppppppppb/8p/9/4P3P/PPPP1PPP1/1B5R1/LNSGKGSNL b");
             Tee<<pos<<std::endl;
             List list;
             gen_legals(list,pos);
-            Tee<<list<<std::endl;*/
+            Tee<<list<<std::endl;
         }
         {
             Pos pos = pos_from_sfen("lnsgkgsnl/1r7/pppppp1pp/6p2/2b6/8P/PPPPSPPP1/1B3K1R1/LNSG1GSNL b p");
