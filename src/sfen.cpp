@@ -91,7 +91,7 @@ std::string out_sfen(const  Pos &pos) {
                 }
                 const auto sd = pos.side(sq);
                 const auto pd = piece_side_make(pc,sd);
-                s +=   ml::rtrim(piece_side_to_sfen(pd));
+                s += ml::trim(piece_side_to_sfen(pd));
                 num = 0;
             }
         }
@@ -116,9 +116,9 @@ std::string out_sfen(const  Pos &pos) {
             const auto num = hand_num(pos.hand(sd),pc);
             if(!num) {
             } else if(num > 1) {
-                s += ml::to_string(num) + ml::rtrim(piece_side_to_sfen(pd));
+                s += ml::to_string(num) + ml::trim(piece_side_to_sfen(pd));
             }  else {
-                s += ml::rtrim(piece_side_to_sfen(pd));
+                s += ml::trim(piece_side_to_sfen(pd));
             }
         }
     }

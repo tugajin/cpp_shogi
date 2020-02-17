@@ -45,8 +45,8 @@ enum Inc : int {
     Inc_SE =  Inc_S + Inc_E,
 };
 
-const std::string PieceChar = ". P L N S B R G K +P+L+N+S+B+R+G+";
-const std::string PieceSfenChar =  ". P L N S B R G K +P+L+N+S+B+R+G+.p l n s b r g k +p+l+n+s+b+r+g+k";
+const std::string PieceChar = " . P L N S B R G K+P+L+N+S+B+R";
+const std::string PieceSfenChar =  " . P L N S B R G K+P+L+N+S+B+R   . p l n s b r g k+p+l+n+s+b+r";
 const std::string SideChar = "bw";
 
 inline std::string piece_to_sfen(const Piece pc) {

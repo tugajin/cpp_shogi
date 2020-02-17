@@ -74,8 +74,8 @@ template uint64 perft<WHITE,false>(const Pos &pos, const Ply ply);
 
 namespace search {
     void test() {
-        //Pos pos = pos_from_sfen(START_SFEN);
-        Pos pos = pos_from_sfen("l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1");
+        Pos pos = pos_from_sfen(START_SFEN);
+        //Pos pos = pos_from_sfen("l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1");
         Tee<<pos<<std::endl;
         Timer t;
         t.start();

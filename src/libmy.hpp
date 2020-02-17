@@ -181,7 +181,7 @@ template<class T> std::string to_string(T x) {
     return ss.str();
 }
 
-std::string rtrim(const std::string s);
+std::string trim(const std::string s);
 
 #endif
 }

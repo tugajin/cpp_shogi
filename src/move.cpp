@@ -133,7 +133,7 @@ std::string move_to_usi(const Move mv) {
     }
     std::string s = "";
     if (move_is_drop(mv)) {
-      s += ml::rtrim(piece_to_sfen(move_piece(mv)));
+      s += ml::trim(piece_to_sfen(move_piece(mv)));
       s += "*";
       s += sq_to_string(move_to(mv));
     } else {
@@ -158,7 +158,7 @@ std::string move_to_string(const Move mv) {
       s += "drop:";
       s += sq_to_string(move_to(mv));
       s += " piece:";
-      s += ml::rtrim(piece_to_sfen(move_piece(mv)));
+      s += ml::trim(piece_to_sfen(move_piece(mv)));
 
     } else {
       s += "from:";
@@ -166,9 +166,9 @@ std::string move_to_string(const Move mv) {
       s += " to:";
       s += sq_to_string(move_to(mv));
       s += " piece:";
-      s += ml::rtrim(piece_to_sfen(move_piece(mv)));
+      s += ml::trim(piece_to_sfen(move_piece(mv)));
       s += " cap:";
-      s += ml::rtrim(piece_to_sfen(move_cap(mv)));
+      s += ml::trim(piece_to_sfen(move_cap(mv)));
       if (move_is_prom(mv)) {
         s += "+";
       }

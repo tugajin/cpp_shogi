@@ -41,7 +41,7 @@ int main(int /*argc*/, char **/*argv*/) {
     hash::init();
     pos::init();
     var::init();
-
+    
 #ifdef DEBUG
     Tee<<"test start\n";
     //gen::test();

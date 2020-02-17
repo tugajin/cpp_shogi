@@ -76,12 +76,14 @@ int log_2(int64 n) {
    return ln;
 }
 
-std::string rtrim(const std::string s) {
+std::string trim(const std::string s) {
    std::string str = s;
-   const auto pos = str.rfind(' ');
+   const auto pos = str.find(' ');
+   //std::cout<<"|"<<s<<"|"<<std::endl;
    if (pos != std::string::npos) {
-      str = str.substr(0, pos);
+      str = str.substr(pos+1);
    }
+   //std::cout<<"|"<<str<<"|"<<std::endl;
    return str;
 }
 

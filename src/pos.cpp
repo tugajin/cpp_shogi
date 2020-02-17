@@ -169,7 +169,7 @@ std::ostream& operator<<(std::ostream& os, const Pos& b){
         if (!rank) {
             os << "  ";
             FILE_FOREACH_REV(file){
-                os << file + 1 << " ";
+                os <<" "<< file + 1;
             }
             os << "\n";
         }
@@ -180,7 +180,7 @@ std::ostream& operator<<(std::ostream& os, const Pos& b){
             const auto sq = square_make(file, rank);
             const auto pc = b.piece(sq);
             if (pc == PieceNone) {
-                os << ". ";
+                os << " .";
             } else {
                 const auto sd = b.side(sq);
                 const auto p32 = piece_side_make(pc, sd);
