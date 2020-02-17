@@ -245,14 +245,14 @@ class State:
         elif self.turn == WHITE:
             s += "WHITE"
         s += "\n"
-        for p in range(WPAWN,WGOLD):
+        for p in range(WPAWN,WGOLD+1):
             s +=  self.piece_to_sfen(p).strip() + ":" +str(self.hand[p]) + " "
         s += "\n"
         for index,p in enumerate(self.pos):
             s +=  self.piece_to_sfen(p)
             if (index + 1) % 9 == 0:
                 s += "\n"
-        for p in range(BPAWN,BGOLD):
+        for p in range(BPAWN,BGOLD+1):
             s +=  self.piece_to_sfen(p).strip() + ":" +str(self.hand[p]) + " "
         s += "\n"
         return s
