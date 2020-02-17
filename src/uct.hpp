@@ -28,17 +28,12 @@ public:
     UCTScore score_win_;
     float nn_rate_;
     int child_num_;
-    ChildNode child[MAX_LEGAL_MOVES];
+    ChildNode child_[MAX_LEGAL_MOVES];
     
     bool evaled_;
     bool is_draw_;
     bool used_;
-    
-    void init(const Pos &pos,const Ply ply) {
-        this->key_ = pos.key();
-        this->hand_b_ = pos.hand_b();
-        this->sd_ = pos.turn();
-        this->ply_ = ply;
+    void clear() {
         this->po_num_ = 0;
         this->win_num_ = 0.0f;
         this->evaled_ = false;
@@ -47,6 +42,13 @@ public:
         this->nn_rate_ = 0.0f;
         this->used_ = false;
     }
+    void init(const Pos &pos,const Ply ply) {
+        this->key_ = pos.key();
+        this->hand_b_ = pos.hand_b();
+        this->sd_ = pos.turn();
+        this->ply_ = ply;
+        this->clear();
+    }
 };
 
 class UCTSearcher {
@@ -54,7 +56,8 @@ public:
     Pos pos_;
     std::vector<Move> moves_;    
     void think();
-    void init(const Pos &pos);
+    void init();
+    void set_pos(const Pos &pos);
 private:
     template<Side sd> void think();
     template<Side sd> UCTScore uct_search(const Pos &pos, UCTNode *node, const Ply ply, Line &pv);

@@ -5,13 +5,19 @@
 #include "gen.hpp"
 #include "list.hpp"
 #include "search.hpp"
+#include <cmath>
 
-void UCTSearcher::init(const Pos &pos) {
-    this->pos_ = pos;
+void UCTSearcher::init() {
     this->moves_.clear();
     this->uct_nodes_ = new UCTNode[this->uct_nodes_size_];
     this->uct_nondes_mask_ = this->uct_nodes_size_-1;
+    for(auto i = 0; i< this->uct_nodes_size_; ++i) {
+        this->uct_nodes_[i].clear();
+    }
+}
 
+void UCTSearcher::set_pos(const Pos &pos) {
+    this->pos_ = pos;
 }
 void UCTSearcher::think() {
     this->pos_.turn() == BLACK ? this->think<BLACK>() 
@@ -19,6 +25,8 @@ void UCTSearcher::think() {
 } 
 template<Side sd>void UCTSearcher::think() {
     
+    this->init();
+
     List list;
     gen_legals(list,this->pos_);
 
@@ -33,11 +41,30 @@ template<Side sd>void UCTSearcher::think() {
 }
 
 ChildNode *select_child(UCTNode * node) {
-    for(auto i = 0; i < node->child_num_; i++) {
-        return &node->child[i];
+    ChildNode * child = node->child_;
+    ChildNode * max_child = nullptr;
+    float max_value = -9999999999;
+    float q,u;
+    for(auto i = 0; i < node->child_num_; ++i) {
+        if(!child[i].po_num_) {
+            q = 0.9;
+            u = 0.9;
+        } else {
+            q = child[i].win_num_ / child[i].po_num_;
+            u = std::sqrt(node->po_num_) / (1 + child[i].po_num_);
+        }
+        const auto rate = child[i].nn_rate_;
+        const auto c_base = 20403;
+        const auto c_init = 0.706;
+        const auto c = std::log((node->po_num_+c_base + 1.0f)/c_base) + c_init;
+        const auto ucb_value = q + c * u * rate;
+        if(ucb_value > max_value) {
+            max_value = ucb_value;
+            max_child = &child[i];
+        }
     }
     assert(false);
-    return nullptr;
+    return max_child;
 }
 
 static uint32 get_index(const Key key, const uint32 hand_b, const Side sd, const Ply ply) {
@@ -90,7 +117,7 @@ UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
     }
     node = this->find_empty_node(pos.key(),pos.hand_b(),pos.turn(),ply);
     node->init(pos,ply);
-    ChildNode * child = node->child;
+    ChildNode * child = node->child_;
     List list;
     gen_legals(list,pos);
     auto child_num = 0;
