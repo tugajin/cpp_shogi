@@ -3,3 +3,4 @@
 - やねうら王
 - Appery
 - senpai 2.0
+- dlshogi
