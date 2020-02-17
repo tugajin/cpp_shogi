@@ -39,7 +39,7 @@ PIECE_NUM = 32
 
 SQUARE_SIZE = 81
 
-SFEN_PIECE =  ". P L N S B R G K +P+L+N+S+B+R+G+.p l n s b r g k +p+l+n+s+b+r+g+k"
+SFEN_PIECE =  " . P L N S B R G K+P+L+N+S+B+R+G+. p l n s b r g k+p+l+n+s+b+r+g+k"
 
 SFEN_FILE = "987654321"
 SFEN_RANK = "abcdefghi"
@@ -210,6 +210,7 @@ class State:
                     piece = self.piece_prom(piece)
                 self.pos[pos_sp] =  piece
                 pos_sp += 1
+                prom_flag = False
         #load turn
         if sfen_list[list_sp] == 'b':
             self.turn = BLACK
@@ -224,9 +225,9 @@ class State:
             if list_sp >= sfen_len:
                 break
             elif s == ' ':
-                break
+                continue
             elif s == '-':
-                break
+                continue
             elif s.isdigit():
                 num = (num * 10) + int(s)
             else:
@@ -234,6 +235,7 @@ class State:
                 if num == 0:
                     num = 1
                 self.hand[piece] = num
+                num = 0
 
     def out(self):
         """
@@ -303,7 +305,9 @@ if  __name__ == '__main__':
     
     # 外部のプログラムを実行する
     proc = subprocess.run(["./shogi","init"],stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+
     result = proc.stdout.decode("utf8")
+    #result = "l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1"
     
     #結果をpythonで読み込む
     state = State()
