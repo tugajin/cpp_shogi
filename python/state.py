@@ -135,9 +135,6 @@ class Action:
         return s
 
 class State:
-    pos =  [EMPTY]*SQUARE_SIZE
-    turn =  BLACK
-    hand = [0]*PIECE_NUM
 
     def __init__(self):
         """
