@@ -25,6 +25,7 @@
 #include "thread.hpp"
 #include "tt.hpp"
 #include "util.hpp"
+#include "uct.hpp"
 #include "var.hpp"
 
 const std::string EngineName {"jugemu"};
@@ -45,8 +46,9 @@ int main(int /*argc*/, char **/*argv*/) {
 #ifdef DEBUG
     Tee<<"test start\n";
     //gen::test();
-    search::test();
+    //search::test();
     //attack::test();
+    uct::test();
     Tee<<"test end\n";
 #else
     listen_input();
