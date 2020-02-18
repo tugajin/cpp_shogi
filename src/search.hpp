@@ -6,6 +6,7 @@
 #include "pos.hpp"
 #include "score.hpp"
 #include "util.hpp"
+#include "move.hpp"
 
 class List;
 class Pos;
@@ -20,9 +21,44 @@ class Line {
 private:
     ml::Array<Move, PLY_SIZE> move_;
 public:
-    Line();
-    void clear();
-    void add(const Move mv);
+    Line() {
+        this->clear();
+    }
+    void clear() {
+        move_.clear();
+    }
+    void add(const Move mv) {
+        assert(move::move_is_ok(mv));
+        move_.add(mv);
+    }
+    void set(const Move mv) {
+        clear();
+        add(mv);
+    }
+    void concat(const Move mv, const Line &pv) {
+        clear();
+        add(mv);
+        for(auto i = 0; i < pv.size(); ++i) {
+            add(pv[i]);
+        }
+    }
+    int size() const {
+        return move_.size();
+    }
+    Move move(const int i) const {
+        return move_[i];
+    }
+    Move operator[](const int i) const {
+        return move(i);
+    }
+    std::string to_usi() const {
+        std::string s = "";
+        for(auto i = 0; i < this->size(); i++) {
+            if(!s.empty()) { s+= " "; }
+            s +=  move::move_to_usi(move(i)) ;
+        }
+        return s;
+    }
 };
 class SearchInput {
     public:
