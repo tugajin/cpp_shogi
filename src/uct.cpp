@@ -120,6 +120,11 @@ UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
     ChildNode * child = node->child_;
     List list;
     gen_legals(list,pos);
+    
+    Tee<<"gen moves\n";
+    Tee<<pos<<std::endl;
+    Tee<<list<<std::endl;
+    
     auto child_num = 0;
     for(auto i = 0; i < list.size(); i++) {
         child[child_num].move_ = list[i];
@@ -154,6 +159,10 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
     }
 #endif
     auto *next_child = select_child(node);
+
+    Tee<<pos<<std::endl;
+    Tee<<"next move:"<<move::move_to_string(next_child->move_)<<std::endl;
+    
     auto new_pos = pos.succ(next_child->move_);
     auto result = 1.0f;
     if(next_child->node_ptr_ == nullptr) {

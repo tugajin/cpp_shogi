@@ -48,6 +48,7 @@ void Pos::clear() {
 Pos Pos::succ(const Move move) const {
     
     assert(is_ok());
+    assert(move::move_is_ok(move,*this));
     
     const auto to = move::move_to(move);
     const auto sd = this->turn();
