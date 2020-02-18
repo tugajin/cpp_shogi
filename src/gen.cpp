@@ -93,8 +93,8 @@ template<bool has_knight, bool has_lance, bool has_pawn, Side sd, int num>
         //std::cout<<bit::g_double_pawn_mask[sd][index]<<std::endl;
         auto pawn_target = target & bit::g_double_pawn_mask[sd][index];
         const auto mate_with_sq = (sd == BLACK) ?
-          pos.king(flip_turn(sd)) - SQ_RANK_INC :
-          pos.king(flip_turn(sd)) + SQ_RANK_INC;
+          pos.king(flip_turn(sd)) + SQ_RANK_INC :
+          pos.king(flip_turn(sd)) - SQ_RANK_INC;
         if (pawn_target.is_set(mate_with_sq)
             && is_mate_with_pawn_drop(mate_with_sq, pos)) {
           pawn_target.clear(mate_with_sq);

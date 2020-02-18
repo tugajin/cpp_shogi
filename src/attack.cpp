@@ -143,16 +143,73 @@ bit::Bitboard pins(const Pos &/*pos*/, const Square /*king*/) {
     return Bitboard(0,0);
 }
 
-template<Side sd>bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
-    return false;
-}
 bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
-  return pos.turn() == BLACK ? is_mate_with_pawn_drop<BLACK>(to,pos)
-                             : is_mate_with_pawn_drop<WHITE>(to,pos);
+    const auto sd = pos.turn();
+    const auto xd = flip_turn(pos.turn());
+    const auto king_sq = pos.king(xd);
+    
+#ifdef DEBUG
+    if(sd == BLACK) {
+        if(to + Inc_N != king_sq) {
+            Tee<<"mate with pawn drop error\n";
+            Tee<<pos<<std::endl;
+            Tee<<to<<std::endl;
+            Tee<<king_sq<<std::endl;
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        Tee<<"mate with pawn drop error\n";
+        if(to + Inc_S != king_sq) {
+            Tee<<pos<<std::endl;
+            Tee<<to<<std::endl;
+            Tee<<king_sq<<std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+#endif
+    //capture checher
+    auto pieces = pos.pieces();
+    assert(!pieces.is_set(to));
+    pieces.set(to);
+    auto xd_piece = attacks_to<true,true>(pos,xd,to,pieces);
+    while(xd_piece) {
+        const auto from = xd_piece.lsb();
+        pieces.clear(from);
+        if(!has_attack(pos,sd,king_sq,pieces)) {
+            return false;
+        }
+        pieces.set(from);
+    }
+    //escape king
+    auto dist = get_king_attack(king_sq) & (~pos.pieces(xd));
+    //pieces.clear(king_sq);//いらないかも
+    while(dist) {
+        const auto king_to = dist.lsb();
+        if(!has_attack(pos,sd,king_to,pieces)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 namespace attack {
     void test() {
+        {
+            Pos pos = pos_from_sfen("3gksR2/9/4+P4/9/9/9/9/9/4K4 b P");
+            Tee<<pos<<std::endl;
+            List list;
+            auto bb = Bitboard(0ull,0ull);
+            gen_moves<DROP,BLACK>(list,pos,&bb);
+            Tee<<list<<std::endl;
+        }
+        {
+            Pos pos = pos_from_sfen("R2gksR2/9/4+P4/9/9/9/9/9/4K4 b P");
+            Tee<<pos<<std::endl;
+            List list;
+            auto bb = Bitboard(0ull,0ull);
+            gen_moves<DROP,BLACK>(list,pos,&bb);
+            Tee<<list<<std::endl;
+        }
         {
             Pos pos = pos_from_sfen("l6nl/5+P2k/3p1S1g1/p1p5p/3n2SpP/1PPb2P2/P5GS1/R5K2/LN3sb1L w RG7png");
             Tee<<is_legal(pos)<<std::endl;
@@ -173,9 +230,6 @@ namespace attack {
         }
     }
 }
-
-template bool is_mate_with_pawn_drop<BLACK>(const Square to, const Pos &pos);
-template bool is_mate_with_pawn_drop<WHITE>(const Square to, const Pos &pos);
 
 template bit::Bitboard attacks_to<true,true>(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);
 template bit::Bitboard attacks_to<true,false>(const Pos &pos, const Side sd, const Square sq, const bit::Bitboard pieces);

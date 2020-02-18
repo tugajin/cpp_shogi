@@ -6,6 +6,7 @@
 #include "list.hpp"
 #include "search.hpp"
 #include "sfen.hpp"
+#include "eval.hpp"
 #include <cmath>
 
 void UCTSearcher::init() {
@@ -164,7 +165,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
             new_node->score_win_ = -1;
             result = 1.0f;
         } else {
-            return eval();
+            return eval<sd>(new_pos);
         }
     } else {
         result = this->uct_search<flip_turn(sd)>(new_pos, next_child->node_ptr_, ply+1, pv);
