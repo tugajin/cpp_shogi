@@ -11,7 +11,7 @@
 
 void UCTSearcher::init() {
     this->moves_.clear();
-    this->uct_nodes_size_ = uint32(1) << 13;
+    this->uct_nodes_size_ = uint32(1) << 10;
     this->uct_nodes_ = new UCTNode[this->uct_nodes_size_];
     this->uct_nondes_mask_ = this->uct_nodes_size_-1;
     for(auto i = 0; i< this->uct_nodes_size_; ++i) {
@@ -102,28 +102,28 @@ UCTNode * UCTSearcher::find_empty_node(const Key key, const uint32 hand_b, const
             this->uct_nodes_[index].hand_b_ = hand_b;
             this->uct_nodes_[index].sd_ = sd;
             this->uct_nodes_[index].ply_ = ply;
+            this->uct_nodes_[index].used_ = true;
             return &this->uct_nodes_[index];
         }
-        index += this->uct_nondes_mask_ & (index+1);
+        index = this->uct_nondes_mask_ & (index+1);
     } while(index != start_index);
     return nullptr;
 }
 
 //TODO template
 UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
+
     UCTNode *node = this->find_same_node(pos.key(),pos.hand_b(),pos.turn(),ply);
+
     if(node != nullptr) {
         return node;
     }
+
     node = this->find_empty_node(pos.key(),pos.hand_b(),pos.turn(),ply);
     node->init(pos,ply);
     ChildNode * child = node->child_;
     List list;
     gen_legals(list,pos);
-    
-    Tee<<"gen moves\n";
-    Tee<<pos<<std::endl;
-    Tee<<list<<std::endl;
     
     auto child_num = 0;
     for(auto i = 0; i < list.size(); i++) {
@@ -157,17 +157,34 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
         Tee<<pos<<std::endl;
         exit(EXIT_FAILURE);
     }
+    if(pos.key() != node->key_) {
+        Tee<<"not eq key error\n";
+        Tee<<pos<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if(pos.hand_b() != node->hand_b_) {
+        Tee<<"not eq  hand_b error\n";
+        Tee<<pos<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if(pos.turn() != node->sd_) {
+        Tee<<"not eq turn error\n";
+        Tee<<pos<<std::endl;
+        exit(EXIT_FAILURE);
+    }
 #endif
     auto *next_child = select_child(node);
-
-    Tee<<pos<<std::endl;
-    Tee<<"next move:"<<move::move_to_string(next_child->move_)<<std::endl;
-    
     auto new_pos = pos.succ(next_child->move_);
     auto result = 1.0f;
     if(next_child->node_ptr_ == nullptr) {
         auto new_node = expand_node(new_pos,ply);
+        assert(new_pos.key() == new_node->key_);
+        assert(new_pos.hand_b() == new_node->hand_b_);
+        assert(new_pos.turn() == new_node->sd_);
+        assert(new_node->sd_ != node->sd_);
+
         next_child->node_ptr_ = new_node;
+
         if(new_node->evaled_) {
             result = this->uct_search<flip_turn(sd)>(new_pos, new_node, ply+1,pv);
         } else if(!new_node->child_num_) {
@@ -177,6 +194,10 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
             return eval<sd>(new_pos);
         }
     } else {
+        assert(new_pos.key() == next_child->node_ptr_->key_);
+        assert(new_pos.hand_b() == next_child->node_ptr_->hand_b_);
+        assert(new_pos.turn() == next_child->node_ptr_->sd_);
+        
         result = this->uct_search<flip_turn(sd)>(new_pos, next_child->node_ptr_, ply+1, pv);
     }
     update_result(next_child,result,node);

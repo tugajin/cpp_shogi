@@ -43,11 +43,12 @@ public:
         this->used_ = false;
     }
     void init(const Pos &pos,const Ply ply) {
+        this->clear();
         this->key_ = pos.key();
         this->hand_b_ = pos.hand_b();
         this->sd_ = pos.turn();
         this->ply_ = ply;
-        this->clear();
+        this->used_ = true;
     }
 };
 
