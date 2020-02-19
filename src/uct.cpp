@@ -63,9 +63,9 @@ ChildNode *select_child(UCTNode * node) {
         if(!child[i].po_num_) {
             ucb_value = 99999;
         } else {
-            q = child[i].win_num_ / child[i].po_num_;
+            q = child[i].win_score_ / child[i].po_num_;
             u = std::sqrt(node->po_num_) / (1 + child[i].po_num_);
-            const auto rate = child[i].nn_rate_;
+            const auto rate = child[i].policy_score_;
             const auto c_base = 20403;
             const auto c_init = 0.706;
             const auto c = std::log((node->po_num_+c_base + 1.0f)/c_base) + c_init;
@@ -102,7 +102,7 @@ UCTNode * UCTSearcher::find_same_node(const Key key, const uint32 hand_b, const 
         else if(this->uct_nodes_[index].used_
         && this->uct_nodes_[index].key_ == key 
         && this->uct_nodes_[index].hand_b_ == hand_b
-        && this->uct_nodes_[index].sd_ == sd
+        && this->uct_nodes_[index].turn_ == sd
         && this->uct_nodes_[index].ply_ == ply) {
             return &this->uct_nodes_[index];
         }
@@ -117,7 +117,7 @@ UCTNode * UCTSearcher::find_empty_node(const Key key, const uint32 hand_b, const
         if(!this->uct_nodes_[index].used_) {
             this->uct_nodes_[index].key_ = key;
             this->uct_nodes_[index].hand_b_ = hand_b;
-            this->uct_nodes_[index].sd_ = sd;
+            this->uct_nodes_[index].turn_ = sd;
             this->uct_nodes_[index].ply_ = ply;
             this->uct_nodes_[index].used_ = true;
             this->use_node_num_++;
@@ -156,9 +156,9 @@ UCTNode * UCTSearcher::expand_root(const Pos &pos) {
     return this->expand_node(pos,Ply(0));
 }
 static void update_result(ChildNode *child, float result, UCTNode *node) {
-    node->win_num_ += result;
+    node->win_score_ += result;
     node->po_num_ += 1;
-    child->win_num_ += result;
+    child->win_score_ += result;
     child->po_num_ += 1;
 }
 
@@ -185,7 +185,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
         Tee<<pos<<std::endl;
         exit(EXIT_FAILURE);
     }
-    if(pos.turn() != node->sd_) {
+    if(pos.turn() != node->turn_) {
         Tee<<"not eq turn error\n";
         Tee<<pos<<std::endl;
         exit(EXIT_FAILURE);
@@ -193,9 +193,9 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
 #endif
     if(!node->child_num_) {
         return 1.0f;
-    } else if(node->score_win_ == 1) {
+    } else if(node->node_state_ == UCTNode::NODE_WIN) {
         return 0.0f;
-    } else if(node->score_win_ == -1) {
+    } else if(node->node_state_ == UCTNode::NODE_LOSE) {
         return 1.0f;
     }
     auto *next_child = select_child(node);
@@ -218,15 +218,15 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
         auto new_node = expand_node(new_pos,ply);
         assert(new_pos.key() == new_node->key_);
         assert(new_pos.hand_b() == new_node->hand_b_);
-        assert(new_pos.turn() == new_node->sd_);
-        assert(new_node->sd_ != node->sd_);
+        assert(new_pos.turn() == new_node->turn_);
+        assert(new_node->turn_ != node->turn_);
 
         next_child->node_ptr_ = new_node;
 
         if(new_node->evaled_) {
             result = this->uct_search<flip_turn(sd)>(new_pos, new_node, ply+1,pv);
         } else if(!new_node->child_num_) {
-            new_node->score_win_ = -1;
+            new_node->node_state_ = UCTNode::NODE_LOSE;
             result = 1.0f;
         } else {
             new_node->evaled_ = true;
@@ -235,7 +235,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
     } else {
         assert(new_pos.key() == next_child->node_ptr_->key_);
         assert(new_pos.hand_b() == next_child->node_ptr_->hand_b_);
-        assert(new_pos.turn() == next_child->node_ptr_->sd_);
+        assert(new_pos.turn() == next_child->node_ptr_->turn_);
 #if 0
         if(next_child->node_ptr_->used_ && 
            !next_child->node_ptr_->child_num_) {

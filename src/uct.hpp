@@ -12,41 +12,44 @@ class ChildNode {
 public:
     Move move_;
     int po_num_;
-    float win_num_;
+    float win_score_;
+    float policy_score_;
     UCTNode *node_ptr_;
-    UCTScore nn_rate_;
 };
+
 
 class UCTNode {
 public:
+    enum UCTNodeState { NODE_LOSE = -1, NODE_WIN = 1, NODE_UNKNOWN = 0 };
+
     Key key_;
     uint32 hand_b_;
-    Side sd_;
+    Side turn_;
     Ply ply_;
     int po_num_;
-    float win_num_;
-    UCTScore score_win_;
-    float nn_rate_;
+    float win_score_;
+    float policy_score_;
+    UCTNodeState node_state_;
     int child_num_;
-    ChildNode child_[MAX_LEGAL_MOVES];
-    
     bool evaled_;
     bool is_draw_;
     bool used_;
+    ChildNode child_[MAX_LEGAL_MOVES];
+    
     void clear() {
         this->po_num_ = 0;
-        this->win_num_ = 0.0f;
+        this->win_score_ = 0.0f;
         this->evaled_ = false;
         this->is_draw_ = false;
-        this->score_win_ = 0.0f;
-        this->nn_rate_ = 0.0f;
+        this->node_state_ = UCTNode::NODE_UNKNOWN;
+        this->policy_score_ = 0.0f;
         this->used_ = false;
     }
     void init(const Pos &pos,const Ply ply) {
         this->clear();
         this->key_ = pos.key();
         this->hand_b_ = pos.hand_b();
-        this->sd_ = pos.turn();
+        this->turn_ = pos.turn();
         this->ply_ = ply;
         this->used_ = true;
     }
