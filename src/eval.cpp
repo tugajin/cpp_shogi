@@ -44,3 +44,6 @@ Score eval(const Pos &pos) {
 Score material(const Pos &pos) {
     return pos.turn() == BLACK ? material<BLACK>(pos) : material<WHITE>(pos);
 }
+UCTScore uct_eval(const Pos &pos) {
+    return pos.turn() == BLACK ? uct_eval<BLACK>(pos) : uct_eval<WHITE>(pos);
+}

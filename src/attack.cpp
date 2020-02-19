@@ -158,8 +158,8 @@ bool is_mate_with_pawn_drop(const Square to, const Pos &pos) {
             exit(EXIT_FAILURE);
         }
     } else {
-        Tee<<"mate with pawn drop error\n";
         if(to + Inc_S != king_sq) {
+            Tee<<"mate with pawn drop error\n";
             Tee<<pos<<std::endl;
             Tee<<to<<std::endl;
             Tee<<king_sq<<std::endl;

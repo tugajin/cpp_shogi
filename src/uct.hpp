@@ -65,6 +65,7 @@ private:
     UCTNode * find_empty_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply);
     UCTNode * expand_root(const Pos &pos);
     UCTNode * expand_node(const Pos &pos, Ply ply);
+    bool is_full() const;
     uint32 uct_nodes_size_;
     uint32 uct_nondes_mask_;
     UCTNode * uct_nodes_;
