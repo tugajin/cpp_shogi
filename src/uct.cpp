@@ -35,7 +35,7 @@ void UCTSearcher::think() {
 template<Side sd>void UCTSearcher::think() {
     
     this->init();
-    UCTNode * root_node = this->expand_root(this->pos_);
+    UCTNode * root_node = this->expand_root<sd>(this->pos_);
     for(auto loop = 0; loop < 1000000; loop++) {
         Line pv;
         pv.clear();
@@ -128,8 +128,7 @@ UCTNode * UCTSearcher::find_empty_node(const Key key, const uint32 hand_b, const
     return nullptr;
 }
 
-//TODO template
-UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
+template<Side sd>UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
 
     UCTNode *node = this->find_same_node(pos.key(),pos.hand_b(),pos.turn(),ply);
 
@@ -152,8 +151,8 @@ UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
     node->child_num_ = child_num;
     return node;
 }
-UCTNode * UCTSearcher::expand_root(const Pos &pos) {
-    return this->expand_node(pos,Ply(0));
+template<Side sd> UCTNode * UCTSearcher::expand_root(const Pos &pos) {
+    return this->expand_node<sd>(pos,Ply(0));
 }
 static void update_result(ChildNode *child, float result, UCTNode *node) {
     node->win_score_ += result;
@@ -215,7 +214,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
     
     auto result = 1.0f;
     if(next_child->node_ptr_ == nullptr) {
-        auto new_node = expand_node(new_pos,ply);
+        auto new_node = expand_node<sd>(new_pos,ply);
         assert(new_pos.key() == new_node->key_);
         assert(new_pos.hand_b() == new_node->hand_b_);
         assert(new_pos.turn() == new_node->turn_);
@@ -251,16 +250,19 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
 
 namespace uct {
     void test() {
-        Pos pos = pos_from_sfen("9/4k4/9/4P4/9/9/9/9/4K4 b 2G");
+        //Pos pos = pos_from_sfen("9/4k4/9/4P4/9/9/9/9/4K4 b 2G");
         
         //Pos pos = pos_from_sfen(START_SFEN);
-        //Pos pos = pos_from_sfen("l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1");
+        Pos pos = pos_from_sfen("l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1");
         Tee<<pos<<std::endl;
         UCTSearcher uct;
         uct.set_pos(pos);
         uct.think();
     }
 }
-
+template UCTNode * UCTSearcher::expand_root<BLACK>(const Pos &pos);
+template UCTNode * UCTSearcher::expand_root<WHITE>(const Pos &pos);
+template UCTNode * UCTSearcher::expand_node<BLACK>(const Pos &pos, Ply ply);
+template UCTNode * UCTSearcher::expand_node<WHITE>(const Pos &pos, Ply ply);
 template UCTScore UCTSearcher::uct_search<BLACK>(const Pos &pos, UCTNode *node, const Ply ply, Line &pv);
 template UCTScore UCTSearcher::uct_search<WHITE>(const Pos &pos, UCTNode *node, const Ply ply, Line &pv);

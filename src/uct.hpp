@@ -66,8 +66,8 @@ private:
     template<Side sd> UCTScore uct_search(const Pos &pos, UCTNode *node, const Ply ply, Line &pv);
     UCTNode * find_same_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply);
     UCTNode * find_empty_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply);
-    UCTNode * expand_root(const Pos &pos);
-    UCTNode * expand_node(const Pos &pos, Ply ply);
+    template<Side sd> UCTNode * expand_root(const Pos &pos);
+    template<Side sd> UCTNode * expand_node(const Pos &pos, Ply ply);
     bool is_full() const;
     uint32 uct_nodes_size_;
     uint32 uct_nondes_mask_;
