@@ -123,7 +123,7 @@ OverloadEnumOperators(Score)
 
 inline Key& operator ^= (Key& lhs, const Key rhs) { return lhs  = static_cast<Key>(static_cast<uint64>(lhs) ^ static_cast<uint64>(rhs)); } 
 
-OverloadEnumOperators(Key);
+OverloadEnumOperators(Key)
 
 inline constexpr Square square_make(const File f, const Rank r) {
     return Square(r + f * FILE_SIZE);

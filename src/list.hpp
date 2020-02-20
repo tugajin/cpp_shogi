@@ -5,6 +5,7 @@
 #include "common.hpp"
 #include "libmy.hpp"
 #include "move.hpp"
+#include <climits>
 
 class MoveScore {
 
@@ -21,7 +22,7 @@ public :
     }
     MoveScore (Move mv, int sc) {
         assert(mv != move::MOVE_NONE);
-        assert(uint64(mv) >= 0 && uint64(mv) < (uint64(1) << 31));
+        assert(uint64(mv) < (uint64(1) << 31));
         assert(uint64(std::abs(sc)) < (uint64(1) << 31));
         pair_ = (int64(sc) << 32) | int(mv);
     }
@@ -102,7 +103,8 @@ public :
 
         // insert sort (stable)
 
-        pair_.add(MoveScore(move::MOVE_NULL, -((1 << 31) - 1))); // HACK: sentinel
+        //pair_.add(MoveScore(move::MOVE_NULL, -((uint64(1) << 31) - 1))); // HACK: sentinel
+        pair_.add(MoveScore(move::MOVE_NULL,-32768));
 
         for (int i = size - 2; i >= 0; i--) {
 
