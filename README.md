@@ -5,7 +5,36 @@
 - senpai 2.0
 - dlshogi
 
+---
+
 以下の環境でコンパイルしています。
 - clang version 6.0.0
 - cmake version 3.10.2
 - Pytorch 1.4
+
+---
+コンパイル方法
+1. srcディレクトリに移動する
+```
+cd src
+```
+2. buildディレクトリを作成する
+```
+make build
+cd build
+```
+3. cmakeする
+```
+cmake ..
+```
+4. makeする
+```
+make
+```
+
+5.動かす
+```
+./shogi
+```
+
+以上
