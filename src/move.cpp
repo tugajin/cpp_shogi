@@ -245,6 +245,9 @@ bool move_is_ok(const Move mv, const Pos &pos) {
       return false;
     }
     const auto  side_bb = pos.pieces(sd);
+    if(!side_bb.is_set(from)) {
+      return false;
+    }
     if(side_bb.is_set(to)) {
       return false;
     }

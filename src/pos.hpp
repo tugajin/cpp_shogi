@@ -21,7 +21,10 @@ private:
     Square cap_sq_;
     Key key_;
     uint32 hand_b_;
+    const Pos * parent_;
+
 public:
+    enum RepState { RepNone, RepCheck, RepChecked, RepHandWin, RepHandLose, RepEq, };
     Pos(){};
     Pos(Side turn, Bitboard piece_side[], int hand[]);
     Pos do_move(Move mv) const;
@@ -51,6 +54,7 @@ public:
     int ply() const { return this->ply_; }
     Hand hand(const Side sd) const { return this->hand_[sd]; }
     Pos succ(const Move move)const;
+    Pos::RepState is_draw() const;
     bool is_ok() const;
     friend std::ostream& operator<<(std::ostream& os, const Pos& b);
 

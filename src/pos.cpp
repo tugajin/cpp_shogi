@@ -3,6 +3,7 @@
 #include "hand.hpp"
 #include "sfen.hpp"
 #include "bit.hpp"
+#include "attack.hpp"
 
 Pos::Pos(Side turn, Bitboard piece_side[], int hand[]) {
     this->clear();
@@ -43,6 +44,7 @@ void Pos::clear() {
     this->cap_sq_ = SQ_NONE;
     this->key_ = Key(0ULL);
     this->hand_b_ = 0u;
+    this->parent_ = nullptr;
 
 }
 Pos Pos::succ(const Move move) const {
@@ -54,6 +56,7 @@ Pos Pos::succ(const Move move) const {
     const auto sd = this->turn();
     const auto xd = flip_turn(sd);
     auto pos = *this;
+    pos.parent_ = this;
     pos.ply_ = this->ply_+1;
     pos.last_move_ = move;
     const auto pc = move::move_piece(move);
@@ -194,6 +197,48 @@ std::ostream& operator<<(std::ostream& os, const Pos& b){
     return os;
 }
 
+Pos::RepState Pos::is_draw() const {
+    if(this->ply() < 4) {
+        return Pos::RepNone;
+    }
+    auto pos = this;
+    for(auto i = 0; i < 4; i++) {
+        assert(pos->parent_ != nullptr);
+        auto org = pos;
+        pos = pos->parent_->parent_;
+        assert(org != nullptr);
+        assert(pos != nullptr);
+
+        if(pos->key() == this->key()) {
+            if(pos->hand_b() == this->hand_b()) {
+                const auto xd = flip_turn(this->turn());
+                if(in_check(*this) && in_check(*org)) {
+                    return Pos::RepChecked;
+                } else if(in_check(*org->parent_)) {
+                    return Pos::RepCheck;
+                } else {
+                    return Pos::RepEq;
+                } 
+            }
+            if(hand_is_superior(this->hand_[BLACK],pos->hand_[BLACK])) {
+                if(this->turn() == BLACK) {
+                    return Pos::RepHandWin;
+                } else {
+                    return Pos::RepHandLose;
+                }
+            } 
+            if(hand_is_superior(pos->hand_[BLACK],this->hand_[BLACK])) {
+                if(this->turn() == BLACK) {
+                    return Pos::RepHandLose;
+                } else {
+                    return Pos::RepHandWin;
+                }
+            }
+        }
+    }
+    return Pos::RepNone;
+}
+
 namespace pos {
 
 Pos gStart;
@@ -202,9 +247,7 @@ void init() {
     gStart = pos_from_sfen(START_SFEN);
 }
 
-void test() {
-    Tee<<"start test pos\n";
-    
+static void test_gen() {
     Pos p = pos_from_sfen(START_SFEN);
     Tee<<p<<std::endl;
    
@@ -257,7 +300,95 @@ void test() {
     Tee<<"sq55"<<std::endl;
     Tee<<bb<<std::endl;
 
+}
 
+void test_draw() {
+    {
+        auto p = pos_from_sfen("9/9/ppppppppp/4k4/1R7/3PP4/9/9/4K4 b - 1");
+        
+        auto mv1 = move::from_usi("8e5e",p);
+        auto p1 =  p.succ(mv1);
+        Tee<<p1<<std::endl;;
+
+        auto mv2 = move::from_usi("5d6d",p1);
+        auto p2 =  p1.succ(mv2);
+        Tee<<p2<<std::endl;;
+
+        auto mv3 = move::from_usi("5e6e",p2);
+        auto p3 =  p2.succ(mv3);
+        Tee<<p3<<std::endl;;
+
+        auto mv4 = move::from_usi("6d5d",p3);
+        auto p4 =  p3.succ(mv4);
+        Tee<<p4<<std::endl;;
+        
+        auto mv5 = move::from_usi("6e5e",p4);
+        auto p5 =  p4.succ(mv5);
+        Tee<<p5<<std::endl;;
+        Tee<<p5.is_draw()<<std::endl;
+        assert(p5.is_draw() == Pos::RepChecked);
+        auto mv6 = move::from_usi("5d6d",p5);
+        auto p6 =  p5.succ(mv6);
+        Tee<<p6<<std::endl;;
+    
+        Tee<<p6.is_draw()<<std::endl;
+        assert(p6.is_draw() == Pos::RepCheck);
+    }
+    {
+        auto p = pos_from_sfen("4k4/9/9/9/9/9/9/9/4K4 b - 1");
+        
+        auto mv1 = move::from_usi("5i5h",p);
+        auto p1 =  p.succ(mv1);
+        Tee<<p1<<std::endl;;
+        
+        auto mv2 = move::from_usi("5a5b",p1);
+        auto p2 =  p1.succ(mv2);
+        Tee<<p2<<std::endl;;
+
+        auto mv3 = move::from_usi("5h5i",p2);
+        auto p3 =  p2.succ(mv3);
+        Tee<<p3<<std::endl;;
+
+        auto mv4 = move::from_usi("5b5a",p3);
+        auto p4 =  p3.succ(mv4);
+        Tee<<p4<<std::endl;;
+        Tee<<p4.is_draw()<<std::endl;;
+        assert(p4.is_draw() == Pos::RepEq);
+        
+    }
+   {
+        auto p = pos_from_sfen("4k4/9/9/9/9/9/9/9/4K4 b 3G - 1");
+        
+        auto mv1 = move::from_usi("G*6a",p);
+        auto p1 =  p.succ(mv1);
+        Tee<<p1<<std::endl;;
+        
+        auto mv2 = move::from_usi("5a6a",p1);
+        auto p2 =  p1.succ(mv2);
+        Tee<<p2<<std::endl;;
+
+        auto mv3 = move::from_usi("G*5a",p2);
+        auto p3 =  p2.succ(mv3);
+       
+        auto mv4 = move::from_usi("6a5a",p3);
+        auto p4 =  p3.succ(mv4);
+        Tee<<p4<<std::endl;;
+        Tee<<p4.is_draw()<<std::endl;;
+        assert(p4.is_draw() == Pos::RepHandLose);
+        
+        auto mv5 = move::from_usi("G*6a",p4);
+        auto p5 =  p4.succ(mv5);
+        Tee<<p5<<std::endl;
+        assert(p5.is_draw() == Pos::RepHandWin);
+
+        
+    }
+}
+
+void test() {
+    Tee<<"start test pos\n";
+    //test_gen();    
+    test_draw();
 }
 
 }

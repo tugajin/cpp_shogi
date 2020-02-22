@@ -48,7 +48,8 @@ int main(int /*argc*/, char **/*argv*/) {
     //gen::test();
     //search::test();
     //attack::test();
-    uct::test();
+    //uct::test();
+    pos::test();
     Tee<<"test end\n";
 #else
     listen_input();
