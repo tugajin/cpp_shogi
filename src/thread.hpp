@@ -36,4 +36,7 @@ bool get_line(std::string & line);
 
 void test_bit();
 
+extern std::thread GThread;
+
+
 #endif

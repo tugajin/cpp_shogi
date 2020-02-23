@@ -60,20 +60,28 @@ public:
     Pos pos_;
     void think();
     void init();
+    void allocate();
     void set_pos(const Pos &pos);
 private:
     template<Side sd> void think();
     template<Side sd> UCTScore uct_search(const Pos &pos, UCTNode *node, const Ply ply, Line &pv);
     UCTNode * find_same_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply);
     UCTNode * find_empty_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply);
-    template<Side sd> UCTNode * expand_root(const Pos &pos);
+    template<Side sd> void expand_root(const Pos &pos);
     template<Side sd> UCTNode * expand_node(const Pos &pos, Ply ply);
     bool is_full() const;
+
     uint32 uct_nodes_size_;
     uint32 uct_nondes_mask_;
-    UCTNode * uct_nodes_;
     uint32 use_node_num_;
+    UCTNode root_node_;
+    UCTNode * uct_nodes_;
+    
 };
+
+void start_search(SearchOutput &so, const Pos &pos, const SearchInput &si);
+
+extern UCTSearcher gUCT;
 
 namespace uct {
     void test();

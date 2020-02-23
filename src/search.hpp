@@ -62,8 +62,46 @@ public:
 };
 class SearchInput {
     public:
+    bool move_;
+    Depth depth_;
+    bool smart_;
+    int moves_;
+    double time_;
+    double inc_;
+    bool ponder_;
     void init();
+    void set_time(int moves, double time, double inc);
 };
+
+class SearchOutput {
+    public:
+    Move move_;
+    Move answer_;
+    Score score_;
+    Depth depth_;
+    Line pv_;
+    int64 node_;
+    int ply_max_;
+    
+    private:
+    const SearchInput *si_;
+    Pos pos_;
+    mutable Timer timer_;
+    
+    public:
+    void init(const SearchInput &si, const Pos &pos);
+    void end();
+    void start_iter(Depth depth);
+    void end_iter();
+    void new_best_move(Move move, Score sc);
+    void new_best_move(Move mv, Score sc,const Line &pv);
+    void disp_best_move();
+    double time() const ;
+};
+
+Move quick_move(const Pos &pos);
+Score quick_score(const Pos &pos);
+
 
 namespace search {
     void test();

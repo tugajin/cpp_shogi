@@ -9,6 +9,8 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <mutex>
+
 
 
 // constants
@@ -72,7 +74,7 @@ class TeeStream {
     template<typename T>
         TeeStream& operator <<(const T& t) {
             if (level_ == 1) {
-            //lock_.lock();
+            lock_.lock();
 
             std::cout << t;
             ofs_ << t;
@@ -80,7 +82,7 @@ class TeeStream {
             ofs_.flush();
             std::cout.flush();
 
-            //lock_.unlock();
+            lock_.unlock();
           }
           return *this;
         }
@@ -92,7 +94,7 @@ class TeeStream {
 
     private:
         std::ofstream ofs_;
-      //Lockable lock_;
+        mutable std::mutex lock_;
         static constexpr int level_ = 1;
 };
 extern TeeStream Tee;
@@ -185,6 +187,7 @@ std::string trim(const std::string s);
 
 #endif
 }
+
 
 
 #endif

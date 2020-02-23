@@ -4,10 +4,8 @@
 #include "move.hpp"
 #include "sfen.hpp"
 #include "list.hpp"
-
-void SearchInput::init() {
-    
-}
+#include "uct.hpp"
+#include "var.hpp"
 
 template<Side sd, bool is_root> static uint64 perft(const Pos &pos, const Ply ply) {
 #ifdef DEBUG
@@ -66,7 +64,38 @@ uint64 perft(const Pos &pos, Ply ply) {
     return (pos.turn() == BLACK) ? perft<BLACK,true>(pos,ply)
                                  : perft<WHITE,true>(pos,ply);
 }
-
+void SearchInput::init() {
+    var::update();
+    this->move_ = true;
+    this->depth_ = Depth(128);
+    this->smart_ = false;
+    this->moves_ = 0;
+    this->time_ = 1E6;
+    this->inc_ = 0.0;
+    this->ponder_ = false;
+}
+void SearchInput::set_time(int moves, double time, double inc) {
+    this->smart_ = true;
+    this->moves_ = moves;
+    this->time_ = time;
+    this->inc_ = inc;
+}
+void SearchOutput::init(const SearchInput &si, const Pos &pos) {
+    this->si_ = &si;
+    this->pos_ = pos;
+    this->move_ = move::MOVE_NONE;
+    this->answer_ = move::MOVE_NONE;
+    this->score_ = Score(0);
+    this->depth_ = Depth(0);
+    this->pv_.clear();
+    this->timer_.reset();
+    this->timer_.start();
+    this->node_ = 0;
+    this->ply_max_ = 0;
+}
+void SearchOutput::end() {
+    this->timer_.stop();
+}
 template uint64 perft<BLACK,true>(const Pos &pos, const Ply ply);
 template uint64 perft<WHITE,true>(const Pos &pos, const Ply ply);
 template uint64 perft<BLACK,false>(const Pos &pos, const Ply ply);

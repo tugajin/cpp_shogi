@@ -27,12 +27,16 @@ public :
 };
 
 static Input GInput;
-static std::thread GThread;
+std::thread GThread;
 
 static void input_program(Input * input) {
     std::string line;
     while(std::getline(std::cin, line)) {
         input->set_line(line);
+        if(line == "quit") {
+            Tee<<"input quit\n";
+            break;
+        }
     }
     input->set_eof();
 }

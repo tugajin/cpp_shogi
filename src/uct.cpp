@@ -9,9 +9,12 @@
 #include "eval.hpp"
 #include <cmath>
 
-void UCTSearcher::init() {
-    this->uct_nodes_size_ = uint32(1) << 19;
+UCTSearcher gUCT;
+void UCTSearcher::allocate() {
+    this->uct_nodes_size_ = (uint32(1) << 19);
     this->uct_nodes_ = new UCTNode[this->uct_nodes_size_];
+}
+void UCTSearcher::init() {
     this->uct_nondes_mask_ = this->uct_nodes_size_-1;
     this->use_node_num_ = 0;
     for(auto i = 0u; i< this->uct_nodes_size_; ++i) {
@@ -32,14 +35,21 @@ void UCTSearcher::think() {
     this->pos_.turn() == BLACK ? this->think<BLACK>() 
                                : this->think<WHITE>();
 } 
+
+void start_search(SearchOutput & so, const Pos &pos, const SearchInput &si) {
+    so.init(si,pos);
+    gUCT.set_pos(pos);
+    gUCT.think();
+    so.end();
+}
 template<Side sd>void UCTSearcher::think() {
     
     this->init();
-    UCTNode * root_node = this->expand_root<sd>(this->pos_);
+    this->expand_root<sd>(this->pos_);
     for(auto loop = 0; loop < 1000000; loop++) {
         Line pv;
         pv.clear();
-        this->uct_search<sd>(this->pos_, root_node, Ply(0), pv);
+        this->uct_search<sd>(this->pos_, &this->root_node_, Ply(0), pv);
         Tee<<pv.to_usi()<<std::endl;
         if(loop % 500 == 0) {
             if(this->is_full()) {
@@ -151,8 +161,20 @@ template<Side sd>UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
     node->child_num_ = child_num;
     return node;
 }
-template<Side sd> UCTNode * UCTSearcher::expand_root(const Pos &pos) {
-    return this->expand_node<sd>(pos,Ply(0));
+template<Side sd> void UCTSearcher::expand_root(const Pos &pos) {
+
+    this->root_node_.init(pos,Ply(0));
+    ChildNode * child = this->root_node_.child_;
+    List list;
+    gen_legals(list,pos);
+    
+    auto child_num = 0;
+    for(auto i = 0; i < list.size(); i++) {
+        child[child_num].move_ = list[i];
+        child[child_num].node_ptr_ = nullptr;
+        child_num++;
+    }
+    this->root_node_.child_num_ = child_num;
 }
 static void update_result(ChildNode *child, float result, UCTNode *node) {
     node->win_score_ += result;
@@ -255,13 +277,13 @@ namespace uct {
         //Pos pos = pos_from_sfen(START_SFEN);
         Pos pos = pos_from_sfen("l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1");
         Tee<<pos<<std::endl;
-        UCTSearcher uct;
-        uct.set_pos(pos);
-        uct.think();
+        gUCT.allocate();
+        gUCT.set_pos(pos);
+        gUCT.think();
     }
 }
-template UCTNode * UCTSearcher::expand_root<BLACK>(const Pos &pos);
-template UCTNode * UCTSearcher::expand_root<WHITE>(const Pos &pos);
+template void UCTSearcher::expand_root<BLACK>(const Pos &pos);
+template void UCTSearcher::expand_root<WHITE>(const Pos &pos);
 template UCTNode * UCTSearcher::expand_node<BLACK>(const Pos &pos, Ply ply);
 template UCTNode * UCTSearcher::expand_node<WHITE>(const Pos &pos, Ply ply);
 template UCTScore UCTSearcher::uct_search<BLACK>(const Pos &pos, UCTNode *node, const Ply ply, Line &pv);
