@@ -13,7 +13,7 @@
 UCTSearcher gUCT;
 
 void UCTSearcher::allocate() {
-    this->uct_nodes_size_ = (uint32(1) << 17);
+    this->uct_nodes_size_ = (uint32(1) << 18);
     if(this->uct_nodes_ != nullptr) {
         this->free();
     }
@@ -57,19 +57,24 @@ template<Side sd>void UCTSearcher::think() {
     
     this->init();
     this->expand_root<sd>(this->pos_);
-    for(auto loop = 0ull; ; ++loop) {
+    auto loop = 0ull;
+    for(loop = 0ull; ; ++loop) {
         Line pv;
         pv.clear();
-        this->uct_search<sd>(this->pos_, &this->root_node_, Ply(0), pv);
+        auto score = this->uct_search<sd>(this->pos_, &this->root_node_, Ply(0), pv);
         if(this->update_root_info(loop)) {
             break;
         }
         if(loop % 5000 == 0) {
-            this->disp_info(loop,pv);
+            this->disp_info(loop,pv,score);
         }
     }
+    /*Tee<<"root_info "<<loop<<std::endl;
+    for(auto i = 0; i < this->root_node_.child_num_;i++) {
+        Tee<<move::move_to_string(this->root_node_.child_[i].move_)<<" :"<<this->root_node_.child_[i].po_num_<<" : "<<this->root_node_.child_[i].win_score_/double(this->root_node_.child_[i].po_num_)<<std::endl;
+    }*/
 }
-bool UCTSearcher::update_root_info(const uint64 /*loop*/) {
+bool UCTSearcher::update_root_info(const uint64 loop) {
     this->so_->move_ = move::MOVE_NONE;
     if(this->root_node_.child_num_ == 0) {
         return true;
@@ -124,9 +129,9 @@ bool UCTSearcher::update_root_info(const uint64 /*loop*/) {
     }
     return this->is_full();
 }
-void UCTSearcher::disp_info(const uint64 loop, const Line &pv) const {
+void UCTSearcher::disp_info(const uint64 loop, const Line &pv, const UCTScore sc) const {
     double time = this->so_->time();
-    std::string line = "info  ";
+    std::string line = "info";
     /*if(this->so_->move_ != move::MOVE_NONE) {
         line += " " + move::move_to_usi(this->so_->move_);
     }*/
@@ -139,7 +144,7 @@ void UCTSearcher::disp_info(const uint64 loop, const Line &pv) const {
     if(loop) {
         line += " nodes "  + std::to_string(loop);
     }
-    line += " score cp 0";
+    line += " score cp " + std::to_string(double(sc));
     if(pv.size() != 0) {
         line += " pv " + pv.to_usi();
     }
@@ -160,8 +165,8 @@ ChildNode *select_child(UCTNode * node) {
             q = child[i].win_score_ / child[i].po_num_;
             u = std::sqrt(node->po_num_) / (1 + child[i].po_num_);
             const auto rate = child[i].policy_score_;
-            const auto c_base = 20403;
-            const auto c_init = 0.706;
+            const auto c_base = 19652;
+            const auto c_init = 1.25;
             const auto c = std::log((node->po_num_+c_base + 1.0f)/c_base) + c_init;
             ucb_value = q + c * u * rate;
         
@@ -240,6 +245,7 @@ template<Side sd>UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
     for(auto i = 0; i < list.size(); i++) {
         child[child_num].move_ = list[i];
         child[child_num].node_ptr_ = nullptr;
+        child[child_num].policy_score_ = double(1.0 / double(list.size()));
         child_num++;
     }
     node->child_num_ = child_num;
@@ -256,6 +262,7 @@ template<Side sd> void UCTSearcher::expand_root(const Pos &pos) {
     for(auto i = 0; i < list.size(); i++) {
         child[child_num].move_ = list[i];
         child[child_num].node_ptr_ = nullptr;
+        child[child_num].policy_score_ = double(1.0 / double(list.size()));
         child_num++;
     }
     this->root_node_.child_num_ = child_num;
@@ -297,11 +304,17 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
     }
 #endif
     if(!node->child_num_) {
-        return 1.0f;
-    } else if(node->node_state_ == UCTNode::NODE_WIN) {
+        //Tee<<"mate 1\n";
+        //Tee<<pos<<std::endl;
         return 0.0f;
-    } else if(node->node_state_ == UCTNode::NODE_LOSE) {
+    } else if(node->node_state_ == UCTNode::NODE_WIN) {
+        //Tee<<"mate 2\n";
+        //Tee<<pos<<std::endl;
         return 1.0f;
+    } else if(node->node_state_ == UCTNode::NODE_LOSE) {
+        //Tee<<"mate 3\n";
+        //Tee<<pos<<std::endl;
+        return 0.0f;
     }
     auto *next_child = select_child(node);
 #ifdef DEBUG
@@ -315,7 +328,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
     
     pv.add(next_child->move_);
     
-    auto result = 1.0f;
+    auto result = 0.0f;
     if(next_child->node_ptr_ == nullptr) {
         auto new_node = expand_node<sd>(new_pos,ply);
         assert(new_pos.key() == new_node->key_);
@@ -326,13 +339,18 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
         next_child->node_ptr_ = new_node;
 
         if(new_node->evaled_) {
-            result = this->uct_search<flip_turn(sd)>(new_pos, new_node, ply+1,pv);
+            result = 1.0 - (this->uct_search<flip_turn(sd)>(new_pos, new_node, ply+1,pv));
         } else if(!new_node->child_num_) {
             new_node->node_state_ = UCTNode::NODE_LOSE;
+            //Tee<<"mate 4\n";
+            //Tee<<pos<<std::endl;
+            //Tee<<pos<<move::move_to_string(next_child->move_)<<std::endl;
+            //Tee<<new_pos<<std::endl;
             result = 1.0f;
         } else {
             new_node->evaled_ = true;
-            return uct_eval<sd>(new_pos);
+            //return 1.0f - uct_eval<flip_turn(sd)>(new_pos);
+            return 0.5f;
         }
     } else {
         assert(new_pos.key() == next_child->node_ptr_->key_);
@@ -345,10 +363,10 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
                exit(1);
         }
 #endif
-        result = this->uct_search<flip_turn(sd)>(new_pos, next_child->node_ptr_, ply+1, pv);
+        result = 1.0f - (this->uct_search<flip_turn(sd)>(new_pos, next_child->node_ptr_, ply+1, pv));
     }
     update_result(next_child,result,node);
-    return 1.0f - result;
+    return result;
 }
 
 namespace uct {

@@ -140,7 +140,7 @@ private:
     template<Side sd> UCTNode * expand_node(const Pos &pos, Ply ply);
     bool is_full() const;
     bool update_root_info(const uint64 loop);
-    void disp_info(const uint64 loop, const Line &pv)const;
+    void disp_info(const uint64 loop, const Line &pv, const UCTScore sc)const;
     uint32 uct_nodes_size_;
     uint32 uct_nondes_mask_;
     uint32 use_node_num_;

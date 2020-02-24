@@ -58,12 +58,23 @@ int main(int argc, char **argv) {
     std::vector<std::string> arg_strings;
     arg_strings.clear();
     if (argc  > 1) {
+        std::string str = "";
         for(auto i = 0; i < argc-1; i++) {
-            //逆向きに入れる
-            arg_strings.push_back(argv[argc-i-1]);
+            std::string curr = std::string(argv[i+1]);
+            auto pos = curr.find(":");
+            if(pos != std::string::npos) {
+                str += curr.substr(0,pos);
+                arg_strings.push_back(str);
+                str = "";
+            } else {
+                if(!str.empty()) { str += " ";}
+                str += curr;
+            }
+        }
+        if (!str.empty()) {
+            arg_strings.push_back(str);
         }
     }
-
     usi_loop(arg_strings);
 //#endif
     return EXIT_SUCCESS;
@@ -82,8 +93,8 @@ static void usi_loop(std::vector<std::string> arg) {
     while(true) {
         std::string line;
         if(!arg.empty()) {
-            line = arg.back();
-            arg.pop_back();
+            line = arg.front();
+            arg.erase(arg.begin());
         } else if(!get_line(line)) {
             std::exit(EXIT_SUCCESS);
         }
@@ -93,7 +104,7 @@ static void usi_loop(std::vector<std::string> arg) {
         std::string command;
         ss >> command;
         
-        Tee<<"from:"<<command<<std::endl;
+        //Tee<<"from:"<<command<<std::endl;
 
         if(command == "usi") {
             Tee<<"id name SHOGI"<<std::endl;
@@ -144,6 +155,7 @@ static void usi_loop(std::vector<std::string> arg) {
             std::string arg;
 
             while(ss >> arg) {
+                //Tee<<"from2:"<<arg<<std::endl;
                 if(arg == "startpos") {
                     sfen = START_SFEN;
                     parsing_sfen = false;
@@ -183,6 +195,7 @@ static void usi_loop(std::vector<std::string> arg) {
             auto analyze = false;
             std::string arg;
             while(ss >> arg) {
+                //Tee<<"from3:"<<arg<<std::endl;
                 if(arg == "depth") {
                     ss >> arg;
                     depth = std::stoi(arg);
