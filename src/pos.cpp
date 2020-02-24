@@ -48,10 +48,17 @@ void Pos::clear() {
 
 }
 Pos Pos::succ(const Move move) const {
-    
+#ifdef DEBUG
+    if(!is_ok()) {
+        Tee<<*this<<std::endl;
+    }
+    if(!move::move_is_ok(move,*this)) {
+        Tee<<*this<<std::endl;
+        Tee<<move::move_to_string(move)<<std::endl;
+    }
     assert(is_ok());
     assert(move::move_is_ok(move,*this));
-    
+#endif
     const auto to = move::move_to(move);
     const auto sd = this->turn();
     const auto xd = flip_turn(sd);
@@ -211,7 +218,6 @@ Pos::RepState Pos::is_draw() const {
 
         if(pos->key() == this->key()) {
             if(pos->hand_b() == this->hand_b()) {
-                const auto xd = flip_turn(this->turn());
                 if(in_check(*this) && in_check(*org)) {
                     return Pos::RepChecked;
                 } else if(in_check(*org->parent_)) {

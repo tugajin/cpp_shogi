@@ -7,12 +7,21 @@
 #include "search.hpp"
 #include "sfen.hpp"
 #include "eval.hpp"
+#include "thread.hpp"
 #include <cmath>
 
 UCTSearcher gUCT;
+
 void UCTSearcher::allocate() {
-    this->uct_nodes_size_ = (uint32(1) << 19);
+    this->uct_nodes_size_ = (uint32(1) << 17);
+    if(this->uct_nodes_ != nullptr) {
+        this->free();
+    }
     this->uct_nodes_ = new UCTNode[this->uct_nodes_size_];
+}
+void UCTSearcher::free() {
+    delete[] this->uct_nodes_;
+    this->uct_nodes_ = nullptr;
 }
 void UCTSearcher::init() {
     this->uct_nondes_mask_ = this->uct_nodes_size_-1;
@@ -28,39 +37,114 @@ bool UCTSearcher::is_full() const {
     return use_rate > 0.8;
 }
 
-void UCTSearcher::set_pos(const Pos &pos) {
-    this->pos_ = pos;
-}
 void UCTSearcher::think() {
     this->pos_.turn() == BLACK ? this->think<BLACK>() 
                                : this->think<WHITE>();
 } 
 
 void start_search(SearchOutput & so, const Pos &pos, const SearchInput &si) {
+    Tee<<"info think start\n";
     so.init(si,pos);
-    gUCT.set_pos(pos);
+    gUCT.pos_ = pos;
+    gUCT.so_ = &so;
+    gUCT.time_limits_.init(si,pos);
     gUCT.think();
     so.end();
+    Tee<<"info think end\n";
+
 }
 template<Side sd>void UCTSearcher::think() {
     
     this->init();
     this->expand_root<sd>(this->pos_);
-    for(auto loop = 0; loop < 1000000; loop++) {
+    for(auto loop = 0ull; ; ++loop) {
         Line pv;
         pv.clear();
         this->uct_search<sd>(this->pos_, &this->root_node_, Ply(0), pv);
-        Tee<<pv.to_usi()<<std::endl;
-        if(loop % 500 == 0) {
-            if(this->is_full()) {
-                Tee<<"full uct\n";
-                break;
+        if(this->update_root_info(loop)) {
+            break;
+        }
+        if(loop % 5000 == 0) {
+            this->disp_info(loop,pv);
+        }
+    }
+}
+bool UCTSearcher::update_root_info(const uint64 /*loop*/) {
+    this->so_->move_ = move::MOVE_NONE;
+    if(this->root_node_.child_num_ == 0) {
+        return true;
+    }
+    if(this->root_node_.child_num_ == 1) {
+        this->so_->move_ = this->root_node_.child_[0].move_;
+        return true;
+    }
+    auto max_po = -1;
+    auto num = this->root_node_.child_num_;
+    ChildNode * child = this->root_node_.child_;
+    for(auto i = 0; i < num; ++i) {
+        if(child[i].po_num_ > max_po) {
+            this->so_->move_ = child[i].move_;
+            max_po = child[i].po_num_;
+        }
+    }
+    assert(this->so_->move_ != move::MOVE_NONE);
+    //check time up
+    double elapsed = this->so_->time();
+    //Tee<<"lim0:"<<this->time_limits_.time_0()<<std::endl;
+    //Tee<<"lim1:"<<this->time_limits_.time_0()<<std::endl;
+    //Tee<<"lim2:"<<this->time_limits_.time_0()<<std::endl;
+
+    if(elapsed > this->time_limits_.time_2() ) {
+        return true;
+    }
+    if(elapsed > this->time_limits_.time_1() ) {
+        return true;
+    }
+    if(elapsed > this->time_limits_.time_0() ) {
+        return true;
+    }
+    //check input
+    if(has_input()) {
+        std::string line;
+        if(!peek_line(line)) {
+            std::exit(EXIT_SUCCESS);
+        }
+        if(!line.empty()) {
+            std::stringstream ss(line);
+            std::string command;
+            ss >> command;
+            if(command == "isready") {
+                get_line(line);
+                Tee<<"readyok"<<std::endl;
+            } else if(command == "stop") {
+                get_line(line);
+                return true;
             }
         }
     }
-
+    return this->is_full();
 }
-
+void UCTSearcher::disp_info(const uint64 loop, const Line &pv) const {
+    double time = this->so_->time();
+    std::string line = "info  ";
+    /*if(this->so_->move_ != move::MOVE_NONE) {
+        line += " " + move::move_to_usi(this->so_->move_);
+    }*/
+    if(time >= 0.001) {
+        line += " time "  + std::to_string(ml::round(time * 1000));
+    }
+    if(pv.size() != 0) {
+        line += " depth " + std::to_string(pv.size());
+    }
+    if(loop) {
+        line += " nodes "  + std::to_string(loop);
+    }
+    line += " score cp 0";
+    if(pv.size() != 0) {
+        line += " pv " + pv.to_usi();
+    }
+    Tee<<line<<std::endl;
+}
 ChildNode *select_child(UCTNode * node) {
     
     assert(node->child_num_ != 0);
@@ -220,9 +304,6 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
         return 1.0f;
     }
     auto *next_child = select_child(node);
-    if(ply == Ply(0)) {
-        Tee<<"select:"<<move::move_to_string(next_child->move_)<<" full:"<<double(this->use_node_num_) / double(this->uct_nodes_size_)<<std::endl;
-    }
 #ifdef DEBUG
     if(next_child == nullptr) {
         Tee<<pos<<std::endl;
@@ -278,7 +359,7 @@ namespace uct {
         Pos pos = pos_from_sfen("l6nl/5+P1gk/2np1S3/p1p4Pp/3P2Sp1/1PPb2P1P/P5GS1/R8/LN4bKL w GR5pnsg 1");
         Tee<<pos<<std::endl;
         gUCT.allocate();
-        gUCT.set_pos(pos);
+        gUCT.pos_ = pos;
         gUCT.think();
     }
 }

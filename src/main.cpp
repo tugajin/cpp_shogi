@@ -167,7 +167,6 @@ static void usi_loop(std::vector<std::string> arg) {
             game.init(pos_from_sfen(sfen));
             std::stringstream ss(moves);
             while(ss >> arg) {
-                Tee<<arg<<std::endl;
                 game.add_move(move::from_usi(arg,game.pos()));
             }
             si.init();
@@ -178,6 +177,7 @@ static void usi_loop(std::vector<std::string> arg) {
             auto smart = false;
             auto moves = 0;
             auto game_time = 30.0;
+            auto game_byoyomi = 0.0;
             auto inc = 0.0;
             auto ponder = false;
             auto analyze = false;
@@ -192,14 +192,18 @@ static void usi_loop(std::vector<std::string> arg) {
                 } else if(arg == "movestogo") {
                     ss >> arg;
                     moves = std::stoi(arg);
-                } else if(arg == (game.turn() == BLACK? "btime" : "wtime")) {
+                } else if(arg == (game.turn() == BLACK ? "btime" : "wtime")) {
                     smart = true;
                     ss >> arg;
                     game_time = std::stod(arg) / 1000.0;
-                } else if(arg == (game.turn() == BLACK? "binc" : "winc")) {
+                } else if(arg == (game.turn() == BLACK ? "binc" : "winc")) {
                     smart = true;
                     ss >> arg;
                     inc = std::stod(arg) / 1000.0;
+                } else if(arg == "byoyomi") {
+                    smart = true;
+                    ss >> arg;
+                    game_byoyomi = std::stod(arg) /1000.0;
                 } else if(arg == "ponder") {
                     ponder = true;
                 } else if(arg == "infinite") {
@@ -209,7 +213,7 @@ static void usi_loop(std::vector<std::string> arg) {
             if(depth >= 0) { si.depth_ = Depth(depth); }
             if(move_time >= 0.0) { si.time_ = move_time; }
             if(smart) {
-                si.set_time(moves,game_time - inc,inc);
+                si.set_time(moves,game_time - inc,inc, game_byoyomi);
             }
             si.move_ = !analyze;
             si.ponder_ = ponder;
@@ -217,12 +221,14 @@ static void usi_loop(std::vector<std::string> arg) {
             start_search(so,game.pos(),si);
             auto move = so.move_;
             auto answer = so.answer_;
-            /*if(move == move::MOVE_NONE) {
-                move = quick_move(game.pos());
-            } else if(answer == move::MOVE_NONE) {
+            if(move == move::MOVE_NONE) {
+                Tee<<"bestmove resign";
+            } else {
+                Tee<<"bestmove "<<move::move_to_usi(move);
+            }/*else if(answer == move::MOVE_NONE) {
                 answer = quick_move(game.pos().succ(move));
             }*/
-            Tee<<"bestmove "<<move::move_to_usi(move);
+            
             if(answer != move::MOVE_NONE) {
                 Tee<<" ponder "<<move::move_to_usi(answer);
             }
@@ -236,6 +242,8 @@ static void usi_loop(std::vector<std::string> arg) {
           //  gen::test();
         } else if(command == "show") {
             Tee<<game.pos()<<std::endl;
+        } else if(command == "gameover") {
+            gUCT.free();
         } else if(command == "quit") {
             GThread.join();
             std::exit(EXIT_SUCCESS);

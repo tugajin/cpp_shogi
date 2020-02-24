@@ -8,6 +8,70 @@
 
 class UCTNode;
 
+class Time {
+
+private :
+
+   double time_0_; // target
+   double time_1_; // extended
+   double time_2_; // maximum
+
+public :
+
+    static double time_lag(double time) {
+        return std::max(time - 0.1, 0.0); // assume 100ms of lag
+    }
+
+   void init (const SearchInput & si, const Pos & pos) {
+        if (si.smart_) {
+            this->init(si.moves_, si.time_, si.inc_, si.byoyomi_, pos);
+        } else {
+            this->init(si.time_ + si.byoyomi_);
+        }
+   }
+
+   double time_0 () const { return time_0_; }
+   double time_1 () const { return time_1_; }
+   double time_2 () const { return time_2_; }
+
+private :
+
+   void init (double time) {
+       this->time_0_ = time;
+       this->time_1_ = time;
+       this->time_2_ = time;
+   }
+   void init (int moves, double time, double inc, double byoyomi, const Pos & /*pos*/) {
+        
+        moves = std::min(moves, 30);
+
+        double moves_left  = double(120 - moves);
+        double factor = 1.3;
+        //if (var::Ponder) factor *= 1.2;
+
+        double total = std::max(time + inc * moves_left, 0.0);
+        double alloc = total / moves_left * factor;
+
+        if (moves > 1) { // save some time for the following moves
+            double total_safe = std::max((time / double(moves - 1) + inc - (time / double(moves) + inc) * 0.5) * double(moves - 1), 0.0);
+            total = std::min(total, total_safe);
+        }
+
+        double max = time_lag(std::min(total, time + inc) * 0.95);
+        
+        if(time == 0.0) {
+            alloc += byoyomi;
+            max += byoyomi;
+        }
+
+        this->time_0_ = std::min(time_lag(alloc), max);
+        this->time_1_ = std::min(time_lag(alloc * 4.0), max);
+        this->time_2_ = max;
+
+        assert(0.0 <= time_0_ && time_0_ <= time_1_ && time_1_ <= time_2_);
+   }
+};
+
 class ChildNode {
 public:
     Move move_;
@@ -58,10 +122,15 @@ public:
 class UCTSearcher {
 public:
     Pos pos_;
+    SearchOutput * so_;
+    Time time_limits_;
+    
     void think();
     void init();
     void allocate();
+    void free();
     void set_pos(const Pos &pos);
+
 private:
     template<Side sd> void think();
     template<Side sd> UCTScore uct_search(const Pos &pos, UCTNode *node, const Ply ply, Line &pv);
@@ -70,12 +139,13 @@ private:
     template<Side sd> void expand_root(const Pos &pos);
     template<Side sd> UCTNode * expand_node(const Pos &pos, Ply ply);
     bool is_full() const;
-
+    bool update_root_info(const uint64 loop);
+    void disp_info(const uint64 loop, const Line &pv)const;
     uint32 uct_nodes_size_;
     uint32 uct_nondes_mask_;
     uint32 use_node_num_;
     UCTNode root_node_;
-    UCTNode * uct_nodes_;
+    UCTNode * uct_nodes_ = nullptr;
     
 };
 

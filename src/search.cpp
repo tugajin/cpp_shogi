@@ -74,11 +74,12 @@ void SearchInput::init() {
     this->inc_ = 0.0;
     this->ponder_ = false;
 }
-void SearchInput::set_time(int moves, double time, double inc) {
+void SearchInput::set_time(int moves, double time, double inc, double byoyomi) {
     this->smart_ = true;
     this->moves_ = moves;
     this->time_ = time;
     this->inc_ = inc;
+    this->byoyomi_ = byoyomi;
 }
 void SearchOutput::init(const SearchInput &si, const Pos &pos) {
     this->si_ = &si;
@@ -95,6 +96,9 @@ void SearchOutput::init(const SearchInput &si, const Pos &pos) {
 }
 void SearchOutput::end() {
     this->timer_.stop();
+}
+double SearchOutput::time() const {
+    return this->timer_.elapsed();
 }
 template uint64 perft<BLACK,true>(const Pos &pos, const Ply ply);
 template uint64 perft<WHITE,true>(const Pos &pos, const Ply ply);

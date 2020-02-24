@@ -68,9 +68,10 @@ class SearchInput {
     int moves_;
     double time_;
     double inc_;
+    double byoyomi_;
     bool ponder_;
     void init();
-    void set_time(int moves, double time, double inc);
+    void set_time(int moves, double time, double inc, double byoyomi);
 };
 
 class SearchOutput {

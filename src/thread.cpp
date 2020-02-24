@@ -49,6 +49,14 @@ bool get_line(std::string & line) {
    return GInput.get_line(line);
 }
 
+bool has_input() {
+    return GInput.has_input();
+}
+
+bool peek_line(std::string & line) {
+    return GInput.peek_line(line);
+}
+
 Input::Input() {
     this->has_input_ = false;
     this->eof_ = false;

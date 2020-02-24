@@ -33,6 +33,8 @@ public :
 
 void listen_input();
 bool get_line(std::string & line);
+bool has_input();
+bool peek_line(std::string & line);
 
 void test_bit();
 
