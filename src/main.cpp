@@ -75,6 +75,12 @@ int main(int argc, char **argv) {
             arg_strings.push_back(str);
         }
     }
+    /*arg_strings.push_back("isready");
+    arg_strings.push_back("usinewgame");
+    arg_strings.push_back("position sfen 9/9/4k4/9/4PG3/9/+p+p+p6/2+p6/K1+p6 b 2G2r2bg4s4n4l12p 1");
+    arg_strings.push_back("show");
+    arg_strings.push_back("go 10000");
+    */
     usi_loop(arg_strings);
 //#endif
     return EXIT_SUCCESS;

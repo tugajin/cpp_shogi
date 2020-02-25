@@ -170,6 +170,8 @@ std::string sq_to_string(const Square sq);
 #define PIECE_FOREACH(p) for(auto p = Pawn; p <= PRook; ++p)
 #define PIECE_SIDE_FOREACH(p) for(auto p = PieceSide(0); p < PieceSide(PIECE_SIDE_SIZE); ++p)
 
+#define BP do{ std::cout<<__LINE__<<std::endl;  std::cin.get(); }while(0) 
+
 #endif
 
 
