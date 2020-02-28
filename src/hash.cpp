@@ -15,10 +15,17 @@ namespace hash {
     }
     void init() {
         gKeyTurn = get_key();
-        for(auto &k1 : gKeyPiece) {
+        /*for(auto &k1 : gKeyPiece) {
             for(auto &k2 : k1) {
                 for(auto &k3 : k2) {
                     k3 = get_key();
+                }
+            }
+        }*/
+        SIDE_FOREACH(sd) {
+            PIECE_FOREACH(pc) {
+                SQUARE_FOREACH(sq) {
+                    gKeyPiece[sd][pc][sq] = get_key();
                 }
             }
         }

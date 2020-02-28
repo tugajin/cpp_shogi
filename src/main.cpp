@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 
 static void usi_loop(std::vector<std::string> arg) {
 
-    Game game;
+    static Game game;
     game.clear();
 
     SearchInput si;

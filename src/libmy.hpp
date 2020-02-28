@@ -163,7 +163,7 @@ int  log_2      (int64 n);
 
 inline int bit_first (uint64 b) { assert(b != 0); unsigned long i; _BitScanForward64(&i, b); return i; }
 inline int bit_count (uint64 b) { return int(__popcnt64(b)); }
-#if BMI
+#if 1
 inline uint64 pext (uint64 a, uint64 b) { return _pext_u64(a, b); }
 inline uint64 pdep (uint64 a, uint64 b) { return _pdep_u64(a, b); }
 #endif
@@ -177,6 +177,8 @@ inline uint64 pext (uint64 a, uint64 b) { return __builtin_ia32_pext_di(a, b); }
 inline uint64 pdep (uint64 a, uint64 b) { return __builtin_ia32_pdep_di(a, b); }
 #endif
 
+#endif
+
 template<class T> std::string to_string(T x) {
     std::stringstream ss;
     ss << x;
@@ -185,7 +187,7 @@ template<class T> std::string to_string(T x) {
 
 std::string trim(const std::string s);
 
-#endif
+
 }
 
 

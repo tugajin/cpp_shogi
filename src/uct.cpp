@@ -66,7 +66,7 @@ template<Side sd>void UCTSearcher::think() {
         if(this->update_root_info(loop)) {
             break;
         }
-        if(/*loop % 5000 == 0*/true) {
+        if(loop % 5000 == 0) {
             this->disp_info(loop,pv,score);
         }
     }
@@ -169,7 +169,7 @@ ChildNode *select_child(UCTNode * node) {
 
     ChildNode * child = node->child_;
     ChildNode * max_child = nullptr;
-    float max_value = -9999999999;
+    float max_value = -9999999.0f;
     float q,u, ucb_value;
     for(auto i = 0; i < node->child_num_; ++i) {
         if(child[i].node_ptr_ != nullptr) {
@@ -189,7 +189,7 @@ ChildNode *select_child(UCTNode * node) {
             ucb_value = 99999;
         } else {
             q = child[i].win_score_ / child[i].po_num_;
-            u = std::sqrt(node->po_num_) / (1 + child[i].po_num_);
+            u = std::sqrt(node->po_num_) / double(1 + child[i].po_num_);
             const auto rate = child[i].policy_score_;
             const auto c_base = 19652;
             const auto c_init = 1.25;
@@ -276,6 +276,8 @@ template<Side sd>UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
         child[child_num].move_ = list[i];
         child[child_num].node_ptr_ = nullptr;
         child[child_num].policy_score_ = double(1.0 / double(list.size()));
+        child[child_num].win_score_ = 0.0;
+        child[child_num].po_num_ = 0;
         child_num++;
     }
     node->child_num_ = child_num;
@@ -293,6 +295,8 @@ template<Side sd> void UCTSearcher::expand_root(const Pos &pos) {
         child[child_num].move_ = list[i];
         child[child_num].node_ptr_ = nullptr;
         child[child_num].policy_score_ = double(1.0 / double(list.size()));
+        child[child_num].win_score_ = 0.0;
+        child[child_num].po_num_ = 0;
         child_num++;
     }
     this->root_node_.child_num_ = child_num;

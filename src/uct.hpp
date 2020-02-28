@@ -129,7 +129,6 @@ public:
     void init();
     void allocate();
     void free();
-    void set_pos(const Pos &pos);
 
 private:
     template<Side sd> void think();

@@ -186,7 +186,7 @@ std::ostream& operator<<(std::ostream& os, const Pos& b){
         }
         FILE_FOREACH_REV(file){
             if (file == FILE_SIZE - 1) {
-                os << char(rank + 'a') << ":";
+                os << char(int(rank) + 'a') << ":";
             }
             const auto sq = square_make(file, rank);
             const auto pc = b.piece(sq);
