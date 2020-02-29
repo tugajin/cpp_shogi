@@ -16,10 +16,15 @@ Pos::Pos(Side turn, Bitboard piece_side[], int hand[]) {
         }
     }
     this->hand_[BLACK] = this->hand_[WHITE] = HAND_NONE;
-    PIECE_SIDE_FOREACH(ps) {
-        auto pc = piece_side_piece(ps);
-        auto sd = piece_side_side(ps);
-        this->hand_[sd] = hand_change<true>(this->hand_[sd],pc,hand[ps]);
+
+    SIDE_FOREACH(sd) {
+        HAND_FOREACH(pc) {
+            auto ps = piece_side_make(pc,sd);
+            this->hand_[sd] = hand_change<true>(this->hand_[sd], pc, hand[ps]);
+            for (auto num = 0; num <= hand[ps]; num++) {
+                this->hand_key_ ^= hash::key_hand(pc, sd, num);
+            }
+        }
     }
     if(turn == WHITE) {
         this->switch_turn();
@@ -42,8 +47,8 @@ void Pos::clear() {
     }
     this->last_move_ = move::MOVE_NONE;
     this->cap_sq_ = SQ_NONE;
-    this->key_ = Key(0ULL);
-    this->hand_b_ = 0u;
+    this->pos_key_ = Key(0ULL);
+    this->hand_key_ = Key(0ULL);
     this->parent_ = nullptr;
 
 }
@@ -68,7 +73,9 @@ Pos Pos::succ(const Move move) const {
     pos.last_move_ = move;
     const auto pc = move::move_piece(move);
     if(move::move_is_drop(move)) {
+        auto num = hand_num(pos.hand_[sd], pc);
         pos.hand_[sd] = hand_change<false>(pos.hand_[sd],pc);
+        pos.hand_key_ ^= hash::key_hand(pc, sd, num);
         pos.add_piece(pc,sd,to);
     } else {
         const auto from = move::move_from(move);
@@ -78,7 +85,9 @@ Pos Pos::succ(const Move move) const {
             pos.remove_piece(cap,xd,to);
             pos.cap_sq_ = to;
             const auto unprom_cap = piece_unprom(cap);
+            auto num = hand_num(pos.hand_[sd], unprom_cap);
             pos.hand_[sd] = hand_change<true>(pos.hand_[sd],unprom_cap);
+            pos.hand_key_ ^= hash::key_hand(unprom_cap, sd, num + 1);
         }
         pos.remove_piece(pc,sd,from);
         if(prom) { 
@@ -143,12 +152,6 @@ bool Pos::is_ok() const {
         Tee<<this->ply_<<std::endl;
         return false;
     }
-    if(uint32(this->hand_[BLACK]) != this->hand_b_) {
-        Tee<<"hand_b error"<<std::endl;
-        Tee<<uint32(this->hand_[BLACK])<<std::endl;
-        Tee<<this->hand_b_<<std::endl;
-        return false;
-    }
     auto debug_key = hash::key_turn(this->turn());
     SQUARE_FOREACH(sq){
         const auto pc = this->square_[sq];
@@ -157,10 +160,25 @@ bool Pos::is_ok() const {
             debug_key ^= hash::key_piece(pc,sd,sq);
         }
     }
-    if(this->key_ != debug_key) {
-        Tee<<"key not eq"<<std::endl;
+    if(this->pos_key_ != debug_key) {
+        Tee<<"pos_key not eq"<<std::endl;
         Tee<<uint64(debug_key)<<std::endl;
-        Tee<<uint64(this->key_)<<std::endl;
+        Tee<<uint64(this->pos_key_)<<std::endl;
+        return false;
+    }
+    debug_key = Key(0ULL);
+    HAND_FOREACH(pc) {
+        for (auto num = 0; num <= hand_num(this->hand_[BLACK], pc); num++) {
+            debug_key ^= hash::key_hand(pc, BLACK, num);
+        }
+        for (auto num = 0; num <= hand_num(this->hand_[WHITE], pc); num++) {
+            debug_key ^= hash::key_hand(pc, WHITE, num);
+        }
+    }
+    if (debug_key != this->hand_key()) {
+        Tee << "hand_key not eq" << std::endl;
+        Tee << uint64(debug_key) << std::endl;
+        Tee << uint64(this->hand_key_) << std::endl;
         return false;
     }
     return true;
@@ -172,7 +190,8 @@ std::ostream& operator<<(std::ostream& os, const Pos& b){
         os << "WHITE" << std::endl;
     }
         
-    os << "key:" << uint64(b.key()) << std::endl;
+    os << "pos_key:" << uint64(b.pos_key()) << std::endl;
+    os << "hand_key:" << uint64(b.hand_key()) << std::endl;
     os << "ply:" << b.ply() << std::endl;
     os <<out_sfen(b)<<std::endl;
     os << hand_to_string(b.hand(WHITE)) << std::endl;
@@ -216,8 +235,8 @@ Pos::RepState Pos::is_draw() const {
         assert(org != nullptr);
         assert(pos != nullptr);
 
-        if(pos->key() == this->key()) {
-            if(pos->hand_b() == this->hand_b()) {
+        if(pos->pos_key() == this->pos_key()) {
+            if(pos->hand_key() == this->hand_key()) {
                 if(in_check(*this) && in_check(*org)) {
                     return Pos::RepChecked;
                 } else if(in_check(*org->parent_)) {

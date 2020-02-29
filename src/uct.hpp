@@ -86,8 +86,8 @@ class UCTNode {
 public:
     enum UCTNodeState { NODE_LOSE = -1, NODE_WIN = 1, NODE_UNKNOWN = 0 };
 
-    Key key_;
-    uint32 hand_b_;
+    Key pos_key_;
+    Key hand_key_;
     Side turn_;
     Ply ply_;
     int po_num_;
@@ -111,8 +111,8 @@ public:
     }
     void init(const Pos &pos,const Ply ply) {
         this->clear();
-        this->key_ = pos.key();
-        this->hand_b_ = pos.hand_b();
+        this->pos_key_ = pos.pos_key();
+        this->hand_key_ = pos.hand_key();
         this->turn_ = pos.turn();
         this->ply_ = ply;
         this->used_ = true;
@@ -133,8 +133,8 @@ public:
 private:
     template<Side sd> void think();
     template<Side sd> UCTScore uct_search(const Pos &pos, UCTNode *node, const Ply ply, Line &pv);
-    UCTNode * find_same_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply);
-    UCTNode * find_empty_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply);
+    UCTNode * find_same_node(const Key key, const Key hand_key, const Side sd, const Ply ply);
+    UCTNode * find_empty_node(const Key key, const Key hand_key, const Side sd, const Ply ply);
     template<Side sd> void expand_root(const Pos &pos);
     template<Side sd> UCTNode * expand_node(const Pos &pos, Ply ply);
     bool is_full() const;

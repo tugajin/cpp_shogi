@@ -73,6 +73,7 @@ void SearchInput::init() {
     this->time_ = 1E6;
     this->inc_ = 0.0;
     this->ponder_ = false;
+    this->byoyomi_ = 0.0;
 }
 void SearchInput::set_time(int moves, double time, double inc, double byoyomi) {
     this->smart_ = true;

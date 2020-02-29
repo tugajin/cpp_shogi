@@ -19,8 +19,8 @@ private:
     Ply ply_;
     Move last_move_;
     Square cap_sq_;
-    Key key_;
-    uint32 hand_b_;
+    Key pos_key_;
+    Key hand_key_;
     const Pos * parent_;
 
 public:
@@ -49,8 +49,8 @@ public:
     Side side(const Square sq) const { return Side(!this->is_side(sq,BLACK)); }
     Move last_move() const { return this->last_move_; }
     Square cap_sq() const { return this->cap_sq_; }
-    Key key() const { return this->key_; }
-    uint32 hand_b() const { return this->hand_b_; }
+    Key pos_key() const { return this->pos_key_; }
+    Key hand_key() const { return this->hand_key_; }
     int ply() const { return this->ply_; }
     Hand hand(const Side sd) const { return this->hand_[sd]; }
     Pos succ(const Move move)const;
@@ -62,23 +62,22 @@ private:
     void clear();
     void update() {
         this->all_ = this->side_[BLACK] | this->side_[WHITE];
-        this->hand_b_ = hand_to_val(this->hand_[BLACK]);
     }
     void switch_turn() {
         this->turn_ = flip_turn(this->turn_);
-        this->key_ ^= hash::key_turn();
+        this->pos_key_ ^= hash::key_turn();
     }
     void add_piece(const Piece pc, const Side sd, const Square sq) {
         this->piece_[pc].set(sq);
         this->side_[sd].set(sq);
         this->square_[sq] = pc;
-        this->key_ ^= hash::key_piece(pc,sd,sq);
+        this->pos_key_ ^= hash::key_piece(pc,sd,sq);
     }
     void remove_piece(const Piece pc, const Side sd, const Square sq) {
         this->piece_[pc].clear(sq);
         this->side_[sd].clear(sq);
         this->square_[sq] = PieceNone;
-        this->key_ ^= hash::key_piece(pc,sd,sq);
+        this->pos_key_ ^= hash::key_piece(pc,sd,sq);
     }
 };
 

@@ -77,10 +77,10 @@ int main(int argc, char **argv) {
     }
     /*arg_strings.push_back("isready");
     arg_strings.push_back("usinewgame");
-    arg_strings.push_back("position sfen 9/9/4k4/9/4PG3/9/+p+p+p6/2+p6/K1+p6 b 2G2r2bg4s4n4l12p 1");
+    arg_strings.push_back("position startpos moves 7g7f 3c3d 8h2b+ 3a2b B*1f 2b3c 8g8f B*8g 6i7h 8g7f+ 7h7g 7f5d 8f8e 8c8d 8e8d 8b8d P*8f 5d6d 2g2f 6d8f 7g8f 8d8f B*7h P*8g");
     arg_strings.push_back("show");
-    arg_strings.push_back("go 10000");
-    */
+    arg_strings.push_back("go infinite");*/
+    
     usi_loop(arg_strings);
 //#endif
     return EXIT_SUCCESS;

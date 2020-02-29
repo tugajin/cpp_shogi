@@ -163,7 +163,7 @@ void UCTSearcher::disp_info(const uint64 loop, const Line &pv, const UCTScore sc
     }
     Tee<<line<<std::endl;
 }
-ChildNode *select_child(UCTNode * node) {
+ChildNode *select_child(UCTNode * node, const Pos &pos) {
     
     assert(node->child_num_ != 0);
 
@@ -171,7 +171,9 @@ ChildNode *select_child(UCTNode * node) {
     ChildNode * max_child = nullptr;
     float max_value = -9999999.0f;
     float q,u, ucb_value;
+
     for(auto i = 0; i < node->child_num_; ++i) {
+
         if(child[i].node_ptr_ != nullptr) {
             UCTNode *child_node = child[i].node_ptr_;
             if(child_node->node_state_ == UCTNode::NODE_WIN) {
@@ -209,19 +211,19 @@ ChildNode *select_child(UCTNode * node) {
     return max_child;
 }
 
-static uint32 get_index(const Key key, const uint32 hand_b, const Side sd, const Ply ply) {
-    auto ret = uint32(key);
+static uint32 get_index(const Key pos_key, const Key hand_key, const Side sd, const Ply ply) {
+    auto ret = uint32(pos_key) ^ uint32(hand_key);
     auto sd_key = hash::key_turn(sd);
-    ret ^= uint64(key) >> 32;
-    ret ^= hand_b;
+    ret ^= uint64(pos_key) >> 32;
+    ret ^= uint64(hand_key) >> 32;
     ret ^=  uint32(sd_key);
     ret ^= uint64(sd_key) >> 32;
     ret ^= uint32(ply);
     return ret;
 }
 
-UCTNode * UCTSearcher::find_same_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply){
-    uint32 index = get_index(key,hand_b,sd,ply) & this->uct_nondes_mask_;
+UCTNode * UCTSearcher::find_same_node(const Key pos_key, const Key hand_key, const Side sd, const Ply ply){
+    uint32 index = get_index(pos_key,hand_key,sd,ply) & this->uct_nondes_mask_;
     auto start_index = index;
     assert(index < this->uct_nodes_size_);
     do {
@@ -229,8 +231,8 @@ UCTNode * UCTSearcher::find_same_node(const Key key, const uint32 hand_b, const 
             return nullptr;
         }
         else if(this->uct_nodes_[index].used_
-        && this->uct_nodes_[index].key_ == key 
-        && this->uct_nodes_[index].hand_b_ == hand_b
+        && this->uct_nodes_[index].pos_key_ == pos_key 
+        && this->uct_nodes_[index].hand_key_ == hand_key
         && this->uct_nodes_[index].turn_ == sd
         && this->uct_nodes_[index].ply_ == ply) {
             return &this->uct_nodes_[index];
@@ -239,13 +241,13 @@ UCTNode * UCTSearcher::find_same_node(const Key key, const uint32 hand_b, const 
     } while(index != start_index);
     return nullptr;
 }
-UCTNode * UCTSearcher::find_empty_node(const Key key, const uint32 hand_b, const Side sd, const Ply ply) {
-    uint32 index = get_index(key,hand_b,sd,ply) & this->uct_nondes_mask_;
+UCTNode * UCTSearcher::find_empty_node(const Key pos_key, const Key hand_key, const Side sd, const Ply ply) {
+    uint32 index = get_index(pos_key,hand_key,sd,ply) & this->uct_nondes_mask_;
     auto start_index = index;
     do {
         if(!this->uct_nodes_[index].used_) {
-            this->uct_nodes_[index].key_ = key;
-            this->uct_nodes_[index].hand_b_ = hand_b;
+            this->uct_nodes_[index].pos_key_ = pos_key;
+            this->uct_nodes_[index].hand_key_ = hand_key;
             this->uct_nodes_[index].turn_ = sd;
             this->uct_nodes_[index].ply_ = ply;
             this->uct_nodes_[index].used_ = true;
@@ -259,13 +261,13 @@ UCTNode * UCTSearcher::find_empty_node(const Key key, const uint32 hand_b, const
 
 template<Side sd>UCTNode * UCTSearcher::expand_node(const Pos &pos, Ply ply) {
 
-    UCTNode *node = this->find_same_node(pos.key(),pos.hand_b(),pos.turn(),ply);
+    UCTNode *node = this->find_same_node(pos.pos_key(),pos.hand_key(),pos.turn(),ply);
 
     if(node != nullptr) {
         return node;
     }
 
-    node = this->find_empty_node(pos.key(),pos.hand_b(),pos.turn(),ply);
+    node = this->find_empty_node(pos.pos_key(),pos.hand_key(),pos.turn(),ply);
     node->init(pos,ply);
     ChildNode * child = node->child_;
     List list;
@@ -321,12 +323,12 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
         Tee<<pos<<std::endl;
         exit(EXIT_FAILURE);
     }
-    if(pos.key() != node->key_) {
+    if(pos.pos_key() != node->pos_key_) {
         Tee<<"not eq key error\n";
         Tee<<pos<<std::endl;
         exit(EXIT_FAILURE);
     }
-    if(pos.hand_b() != node->hand_b_) {
+    if(pos.hand_key() != node->hand_key_) {
         Tee<<"not eq  hand_b error\n";
         Tee<<pos<<std::endl;
         exit(EXIT_FAILURE);
@@ -352,7 +354,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
     }
     //Tee<<"select child\n";
     //Tee<<pos<<std::endl;
-    auto *next_child = select_child(node);
+    auto *next_child = select_child(node,pos);
     if(next_child == nullptr) {
         node->node_state_ = UCTNode::NODE_LOSE;
         return 0.0f;
@@ -365,8 +367,8 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
     auto result = 0.0f;
     if(next_child->node_ptr_ == nullptr) {
         auto new_node = expand_node<sd>(new_pos,ply);
-        assert(new_pos.key() == new_node->key_);
-        assert(new_pos.hand_b() == new_node->hand_b_);
+        assert(new_pos.pos_key() == new_node->pos_key_);
+        assert(new_pos.hand_key() == new_node->hand_key_);
         assert(new_pos.turn() == new_node->turn_);
         assert(new_node->turn_ != node->turn_);
 
@@ -387,8 +389,8 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos &pos, UCTNode *node
             //return 0.5f;
         }
     } else {
-        assert(new_pos.key() == next_child->node_ptr_->key_);
-        assert(new_pos.hand_b() == next_child->node_ptr_->hand_b_);
+        assert(new_pos.pos_key() == next_child->node_ptr_->pos_key_);
+        assert(new_pos.hand_key() == next_child->node_ptr_->hand_key_);
         assert(new_pos.turn() == next_child->node_ptr_->turn_);
 #if 0
         if(next_child->node_ptr_->used_ && 

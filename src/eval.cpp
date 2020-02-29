@@ -1,6 +1,7 @@
 #include "eval.hpp"
 #include "pos.hpp"
 #include <cmath>
+//#include <torch/torch.h>
 
 constexpr Score piece_value [] = 
     { Score(0),  Score(100), Score(300), Score(300), Score(400), Score(700),Score(800), Score(500), Score(15000),
@@ -12,6 +13,8 @@ double sigmoid(double x) {
 template<Side sd> UCTScore uct_eval(const Pos &pos) {
     auto score = eval<sd>(pos);
     auto uct_score = sigmoid(double(score));
+   // torch::Tensor tensor = torch::rand({ 2, 3 });
+   // std::cout << tensor << std::endl;
     return uct_score;
 }
 

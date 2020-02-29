@@ -8,6 +8,7 @@ class Pos;
 namespace hash {
 extern Key gKeyTurn;
 extern Key gKeyPiece[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE];
+extern Key gKeyHand[SIDE_SIZE][PIECE_SIZE][20];
 
 void init();
 Key key(const Pos &pos);
@@ -20,6 +21,9 @@ inline Key key_turn(Side sd) {
 }
 inline Key key_piece(const Piece pc, const Side sd, const Square sq) {
     return gKeyPiece[sd][pc][sq];
+}
+inline Key key_hand(const Piece pc, const Side sd, const int num) {
+    return gKeyHand[sd][pc][num];
 }
 inline int index(Key key, int mask) {
     return int(key) & mask;
