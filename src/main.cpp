@@ -46,6 +46,7 @@ int main(int argc, char **argv) {
 //#ifdef DEBUG
  //   Tee<<"test start\n";
     //gen::test();
+    //exit(1);
     //search::test();
     //attack::test();
     //uct::test();
@@ -54,6 +55,7 @@ int main(int argc, char **argv) {
 //#else
     listen_input();
     var::update();
+  
 
     std::vector<std::string> arg_strings;
     arg_strings.clear();
@@ -77,9 +79,10 @@ int main(int argc, char **argv) {
     }
     /*arg_strings.push_back("isready");
     arg_strings.push_back("usinewgame");
-    arg_strings.push_back("position startpos moves 7g7f 3c3d 8h2b+ 3a2b B*1f 2b3c 8g8f B*8g 6i7h 8g7f+ 7h7g 7f5d 8f8e 8c8d 8e8d 8b8d P*8f 5d6d 2g2f 6d8f 7g8f 8d8f B*7h P*8g");
+    arg_strings.push_back("position startpos moves 7g7f 1c1d 4g4f 1a1c 3g3f 1d1e 3f3e 8c8d 3e3d 3c3d 8h2b+ 3a2b B*7g 2b3a 7g1a+ B*9e 5i4h 3a3b 9g9f 1e1f 9f9e 1f1g+ 1i1g 1c1g+ 2i1g 9c9d B*1b 9d9e 9i9e 9a9e P*3e 9e9h+ 8i7g 3d3e L*3d 2a3c 3d3c 3b3c 1a3c 4a4b 3c2c L*1a 1b2a+ 1a1g+ S*9a 1g2h 9a8b+ 7a8b 3i2h R*2e L*2f 2e2c 2f2c+ B*2e P*3f 2e3f 6i6h L*4d R*9b");
     arg_strings.push_back("show");
-    arg_strings.push_back("go infinite");*/
+    arg_strings.push_back("go infinite");
+    */
     
     usi_loop(arg_strings);
 //#endif
@@ -263,6 +266,7 @@ static void usi_loop(std::vector<std::string> arg) {
             Tee<<game.pos()<<std::endl;
         } else if(command == "gameover") {
             gUCT.free();
+            init_done = false;
         } else if(command == "quit") {
             GThread.join();
             std::exit(EXIT_SUCCESS);

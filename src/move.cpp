@@ -7,7 +7,18 @@ namespace move {
 
 bool pseudo_is_legal(const Move mv, const Pos &pos) {
   
-  assert(move_is_ok(mv,pos));
+#ifdef DEBUG
+    if (!move_is_ok(mv,pos)) {
+        Tee << pos << std::endl;
+        Tee << move::move_to_string(mv) << std::endl;
+        Tee << move::move_to_string(pos.last_move()) << std::endl;
+        Tee << uint64(pos.parent_->pos_key()) << std::endl;
+        Tee << uint64(pos.parent_->hand_key()) << std::endl;
+
+        assert(false);
+    }
+#endif
+  assert(move_is_ok(mv, pos));
 
   if(move::move_is_drop(mv)) {
     return true;
@@ -44,8 +55,8 @@ bool pseudo_is_legal(const Move mv, const Pos &pos) {
     }
   }
   b = pos.pieces(Lance,xd) & g_lance_mask[sd][king];
-  if(b) {
-    const auto ds = b.lsb<false>();
+  while(b) {
+    const auto ds = b.lsb();
     if(ds != to && line_is_empty(ds,king,pieces)) {
       return false;
     }
@@ -101,8 +112,8 @@ bool is_check(const Move mv, const Pos &pos) {
       }
     }
     b = pos.pieces(Lance,sd) & g_lance_mask[sd][king];
-    if(b) {
-      const auto ds = b.lsb<false>();
+    while(b) {
+      const auto ds = b.lsb();
       if(line_is_empty(ds,king,pieces)) {
         return false;
       }

@@ -21,6 +21,7 @@ private:
     Square cap_sq_;
     Key pos_key_;
     Key hand_key_;
+public:
     const Pos * parent_;
 
 public:

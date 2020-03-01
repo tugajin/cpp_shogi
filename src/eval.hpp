@@ -7,6 +7,11 @@ template<Side sd> Score material(const Pos &pos);
 Score eval(const Pos &pos);
 Score material(const Pos &pos);
 template<Side sd> UCTScore uct_eval(const Pos &pos);
-
+inline double sigmoid(double x) {
+    return 1 / (1 + std::exp(-x / 2000));
+}
+inline double sigmoid_inverse(double x) {
+    return std::log(x / (1 - x)) * 2000;
+}
 
 #endif

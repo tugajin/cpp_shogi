@@ -137,8 +137,9 @@ private:
     UCTNode * find_empty_node(const Key key, const Key hand_key, const Side sd, const Ply ply);
     template<Side sd> void expand_root(const Pos &pos);
     template<Side sd> UCTNode * expand_node(const Pos &pos, Ply ply);
+    uint32 hash_use_rate() const;
     bool is_full() const;
-    bool update_root_info(const uint64 loop);
+    bool update_root_info(const uint64 loop, const Line &pv);
     void disp_info(const uint64 loop, const Line &pv, const UCTScore sc)const;
     uint32 uct_nodes_size_;
     uint32 uct_nondes_mask_;

@@ -95,7 +95,8 @@ template<bool has_knight, bool has_lance, bool has_pawn, Side sd, int num>
         const auto mate_with_sq = (sd == BLACK) ?
           pos.king(flip_turn(sd)) + SQ_RANK_INC :
           pos.king(flip_turn(sd)) - SQ_RANK_INC;
-        if (pawn_target.is_set(mate_with_sq)
+        if ( is_valid_sq(mate_with_sq)
+            && pawn_target.is_set(mate_with_sq)
             && is_mate_with_pawn_drop(mate_with_sq, pos)) {
           pawn_target.clear(mate_with_sq);
         }
@@ -377,6 +378,13 @@ template void gen_moves<EVASION, WHITE>(List & ml, const Pos & pos, const bit::B
 namespace gen {
 
     void test() {
+        {
+            Pos pos = pos_from_sfen("1n1gkl1+B1/Rs3g3/2pppp1+L1/1p7/6p2/2P2lb2/1PNPPN1P1/+l2G1K1S1/2S2G b PR6pns");
+            Tee << pos << std::endl;
+            List list;
+            gen_legals<BLACK>(list, pos);
+            Tee << list << std::endl;
+        }
         {
             Pos pos = pos_from_sfen(START_SFEN);
             Tee<<pos<<std::endl;
