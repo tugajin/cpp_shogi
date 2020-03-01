@@ -66,126 +66,126 @@ typedef std::uint64_t uint64;
 std::string timestamp();
 
 class TeeStream {
-    public:
-    TeeStream() {
-        ofs_.open("./log.log", std::ios::app);
-        ofs_ << "LOG_START " + timestamp() << std::endl;
-    }
-    template<typename T>
-        TeeStream& operator <<(const T& t) {
-            if (level_ == 1) {
-            lock_.lock();
+public:
+	TeeStream() {
+		ofs_.open("./log.log", std::ios::app);
+		ofs_ << "LOG_START " + timestamp() << std::endl;
+	}
+	template<typename T>
+	TeeStream& operator <<(const T& t) {
+		if (level_ == 1) {
+			lock_.lock();
 
-            std::cout << t;
-            ofs_ << t;
+			std::cout << t;
+			ofs_ << t;
 
-            ofs_.flush();
-            std::cout.flush();
+			ofs_.flush();
+			std::cout.flush();
 
-            lock_.unlock();
-          }
-          return *this;
-        }
-        TeeStream& operator <<(std::ostream& (*f)(std::ostream&)) {
-            std::cout << f;
-            ofs_ << f;
-            return *this;
-        }
+			lock_.unlock();
+		}
+		return *this;
+	}
+	TeeStream& operator <<(std::ostream& (*f)(std::ostream&)) {
+		std::cout << f;
+		ofs_ << f;
+		return *this;
+	}
 
-    private:
-        std::ofstream ofs_;
-        mutable std::mutex lock_;
-        static constexpr int level_ = 1;
+private:
+	std::ofstream ofs_;
+	mutable std::mutex lock_;
+	static constexpr int level_ = 1;
 };
 extern TeeStream Tee;
 
 namespace ml {
 
-   // array
+	// array
 
-   template <class T, int Size> class Array {
+	template <class T, int Size> class Array {
 
-   private:
+	private:
 
-      int size_;
-      T item_[Size];
+		int size_;
+		T item_[Size];
 
-      void copy(const Array<T, Size> & array) {
+		void copy(const Array<T, Size>& array) {
 
-         int size = array.size_;
+			int size = array.size_;
 
-         this->size_ = size;
+			this->size_ = size;
 
-         for (int pos = 0; pos < size_; pos++) {
-            item_[pos] = array.item_[pos];
-         }
-      }
+			for (int pos = 0; pos < size_; pos++) {
+				item_[pos] = array.item_[pos];
+			}
+		}
 
-   public:
+	public:
 
-      Array ()                             { clear(); }
-      Array (const Array<T, Size> & array) { copy(array); }
+		Array() { clear(); }
+		Array(const Array<T, Size>& array) { copy(array); }
 
-      void operator= (const Array<T, Size> & array) { copy(array); }
+		void operator= (const Array<T, Size>& array) { copy(array); }
 
-      void clear   ()               { size_ = 0; }
-      void add     (T item)         { assert(!full()); item_[size_++] = item; }
-      void add_ref (const T & item) { assert(!full()); item_[size_++] = item; }
+		void clear() { size_ = 0; }
+		void add(T item) { assert(!full()); item_[size_++] = item; }
+		void add_ref(const T& item) { assert(!full()); item_[size_++] = item; }
 
-      T    remove   ()         { assert(!empty()); return item_[--size_]; }
-      void set_size (int size) { assert(size <= Size); size_ = size; }
+		T    remove() { assert(!empty()); return item_[--size_]; }
+		void set_size(int size) { assert(size <= Size); size_ = size; }
 
-      bool empty () const { return size_ == 0; }
-      bool full  () const { return size_ == Size; }
-      int  size  () const { return size_; }
+		bool empty() const { return size_ == 0; }
+		bool full() const { return size_ == Size; }
+		int  size() const { return size_; }
 
-      const T & operator[] (int pos) const { assert(pos < size_); return item_[pos]; }
-      T &       operator[] (int pos)       { assert(pos < size_); return item_[pos]; } // direct access!
-   };
+		const T& operator[] (int pos) const { assert(pos < size_); return item_[pos]; }
+		T& operator[] (int pos) { assert(pos < size_); return item_[pos]; } // direct access!
+	};
 }
 
 
 namespace ml {
 
-// math
+	// math
 
-uint64 rand_int_64 ();
+	uint64 rand_int_64();
 
-int  round (double x);
+	int  round(double x);
 
-int  div       (int a, int b);
-int  div_round (int a, int b);
+	int  div(int a, int b);
+	int  div_round(int a, int b);
 
-bool is_power_2 (int64 n);
-int  log_2      (int64 n);
+	bool is_power_2(int64 n);
+	int  log_2(int64 n);
 
 #ifdef _MSC_VER
 
-inline int bit_first (uint64 b) { assert(b != 0); unsigned long i; _BitScanForward64(&i, b); return i; }
-inline int bit_count (uint64 b) { return int(__popcnt64(b)); }
+	inline int bit_first(uint64 b) { assert(b != 0); unsigned long i; _BitScanForward64(&i, b); return i; }
+	inline int bit_count(uint64 b) { return int(__popcnt64(b)); }
 #if 1
-inline uint64 pext (uint64 a, uint64 b) { return _pext_u64(a, b); }
-inline uint64 pdep (uint64 a, uint64 b) { return _pdep_u64(a, b); }
+	inline uint64 pext(uint64 a, uint64 b) { return _pext_u64(a, b); }
+	inline uint64 pdep(uint64 a, uint64 b) { return _pdep_u64(a, b); }
 #endif
 
 #else // assume GCC/Clang
 
-inline int bit_first (uint64 b) { assert(b != 0); return __builtin_ctzll(b); }
-inline int bit_count (uint64 b) { return __builtin_popcountll(b); }
+	inline int bit_first(uint64 b) { assert(b != 0); return __builtin_ctzll(b); }
+	inline int bit_count(uint64 b) { return __builtin_popcountll(b); }
 #if 1
-inline uint64 pext (uint64 a, uint64 b) { return __builtin_ia32_pext_di(a, b); }
-inline uint64 pdep (uint64 a, uint64 b) { return __builtin_ia32_pdep_di(a, b); }
+	inline uint64 pext(uint64 a, uint64 b) { return __builtin_ia32_pext_di(a, b); }
+	inline uint64 pdep(uint64 a, uint64 b) { return __builtin_ia32_pdep_di(a, b); }
 #endif
 
 #endif
 
-template<class T> std::string to_string(T x) {
-    std::stringstream ss;
-    ss << x;
-    return ss.str();
-}
+	template<class T> std::string to_string(T x) {
+		std::stringstream ss;
+		ss << x;
+		return ss.str();
+	}
 
-std::string trim(const std::string s);
+	std::string trim(const std::string s);
 
 
 }

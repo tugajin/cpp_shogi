@@ -7,25 +7,25 @@
 class List;
 class Pos;
 namespace bit {
-class Bitboard;
+	class Bitboard;
 }
 
 enum MoveType {
-    TACTICAL, QUIET, DROP, EVASION,
+	TACTICAL, QUIET, DROP, EVASION,
 };
 
-template<Side sd>void gen_legals(List &list, const Pos &pos);
-template<Side sd>void gen_moves(List &list, const Pos &pos);
-template<Side sd>void gen_moves(List &list, const Pos &pos, const bit::Bitboard *checks);
+template<Side sd>void gen_legals(List& list, const Pos& pos);
+template<Side sd>void gen_moves(List& list, const Pos& pos);
+template<Side sd>void gen_moves(List& list, const Pos& pos, const bit::Bitboard* checks);
 
-void gen_legals(List &list, const Pos &pos);
-void gen_moves(List &list, const Pos &pos);
-template<MoveType mt>void gen_moves(List &list, const Pos &pos);
-template<MoveType mt>void gen_moves(List &list, const Pos &pos, const bit::Bitboard *checks);
-template<MoveType mt, Side sd>void gen_moves(List & ml, const Pos & pos, const bit::Bitboard *checks);
+void gen_legals(List& list, const Pos& pos);
+void gen_moves(List& list, const Pos& pos);
+template<MoveType mt>void gen_moves(List& list, const Pos& pos);
+template<MoveType mt>void gen_moves(List& list, const Pos& pos, const bit::Bitboard* checks);
+template<MoveType mt, Side sd>void gen_moves(List& ml, const Pos& pos, const bit::Bitboard* checks);
 
 namespace gen {
-    void test();
+	void test();
 }
 
 #endif

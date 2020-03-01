@@ -13,78 +13,76 @@
 #include "libmy.hpp"
 
 std::string timestamp() {
-    std::time_t t = std::time(nullptr);
-    char mbstr[256];
-    if (std::strftime(mbstr, 256, "%Y%m%d-%H%M%S", std::localtime(&t))) {
-        std::string str = mbstr;
-        return str;
-    }
-    return "";
+	std::time_t t = std::time(nullptr);
+	char mbstr[256];
+	if (std::strftime(mbstr, 256, "%Y%m%d-%H%M%S", std::localtime(&t))) {
+		std::string str = mbstr;
+		return str;
+	}
+	return "";
 }
 
 namespace ml {
 
-// functions
+	// functions
 
-// math
+	// math
 
-uint64 rand_int_64() {
-   static std::mt19937_64 gen;
-   return gen();
-}
+	uint64 rand_int_64() {
+		static std::mt19937_64 gen;
+		return gen();
+	}
 
-int round(double x) {
-   return int(floor(x + 0.5));
-}
+	int round(double x) {
+		return int(floor(x + 0.5));
+	}
 
-int div(int a, int b) {
+	int div(int a, int b) {
 
-   assert(b > 0);
+		assert(b > 0);
 
-   if (b <= 0) {
-      Tee << "ml::div(): divide error" << std::endl;
-      std::exit(EXIT_FAILURE);
-   }
+		if (b <= 0) {
+			Tee << "ml::div(): divide error" << std::endl;
+			std::exit(EXIT_FAILURE);
+		}
 
-   int div = a / b;
-   if (a < 0 && a != b * div) div--; // fix buggy C semantics
+		int div = a / b;
+		if (a < 0 && a != b * div) div--; // fix buggy C semantics
 
-   return div;
-}
+		return div;
+	}
 
-int div_round(int a, int b) {
-   assert(b > 0);
-   return div(a + b / 2, b);
-}
+	int div_round(int a, int b) {
+		assert(b > 0);
+		return div(a + b / 2, b);
+	}
 
-bool is_power_2(int64 n) {
-   assert(n >= 0);
-   return (n & (n - 1)) == 0 && n != 0;
-}
+	bool is_power_2(int64 n) {
+		assert(n >= 0);
+		return (n & (n - 1)) == 0 && n != 0;
+	}
 
-int log_2(int64 n) {
+	int log_2(int64 n) {
 
-   assert(n > 0);
+		assert(n > 0);
 
-   int ln = -1;
+		int ln = -1;
 
-   for (; n != 0; n >>= 1) {
-      ln++;
-   }
+		for (; n != 0; n >>= 1) {
+			ln++;
+		}
 
-   assert(ln >= 0);
-   return ln;
-}
+		assert(ln >= 0);
+		return ln;
+	}
 
-std::string trim(const std::string s) {
-   std::string str = s;
-   const auto pos = str.find(' ');
-   //std::cout<<"|"<<s<<"|"<<std::endl;
-   if (pos != std::string::npos) {
-      str = str.substr(pos+1);
-   }
-   //std::cout<<"|"<<str<<"|"<<std::endl;
-   return str;
-}
+	std::string trim(const std::string s) {
+		std::string str = s;
+		const auto pos = str.find(' ');
+		if (pos != std::string::npos) {
+			str = str.substr(pos + 1);
+		}
+		return str;
+	}
 
 }

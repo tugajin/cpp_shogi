@@ -3,14 +3,14 @@
 
 namespace tt {
 
-TT Gtt;
+	TT Gtt;
 
-void TT::set_size(uint64 /*size*/) {
+	void TT::set_size(uint64 /*size*/) {
 
-}
+	}
 
-void TT::clear() {
+	void TT::clear() {
 
-}
+	}
 
 }

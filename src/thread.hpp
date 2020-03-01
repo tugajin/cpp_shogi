@@ -9,32 +9,32 @@
 
 class Lockable {
 
-protected : // HACK for Waitable::wait()
+protected: // HACK for Waitable::wait()
 
-   mutable std::mutex mutex_;
+	mutable std::mutex mutex_;
 
-public :
+public:
 
-   void lock   () const;
-   void unlock () const;
+	void lock() const;
+	void unlock() const;
 };
 
 class Waitable : public Lockable {
 
-private :
+private:
 
-   std::condition_variable_any cond_;
+	std::condition_variable_any cond_;
 
-public :
+public:
 
-   void wait   ();
-   void signal ();
+	void wait();
+	void signal();
 };
 
 void listen_input();
-bool get_line(std::string & line);
+bool get_line(std::string& line);
 bool has_input();
-bool peek_line(std::string & line);
+bool peek_line(std::string& line);
 
 void test_bit();
 

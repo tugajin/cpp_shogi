@@ -2,8 +2,8 @@
 
 namespace math {
 
-    void init() {
-        
-    }
+	void init() {
+
+	}
 
 }

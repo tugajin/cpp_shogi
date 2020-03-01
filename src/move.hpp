@@ -9,78 +9,78 @@ class Pos;
 
 namespace move {
 
-Move from_usi(const std::string &s, const Pos &pos);
+	Move from_usi(const std::string& s, const Pos& pos);
 
-// move structure
-//xxxxxxxx xxxxxxxx xxxxxxxx x1111111  destination
-//xxxxxxxx xxxxxxxx xx111111 1xxxxxxx  starting square(drop move = square::SIZE)
-//xxxxxxxx xxxxxxxx x1xxxxxx xxxxxxxx  flag for promotion
-//xxxxxxxx xxxxx111 1xxxxxxx xxxxxxxx  piece to move
-//xxxxxxxx x1111xxx xxxxxxxx xxxxxxxx  captured piece
+	// move structure
+	//xxxxxxxx xxxxxxxx xxxxxxxx x1111111  destination
+	//xxxxxxxx xxxxxxxx xx111111 1xxxxxxx  starting square(drop move = square::SIZE)
+	//xxxxxxxx xxxxxxxx x1xxxxxx xxxxxxxx  flag for promotion
+	//xxxxxxxx xxxxx111 1xxxxxxx xxxxxxxx  piece to move
+	//xxxxxxxx x1111xxx xxxxxxxx xxxxxxxx  captured piece
 
 
-// move16 structure
-//xxxxxxxx xxxxxxxx xxxxxxxx x1111111  destination
-//xxxxxxxx xxxxxxxx xx111111 1xxxxxxx  starting square(drop move = square::SIZE + piece)
-//xxxxxxxx xxxxxxxx x1xxxxxx xxxxxxxx  flag for promotion
+	// move16 structure
+	//xxxxxxxx xxxxxxxx xxxxxxxx x1111111  destination
+	//xxxxxxxx xxxxxxxx xx111111 1xxxxxxx  starting square(drop move = square::SIZE + piece)
+	//xxxxxxxx xxxxxxxx x1xxxxxx xxxxxxxx  flag for promotion
 
-constexpr int TO_SHIFT = 0;
-constexpr int FROM_SHIFT = 7;
-constexpr int PROM_SHIFT = 14;
-constexpr int PIECE_SHIFT = 15;
-constexpr int CAP_SHIFT = 19;
+	constexpr int TO_SHIFT = 0;
+	constexpr int FROM_SHIFT = 7;
+	constexpr int PROM_SHIFT = 14;
+	constexpr int PIECE_SHIFT = 15;
+	constexpr int CAP_SHIFT = 19;
 
-constexpr int BITS = 24;
-constexpr int SIZE = 1 << BITS;
-constexpr int MASK = SIZE - 1;
+	constexpr int BITS = 24;
+	constexpr int SIZE = 1 << BITS;
+	constexpr int MASK = SIZE - 1;
 
-constexpr uint32 MOVE16_MASK = 0x7FFF;
+	constexpr uint32 MOVE16_MASK = 0x7FFF;
 
-const Move MOVE_NONE = Move(0);
-const Move MOVE_NULL = Move((1u<<(move::BITS+1))-1);
-//move
-inline Move make_move(const Square f, const Square t, const Piece pc, const Piece cp, const bool pp) {
-    return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT)
-      | (cp << move::CAP_SHIFT) | (static_cast<int>(pp) << move::PROM_SHIFT));
-}
-inline Move make_move(const Square f, const Square t, const Piece pc, const Piece cp) {
-    return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT)
-      | (cp << move::CAP_SHIFT));
-}
-inline Move make_move(const Square f, const Square t, const Piece pc) {
-    return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT));
-}
+	const Move MOVE_NONE = Move(0);
+	const Move MOVE_NULL = Move((1u << (move::BITS + 1)) - 1);
+	//move
+	inline Move make_move(const Square f, const Square t, const Piece pc, const Piece cp, const bool pp) {
+		return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT)
+			| (cp << move::CAP_SHIFT) | (static_cast<int>(pp) << move::PROM_SHIFT));
+	}
+	inline Move make_move(const Square f, const Square t, const Piece pc, const Piece cp) {
+		return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT)
+			| (cp << move::CAP_SHIFT));
+	}
+	inline Move make_move(const Square f, const Square t, const Piece pc) {
+		return Move((f << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT));
+	}
 
-//drop
-inline Move make_move(const Square t, const Piece pc) {
-    return Move((SQUARE_SIZE << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT));
-}
-inline Square move_from(const Move mv) {
-    return Square((uint32(mv) >> move::FROM_SHIFT) & 0x7f);
-}
-inline Square move_to(const Move mv) {
-    return Square((uint32(mv) >> move::TO_SHIFT) & 0x7f);
-}
-inline Piece move_piece(const Move mv) {
-    return Piece((uint32(mv) >> move::PIECE_SHIFT) & 0xf);
-}
-inline Piece move_cap(const Move mv) {
-    return Piece((uint32(mv) >> move::CAP_SHIFT) & 0xf);
-}
-inline bool move_is_prom(const Move mv) {
-    return ((uint32(mv) & (1 << move::PROM_SHIFT)) != 0);
-}
-inline bool move_is_drop(const Move mv) {
-    return move_from(mv) >= SQUARE_SIZE;
-}
+	//drop
+	inline Move make_move(const Square t, const Piece pc) {
+		return Move((SQUARE_SIZE << move::FROM_SHIFT) | (t << move::TO_SHIFT) | (pc << move::PIECE_SHIFT));
+	}
+	inline Square move_from(const Move mv) {
+		return Square((uint32(mv) >> move::FROM_SHIFT) & 0x7f);
+	}
+	inline Square move_to(const Move mv) {
+		return Square((uint32(mv) >> move::TO_SHIFT) & 0x7f);
+	}
+	inline Piece move_piece(const Move mv) {
+		return Piece((uint32(mv) >> move::PIECE_SHIFT) & 0xf);
+	}
+	inline Piece move_cap(const Move mv) {
+		return Piece((uint32(mv) >> move::CAP_SHIFT) & 0xf);
+	}
+	inline bool move_is_prom(const Move mv) {
+		return ((uint32(mv) & (1 << move::PROM_SHIFT)) != 0);
+	}
+	inline bool move_is_drop(const Move mv) {
+		return move_from(mv) >= SQUARE_SIZE;
+	}
 
-bool pseudo_is_legal(const Move mv, const Pos &pos);
-bool pseudo_is_legal_debug(const Move mv, const Pos &pos);
-bool is_check(const Move mv, const Pos &pos);
-std::string move_to_usi(const Move mv);
-std::string move_to_string(const Move mv);
-bool move_is_ok(const Move mv);
-bool move_is_ok(const Move mv, const Pos &pos);
+	bool pseudo_is_legal(const Move mv, const Pos& pos);
+	bool pseudo_is_legal_debug(const Move mv, const Pos& pos);
+	bool is_check(const Move mv, const Pos& pos);
+	std::string move_to_usi(const Move mv);
+	std::string move_to_string(const Move mv);
+	bool move_is_ok(const Move mv);
+	bool move_is_ok(const Move mv, const Pos& pos);
 
 }
 
