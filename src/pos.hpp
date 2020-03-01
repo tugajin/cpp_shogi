@@ -21,7 +21,6 @@ private:
 	Square cap_sq_;
 	Key pos_key_;
 	Key hand_key_;
-public:
 	const Pos* parent_;
 
 public:
@@ -58,6 +57,7 @@ public:
 	Pos::RepState is_draw() const;
 	bool is_ok() const;
 	friend std::ostream& operator<<(std::ostream& os, const Pos& b);
+	bool is_win() const;
 
 private:
 	void clear();

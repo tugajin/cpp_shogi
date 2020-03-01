@@ -17,6 +17,8 @@ const Ply PLY_MAX = Ply(127);
 const int PLY_SIZE = PLY_MAX + 1;
 constexpr int MAX_LEGAL_MOVES = 600;
 
+enum SearchLimitType { LIMIT_NONE, LIMIT_DEPTH, LIMIT_TIME, LIMIT_SMART_TIME, LIMIT_NODE };
+
 class Line {
 private:
 	ml::Array<Move, PLY_SIZE> move_;
@@ -64,14 +66,16 @@ class SearchInput {
 public:
 	bool move_;
 	Depth depth_;
-	bool smart_;
 	int moves_;
 	double time_;
 	double inc_;
 	double byoyomi_;
+	uint64 node_;
 	bool ponder_;
+	SearchLimitType type_;
 	void init();
 	void set_time(int moves, double time, double inc, double byoyomi);
+	void set_node(uint64 node);
 };
 
 class SearchOutput {
@@ -83,9 +87,9 @@ public:
 	Line pv_;
 	int64 node_;
 	int ply_max_;
+	const SearchInput* si_;
 
 private:
-	const SearchInput* si_;
 	Pos pos_;
 	mutable Timer timer_;
 

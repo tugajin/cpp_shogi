@@ -228,7 +228,7 @@ std::ostream& operator<<(std::ostream& os, const Pos& b) {
 }
 
 Pos::RepState Pos::is_draw() const {
-	if (this->ply() < 4) {
+	if (this->ply() < 8) {
 		return Pos::RepNone;
 	}
 	auto pos = this;
@@ -271,6 +271,51 @@ Pos::RepState Pos::is_draw() const {
 	}
 	return Pos::RepNone;
 }
+
+bool Pos::is_win() const {
+	const auto sd = this->turn();
+	const auto king_sq = this->king(sd);
+	const auto king_rank = square_rank(king_sq);
+	if (sd == BLACK) {
+		if (side_rank<BLACK>(king_rank) >= Rank_4) {
+			return false;
+		}
+	}
+	else {
+		if (side_rank<WHITE>(king_rank) >= Rank_4) {
+			return false;
+		}
+	}
+	if (in_check(*this)) {
+		return false;
+	}
+	auto side_bb = this->pieces(sd);
+	side_bb.clear(king_sq);
+	side_bb &= g_prom[sd];
+	if (side_bb.pop_cnt() < 10) {
+		return false;
+	}
+	auto num = this->pieces(Pawn, sd).pop_cnt();
+	num += this->pieces(Lance, sd).pop_cnt();
+	num += this->pieces(Knight, sd).pop_cnt();
+	num += this->pieces(Silver, sd).pop_cnt();
+	num += this->golds(sd).pop_cnt();
+	num += (this->pieces(Bishop, sd).pop_cnt()) * 5;
+	num += (this->pieces(Rook, sd).pop_cnt()) * 5;
+	num += (this->pieces(PBishop, sd).pop_cnt()) * 5;
+	num += (this->pieces(PRook, sd).pop_cnt()) * 5;
+
+	num += hand_num(this->hand(sd), Pawn);
+	num += hand_num(this->hand(sd), Lance);
+	num += hand_num(this->hand(sd), Knight);
+	num += hand_num(this->hand(sd), Silver);
+	num += hand_num(this->hand(sd), Gold);
+	num += hand_num(this->hand(sd), Bishop) * 5;
+	num += hand_num(this->hand(sd), Rook) * 5;
+
+	return (num >= 31);
+}
+
 
 namespace pos {
 

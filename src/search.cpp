@@ -68,19 +68,23 @@ void SearchInput::init() {
 	var::update();
 	this->move_ = true;
 	this->depth_ = Depth(128);
-	this->smart_ = false;
 	this->moves_ = 0;
 	this->time_ = 1E6;
 	this->inc_ = 0.0;
 	this->ponder_ = false;
 	this->byoyomi_ = 0.0;
+	this->type_ = LIMIT_NODE;
 }
 void SearchInput::set_time(int moves, double time, double inc, double byoyomi) {
-	this->smart_ = true;
 	this->moves_ = moves;
 	this->time_ = time;
 	this->inc_ = inc;
 	this->byoyomi_ = byoyomi;
+	this->type_ = LIMIT_SMART_TIME;
+}
+void SearchInput::set_node(uint64 node) {
+	this->node_ = node;
+	this->type_ = LIMIT_NODE;
 }
 void SearchOutput::init(const SearchInput& si, const Pos& pos) {
 	this->si_ = &si;

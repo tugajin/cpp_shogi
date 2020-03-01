@@ -86,6 +86,8 @@ bool UCTSearcher::update_root_info(const uint64 loop, const Line& pv) {
 	}
 	if (this->root_node_.child_num_ == 1) {
 		this->so_->move_ = this->root_node_.child_[0].move_;
+		this->root_node_.po_num_ = 1;
+		this->root_node_.child_[0].po_num_ = 1;
 		return true;
 	}
 	auto max_po = -1;
@@ -98,6 +100,13 @@ bool UCTSearcher::update_root_info(const uint64 loop, const Line& pv) {
 			if (child_node->node_state_ == UCTNode::NODE_LOSE) {
 				this->so_->move_ = child[i].move_;
 				this->so_->pv_ = pv;
+				//ŠwK‚Ì‚É‚¨‚©‚µ‚­‚È‚é‚Ì‚ÅŸ‚¿‚ªŒ©‚Â‚©‚Á‚½è‚¾‚¯PO‚µ‚½‚Æ‚·‚éB
+				for (auto j = 0; j < num; j++) {
+					child[j].po_num_ = 0;
+					if (j == i) {
+						child[j].po_num_ = this->root_node_.po_num_;
+					}
+				}
 				return true;
 			}
 		}
@@ -115,15 +124,23 @@ bool UCTSearcher::update_root_info(const uint64 loop, const Line& pv) {
 	Tee<<"lim1:"<<this->time_limits_.time_1()<<std::endl;
 	Tee<<"lim2:"<<this->time_limits_.time_2()<<std::endl;
 	*/
-	if (elapsed > this->time_limits_.time_2()) {
-		return true;
+	if (this->so_->si_->type_ == LIMIT_SMART_TIME || this->so_->si_->type_ == LIMIT_TIME) {
+		if (elapsed > this->time_limits_.time_2()) {
+			return true;
+		}
+		if (elapsed > this->time_limits_.time_1()) {
+			return true;
+		}
+		if (elapsed > this->time_limits_.time_0()) {
+			return true;
+		}
 	}
-	if (elapsed > this->time_limits_.time_1()) {
-		return true;
+	else if (this->so_->si_->type_ == LIMIT_NODE) {
+		if (loop >= this->so_->si_->node_) {
+			return true;
+		}
 	}
-	if (elapsed > this->time_limits_.time_0()) {
-		return true;
-	}
+
 	//check input
 	if (has_input()) {
 		std::string line;
@@ -161,7 +178,6 @@ void UCTSearcher::disp_info(const uint64 loop, const Line& pv, const UCTScore sc
 	if (loop) {
 		line += " nodes " + std::to_string(loop);
 	}
-	//line += " score cp " + std::to_string((int(double(sc) * 1000))-500);
 	line += " score cp " + std::to_string(int(sigmoid_inverse(double(sc))));
 	if (this->so_->pv_.size() != 0) {
 		line += " pv " + this->so_->pv_.to_usi();
@@ -375,6 +391,29 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 		//Tee<<pos<<std::endl;
 		return 0.0f;
 	}
+	switch (pos.is_draw()) {
+	case Pos::RepCheck:
+		//Tee << "check\n";
+		return 0.0f;
+	case Pos::RepChecked:
+		//Tee << "checked\n";
+		return 1.0f;
+	case Pos::RepEq:
+		//Tee << "eq\n";
+		return 0.0f;
+	case Pos::RepHandWin:
+		//Tee << "win\n";
+		return 1.0f;
+	case Pos::RepHandLose:
+		//Tee << "lose\n";
+		return 0.0f;
+	case Pos::RepNone:
+		break;
+	}
+	if (pos.is_win()) {
+		Tee << "win\n";
+		return 1.0f;
+	}
 	//Tee<<"select child\n";
 	//Tee<<pos<<std::endl;
 	auto* next_child = select_child(node, pos);
@@ -440,6 +479,18 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 	update_result(next_child, result, node);
 	//BP;
 	return result;
+}
+
+std::string UCTSearcher::out_root_info() const {
+	const ChildNode* child = this->root_node_.child_;
+	const auto num = this->root_node_.child_num_;
+	std::string str = "";
+	double sum = double(this->root_node_.po_num_);
+	for (auto i = 0; i < num; i++) {
+		if (!str.empty()) { str += " "; }
+		str += move::move_to_usi(child[i].move_) + ":" + ml::to_string(double(child[i].po_num_) / sum);
+	}
+	return str;
 }
 
 namespace uct {

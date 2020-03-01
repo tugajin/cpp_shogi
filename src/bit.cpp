@@ -413,8 +413,8 @@ namespace bit {
 				}
 			}
 		}
-		Tee << "between:" << between_sq << std::endl;
-		Tee << "beyond:" << beyond_sq << std::endl;
+		//Tee << "between:" << between_sq << std::endl;
+		//Tee << "beyond:" << beyond_sq << std::endl;
 
 	}
 

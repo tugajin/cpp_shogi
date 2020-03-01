@@ -23,7 +23,7 @@ public:
 	}
 
 	void init(const SearchInput& si, const Pos& pos) {
-		if (si.smart_) {
+		if (si.type_ == LIMIT_SMART_TIME) {
 			this->init(si.moves_, si.time_, si.inc_, si.byoyomi_, pos);
 		}
 		else {
@@ -130,6 +130,7 @@ public:
 	void init();
 	void allocate();
 	void free();
+	std::string out_root_info() const;
 
 private:
 	template<Side sd> void think();

@@ -22,6 +22,7 @@
 #include "pos.hpp"
 #include "search.hpp"
 #include "sort.hpp"
+#include "selfplay.hpp"
 #include "thread.hpp"
 #include "tt.hpp"
 #include "util.hpp"
@@ -32,6 +33,7 @@ const std::string EngineName{ "jugemu" };
 const std::string EngineVersion{ "1.0" };
 
 TeeStream Tee;
+Game gGame;
 
 static void usi_loop(std::vector<std::string> arg);
 
@@ -63,7 +65,7 @@ int main(int argc, char** argv) {
 		std::string str = "";
 		for (auto i = 0; i < argc - 1; i++) {
 			std::string curr = std::string(argv[i + 1]);
-			auto pos = curr.find(":");
+			auto pos = curr.find(";");
 			if (pos != std::string::npos) {
 				str += curr.substr(0, pos);
 				arg_strings.push_back(str);
@@ -80,10 +82,11 @@ int main(int argc, char** argv) {
 	}
 	/*arg_strings.push_back("isready");
 	arg_strings.push_back("usinewgame");
-	arg_strings.push_back("position startpos moves 7g7f 1c1d 4g4f 1a1c 3g3f 1d1e 3f3e 8c8d 3e3d 3c3d 8h2b+ 3a2b B*7g 2b3a 7g1a+ B*9e 5i4h 3a3b 9g9f 1e1f 9f9e 1f1g+ 1i1g 1c1g+ 2i1g 9c9d B*1b 9d9e 9i9e 9a9e P*3e 9e9h+ 8i7g 3d3e L*3d 2a3c 3d3c 3b3c 1a3c 4a4b 3c2c L*1a 1b2a+ 1a1g+ S*9a 1g2h 9a8b+ 7a8b 3i2h R*2e L*2f 2e2c 2f2c+ B*2e P*3f 2e3f 6i6h L*4d R*9b");
+	arg_strings.push_back("position sfen lns2k3/3g5/ppppppp2/3l5/9/5B1P1/P1N1+lPP2/9/2G1Kg+p b 6pl2n3sb2rg");
 	arg_strings.push_back("show");
 	arg_strings.push_back("go infinite");
 	*/
+	arg_strings.push_back("selfplay 100000");
 
 	usi_loop(arg_strings);
 	//#endif
@@ -92,8 +95,8 @@ int main(int argc, char** argv) {
 
 static void usi_loop(std::vector<std::string> arg) {
 
-	static Game game;
-	game.clear();
+	
+	gGame.clear();
 
 	SearchInput si;
 	si.init();
@@ -118,14 +121,17 @@ static void usi_loop(std::vector<std::string> arg) {
 		//Tee<<"from:"<<command<<std::endl;
 
 		if (command == "usi") {
+#ifdef DEBUG
+			Tee << "id name SHOGI_DEBUG" << std::endl;
+#else
 			Tee << "id name SHOGI" << std::endl;
+#endif
 			Tee << "usiok" << std::endl;
 
 		}
 		else if (command == "isready") {
 			if (!init_done) {
 				var::update();
-				//tt::Gtt.set_size(int64(var::Hash) << (20-4));
 				gUCT.allocate();
 				init_done = true;
 			}
@@ -198,10 +204,10 @@ static void usi_loop(std::vector<std::string> arg) {
 					moves += arg;
 				}
 			}
-			game.init(pos_from_sfen(sfen));
+			gGame.init(pos_from_sfen(sfen));
 			std::stringstream ss(moves);
 			while (ss >> arg) {
-				game.add_move(move::from_usi(arg, game.pos()));
+				gGame.add_move(move::from_usi(arg, gGame.pos()));
 			}
 			si.init();
 		}
@@ -232,12 +238,12 @@ static void usi_loop(std::vector<std::string> arg) {
 					ss >> arg;
 					moves = std::stoi(arg);
 				}
-				else if (arg == (game.turn() == BLACK ? "btime" : "wtime")) {
+				else if (arg == (gGame.turn() == BLACK ? "btime" : "wtime")) {
 					smart = true;
 					ss >> arg;
 					game_time = std::stod(arg) / 1000.0;
 				}
-				else if (arg == (game.turn() == BLACK ? "binc" : "winc")) {
+				else if (arg == (gGame.turn() == BLACK ? "binc" : "winc")) {
 					smart = true;
 					ss >> arg;
 					inc = std::stod(arg) / 1000.0;
@@ -255,14 +261,17 @@ static void usi_loop(std::vector<std::string> arg) {
 				}
 			}
 			if (depth >= 0) { si.depth_ = Depth(depth); }
-			if (move_time >= 0.0) { si.time_ = move_time; }
+			if (move_time >= 0.0) { 
+				si.type_ = LIMIT_TIME;
+				si.time_ = move_time; 
+			}
 			if (smart) {
 				si.set_time(moves, game_time - inc, inc, game_byoyomi);
-			}
+			} 
 			si.move_ = !analyze;
 			si.ponder_ = ponder;
 			SearchOutput so;
-			start_search(so, game.pos(), si);
+			start_search(so, gGame.pos(), si);
 			auto move = so.move_;
 			auto answer = so.answer_;
 			if (move == move::MOVE_NONE) {
@@ -289,8 +298,24 @@ static void usi_loop(std::vector<std::string> arg) {
 		   //  gen::test();
 		}
 		else if (command == "show") {
-			Tee << game.pos() << std::endl;
+			Tee << gGame.pos() << std::endl;
 		}
+		else if (command == "selfplay") {
+			std::string arg;
+			auto loop = 0;
+			while (ss >> arg) {
+				ss >> arg;
+				loop = std::stoi(arg);
+			}
+			gSelfPlay.init();
+			for (auto i = 0; i < loop; i++) {
+				Tee << "episode:" << i << std::endl;
+				gSelfPlay.episode();
+				Tee << "end:" << i << std::endl;
+			}
+			gSelfPlay.free();
+			std::exit(EXIT_SUCCESS);			
+		} 
 		else if (command == "gameover") {
 			gUCT.free();
 			init_done = false;

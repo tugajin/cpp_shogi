@@ -12,8 +12,8 @@ namespace move {
 			Tee << pos << std::endl;
 			Tee << move::move_to_string(mv) << std::endl;
 			Tee << move::move_to_string(pos.last_move()) << std::endl;
-			Tee << uint64(pos.parent_->pos_key()) << std::endl;
-			Tee << uint64(pos.parent_->hand_key()) << std::endl;
+			//Tee << uint64(pos.parent_->pos_key()) << std::endl;
+			//Tee << uint64(pos.parent_->hand_key()) << std::endl;
 
 			assert(false);
 		}

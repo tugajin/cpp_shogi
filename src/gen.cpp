@@ -381,10 +381,10 @@ namespace gen {
 
 	void test() {
 		{
-			Pos pos = pos_from_sfen("1n1gkl1+B1/Rs3g3/2pppp1+L1/1p7/6p2/2P2lb2/1PNPPN1P1/+l2G1K1S1/2S2G b PR6pns");
+			Pos pos = pos_from_sfen("l+N4Bn1/3+N1kS+P1/p2sgsp+Lp/1p3pP2/3pP1R1G/P1PPbP1s1/KP6P/L3rg3/7NL w 2PGp");
 			Tee << pos << std::endl;
 			List list;
-			gen_legals<BLACK>(list, pos);
+			gen_legals<WHITE>(list, pos);
 			Tee << list << std::endl;
 		}
 		{

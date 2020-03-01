@@ -37,4 +37,6 @@ public:
 	}
 };
 
+extern Game gGame;
+
 #endif
