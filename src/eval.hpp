@@ -1,6 +1,8 @@
 #ifndef EVAL_HPP
 #define EVAL_HPP
 #include "common.hpp"
+#include <cmath>
+
 class Pos;
 template<Side sd> Score eval(const Pos& pos);
 template<Side sd> Score material(const Pos& pos);
