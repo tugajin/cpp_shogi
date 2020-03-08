@@ -7,6 +7,8 @@ enum class Hand : uint32;
 
 const Hand HAND_NONE = Hand(0);
 
+constexpr int HAND_PIECE_SIZE{ 8 };
+
 //handの構成
 //     rook      bishop      gold       silver     knight      lance      pawn
 //1bit 2bit 1bit 2bit 1bit   3bit 1bit  3bit 1bit  3bit  1bit  3bit 1bit  5bit

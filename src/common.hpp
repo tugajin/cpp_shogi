@@ -48,6 +48,9 @@ enum Inc : int {
 	Inc_SE = Inc_S + Inc_E,
 };
 
+enum Direction : int { DIR_UP, DIR_UL, DIR_LF, DIR_DL, DIR_DW, DIR_DR, DIR_RG, DIR_UR, DIR_L_KNT, DIR_R_KNT, DIR_NONE, };
+
+
 const std::string PieceChar = " . P L N S B R G K+P+L+N+S+B+R";
 const std::string PieceSfenChar = " . P L N S B R G K+P+L+N+S+B+R   . p l n s b r g k+p+l+n+s+b+r";
 const std::string SideChar = "bw";
@@ -161,6 +164,9 @@ template<Side sd> bool square_is_prom(const Square sq) {
 	const auto rank = square_rank(sq);
 	return (sd == BLACK) ? (rank <= Rank_3) : (rank >= Rank_7);
 }
+inline constexpr Square flip_sq(const Square sq) {
+	return Square(SQUARE_SIZE - sq + 1);
+}
 
 Square sq_from_string(const std::string& s);
 std::string sq_to_string(const Square sq);
@@ -174,6 +180,18 @@ std::string sq_to_string(const Square sq);
 #define PIECE_SIDE_FOREACH(p) for(auto p = PieceSide(0); p < PieceSide(PIECE_SIDE_SIZE); ++p)
 
 #define BP do{ std::cout<<__LINE__<<std::endl;  std::cin.get(); }while(0) 
+
+extern Direction gDirection[SQUARE_SIZE][SQUARE_SIZE];
+
+inline Direction get_direction(const Square from, const Square to) {
+	return gDirection[from][to];
+}
+
+namespace common {
+
+	void init();
+
+}
 
 #endif
 

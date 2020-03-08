@@ -28,6 +28,7 @@
 #include "util.hpp"
 #include "uct.hpp"
 #include "var.hpp"
+#include "nn.hpp"
 
 const std::string EngineName{ "jugemu" };
 const std::string EngineVersion{ "1.0" };
@@ -44,11 +45,12 @@ int main(int argc, char** argv) {
 	hash::init();
 	pos::init();
 	var::init();
+	common::init();
 
 	//#ifdef DEBUG
 	 //   Tee<<"test start\n";
-		//gen::test();
-		//exit(1);
+		nn::test();
+		exit(1);
 		//search::test();
 		//attack::test();
 		//uct::test();
