@@ -6,31 +6,27 @@
 
 struct Net : torch::nn::Module {
     Net()
-        : conv1(torch::nn::Conv2dOptions(1, 10, /*kernel_size=*/5)),
-        conv2(torch::nn::Conv2dOptions(10, 20, /*kernel_size=*/5)),
-        fc1(320, 50),
-        fc2(50, 10) {
+        : conv1(torch::nn::Conv2dOptions(POS_END_SIZE, 192, /*kernel_size=*/3)),
+        conv2(torch::nn::Conv2dOptions(192, 300, /*kernel_size=*/3)),
+        fc1(300, 500),
+        fc2(500, CLS_END){
         register_module("conv1", conv1);
         register_module("conv2", conv2);
-        register_module("conv2_drop", conv2_drop);
         register_module("fc1", fc1);
         register_module("fc2", fc2);
     }
 
     torch::Tensor forward(torch::Tensor x) {
-        x = torch::relu(torch::max_pool2d(conv1->forward(x), 2));
-        x = torch::relu(
-            torch::max_pool2d(conv2_drop->forward(conv2->forward(x)), 2));
-        x = x.view({ -1, 320 });
+        x = torch::relu(conv1->forward(x));
+        x = torch::relu(conv2->forward(x));
+        x = x.view({ -1,300 });
         x = torch::relu(fc1->forward(x));
-        x = torch::dropout(x, /*p=*/0.5, /*training=*/is_training());
-        x = fc2->forward(x);
-        return torch::log_softmax(x, /*dim=*/1);
+        x = torch::relu(fc2->forward(x));
+        return x;
     }
 
     torch::nn::Conv2d conv1;
     torch::nn::Conv2d conv2;
-    torch::nn::Dropout2d conv2_drop;
     torch::nn::Linear fc1;
     torch::nn::Linear fc2;
 };
@@ -66,7 +62,7 @@ void make_feat(const Pos& pos, NNFeat &feat) {
                 break;
             }
             index += num;
-            feat.feat_[index] = 1;
+            feat.feat_[index] = torch::ones({ SQUARE_SIZE });
         }
         PIECE_FOREACH(pc) {
             auto piece = pos.pieces(pc, sd);
@@ -117,8 +113,7 @@ void make_feat(const Pos& pos, NNFeat &feat) {
                     index = (sd == me) ? F_POS_PROOK_POS : E_POS_PROOK_POS;
                     break;
                 }
-                index += sq;
-                feat.feat_[index] = 1;
+                feat.feat_[index][sq] = 1.0;
             }
         }
     }
@@ -144,6 +139,8 @@ MoveClassPos move_to_index(const Move mv, const Side sd) {
             return MoveClassPos(int(CLS_HAND_BISHOP) + int(to));
         case Rook:
             return MoveClassPos(int(CLS_HAND_ROOK) + int(to));
+        default:
+            assert(false);
         }
     }
     else {
@@ -172,6 +169,8 @@ MoveClassPos move_to_index(const Move mv, const Side sd) {
             return (prom) ? MoveClassPos(int(CLS_L_KNT_PROM) + int(to)) : MoveClassPos(int(CLS_L_KNT) + int(to));
         case DIR_R_KNT:
             return (prom) ? MoveClassPos(int(CLS_R_KNT_PROM) + int(to)) : MoveClassPos(int(CLS_R_KNT) + int(to));
+        default:
+            assert(false);
         }
     }
 }
@@ -179,10 +178,61 @@ MoveClassPos move_to_index(const Move mv, const Side sd) {
 namespace nn {
 
     void test() {
+
+        torch::manual_seed(1);
+
+        torch::DeviceType device_type;
+        if (torch::cuda::is_available()) {
+            std::cout << "CUDA available! Training on GPU." << std::endl;
+            device_type = torch::kCUDA;
+        }
+        else {
+            std::cout << "Training on CPU." << std::endl;
+            device_type = torch::kCPU;
+        }
+        torch::Device device(device_type);
+
+        Net model;
+        model.to(device);
+
+        torch::optim::SGD optimizer(
+            model.parameters(), torch::optim::SGDOptions(0.01).momentum(0.5));
+
         Pos pos = pos_from_sfen(START_SFEN);
         Tee << pos << std::endl;
         NNFeat f;
         make_feat(pos, f);
+        //std::cout << f.feat_ << std::endl;
+        Move mv = move::from_usi("7g7f", pos);
+        std::cout << move::move_to_string(mv) << std::endl;
+        f.target_[move_to_index(mv, pos.turn())] = 1.0;
+        f.target_[CLS_VALUE] = 0.5;
+        std::cout << "target end\n";
+        for (size_t epoch = 1; epoch <= 10; ++epoch) {
+            std::cout << "loop\n";
+            model.train();
+            std::cout << "loop2\n";
+            auto feat2 = f.feat_.view({ 1,POS_END_SIZE ,9,9 });
+            std::cout << "size:" << feat2.sizes() << std::endl;
+            //auto data = f.feat_.to(device);
+            auto data = feat2.to(device);
+            auto targets = f.target_.to(device);
+            std::cout << "loop3\n";
+            auto output = model.forward(data);
+            std::cout << "out:" <<output[0][CLS_VALUE]<< std::endl;
+            
+            //auto loss = torch::l1_loss(output, targets);
+            auto loss = torch::mse_loss(output, targets);
+            //auto loss = torch::nll_loss(output, targets);
+            Tee << "loss:" << loss << std::endl;
+            //AT_ASSERT(!std::isnan(loss.template item<float>()));
+            Tee << "backword\n";
+            loss.backward();
+            Tee << "opt\n";
+            optimizer.step();
+            //test(model, device, *test_loader, test_dataset_size);
+        }
+        std::cout << "end\n";
     }
 
 }

@@ -1,6 +1,9 @@
 #include "common.hpp"
 #include "bit.hpp"
 
+Direction gDirection[SQUARE_SIZE][SQUARE_SIZE];
+
+
 Square sq_from_string(const std::string& s) {
 	assert(s.length() == 2);
 	return square_make(File(s[0] - '1'), Rank(s[1] - 'a'));
