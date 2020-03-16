@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(cpp_shogi CXX)
-set(CMAKE_PREFIX_PATH "/content/libtorch")
+set(CMAKE_PREFIX_PATH "/content/sample_data/libtorch")
 #target_link_libraries(cpp_shogi "pthread")
 find_package(Torch REQUIRED)
 add_executable(cpp_shogi attack.cpp bit.cpp common.cpp eval.cpp gen.cpp hash.cpp libmy.cpp main.cpp math.cpp move.cpp nn.cpp hand.cpp pos.cpp score.cpp search.cpp sfen.cpp sort.cpp selfplay.cpp thread.cpp tt.cpp uct.cpp util.cpp var.cpp)
