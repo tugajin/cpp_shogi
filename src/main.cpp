@@ -29,6 +29,7 @@
 #include "uct.hpp"
 #include "var.hpp"
 #include "nn.hpp"
+#include "learn.hpp"
 
 const std::string EngineName{ "jugemu" };
 const std::string EngineVersion{ "1.0" };
@@ -49,8 +50,8 @@ int main(int argc, char** argv) {
 
 	//#ifdef DEBUG
 	 //   Tee<<"test start\n";
-		nn::test();
-		exit(1);
+		//nn::test();
+	
 		//search::test();
 		//attack::test();
 		//uct::test();
@@ -88,7 +89,7 @@ int main(int argc, char** argv) {
 	arg_strings.push_back("show");
 	arg_strings.push_back("go infinite");
 	*/
-	arg_strings.push_back("selfplay 100000");
+	arg_strings.push_back("learn");
 
 	usi_loop(arg_strings);
 	//#endif
@@ -318,6 +319,9 @@ static void usi_loop(std::vector<std::string> arg) {
 			gSelfPlay.free();
 			std::exit(EXIT_SUCCESS);			
 		} 
+		else if (command == "learn") {
+			learner::learn();
+		}
 		else if (command == "gameover") {
 			gUCT.free();
 			init_done = false;

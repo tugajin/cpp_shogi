@@ -150,7 +150,7 @@ public:
 
 namespace list {
 
-	inline int  find(const List& list, Move mv) {
+	inline int find(const List& list, Move mv) {
 		for (auto i = 0; i < list.size(); ++i) {
 			if (list[i] == mv) return i;
 		}
@@ -161,6 +161,34 @@ namespace list {
 	inline bool has(const List& list, Move mv) {
 		return find(list, mv) >= 0;
 	}
+
+	inline int find_generally(const List& list, Move mv) {
+		for (auto i = 0; i < list.size(); ++i) {
+			const auto list_mv = list[i];
+			const auto from1 = move::move_from(list_mv);
+			const auto to1 = move::move_to(list_mv);
+			const auto piece1 = move::move_piece(list_mv);
+			const auto cap1 = move::move_cap(list_mv);
+
+			const auto from2 = move::move_from(mv);
+			const auto to2 = move::move_to(mv);
+			const auto piece2 = move::move_piece(mv);
+			const auto cap2 = move::move_cap(mv);
+			if (from1 == from2 &&
+				to1 == to2 &&
+				piece1 == piece2 &&
+				cap1 == cap2) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	inline bool has_generally(const List& list, Move mv) {
+		return find_generally(list, mv) >= 0;
+	}
+
 
 }
 
