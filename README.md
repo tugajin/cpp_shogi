@@ -4,6 +4,7 @@
 - Appery
 - senpai 2.0
 - dlshogi
+- Bonanza6.0
 
 ---
 
@@ -34,7 +35,7 @@ make
 
 5.動かす
 ```
-./shogi
+./cpp_shogi
 ```
 
 以上
