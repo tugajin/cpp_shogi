@@ -88,6 +88,10 @@ static std::thread gThreadList[MAX_THREAD];
     void learn() {
         Tee<<"start learning\n";
         auto file_rownum = row_num(SFEN_PATH);
+        if(file_rownum < 0) {
+            Tee<<"file not found\n";
+            return;
+        }
         for(auto i = 0; i < MAX_THREAD; i++) {
             gLearner[i] = Learner();
             gLearner[i].thread_id_ = i;
