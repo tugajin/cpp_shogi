@@ -37,6 +37,7 @@ void make_feat(const Pos& pos, NNFeat &feat) {
     SIDE_FOREACH(sd) {
         HAND_FOREACH(hp) {
             const auto num = hand_num(pos.hand(sd), hp);
+            if(!num) { continue; }
             auto index = 0;
             switch (hp) {
             case Pawn:
@@ -60,9 +61,15 @@ void make_feat(const Pos& pos, NNFeat &feat) {
             case Rook:
                 index = (me == sd) ? F_HAND_ROOK_POS : E_HAND_ROOK_POS;
                 break;
+            default:
+                assert(false);
+                break;
             }
-            index += num;
-            feat.feat_[index] = torch::ones({ SQUARE_SIZE });
+            //重ね合わせで表現してみる
+            /*for(auto all_index = 0; all_index <= num; ++all_index) {
+                feat.feat_[all_index] = torch::ones({ SQUARE_SIZE });
+            }*/
+            feat.feat_[index + num] = torch::ones({ SQUARE_SIZE });
         }
         PIECE_FOREACH(pc) {
             auto piece = pos.pieces(pc, sd);
@@ -111,6 +118,9 @@ void make_feat(const Pos& pos, NNFeat &feat) {
                     break;
                 case PRook:
                     index = (sd == me) ? F_POS_PROOK_POS : E_POS_PROOK_POS;
+                    break;
+                default:
+                    assert(false);
                     break;
                 }
                 feat.feat_[index][sq] = 1.0;
