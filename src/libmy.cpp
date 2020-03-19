@@ -33,6 +33,10 @@ namespace ml {
 		return gen();
 	}
 
+	int my_rand(int i) {
+		return int(rand_int_64() % i);
+	}
+
 	int round(double x) {
 		return int(floor(x + 0.5));
 	}

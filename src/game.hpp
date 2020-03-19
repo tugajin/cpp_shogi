@@ -35,6 +35,10 @@ public:
 		assert(this->pos_.size() > 0);
 		return this->pos_[this->pos_.size() - 1];
 	}
+	const Pos& pos(int i) const {
+		assert(this->pos_.size() > 0);
+		return this->pos_[i];
+	}
 };
 
 extern Game gGame;

@@ -3,42 +3,63 @@
 #include "pos.hpp"
 #include "gen.hpp"
 #include "list.hpp"
+#include "libmy.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <thread>
+
+std::string SFEN_PATH = "/home/tugajin/Documents/etc/resource/wdoor2019/original.sfen";
 
 void Learner::phase1() {
 
-    std::ifstream ifs("C:/Users/tugajin/Documents/rsc/all.sfen");
+    std::ifstream ifs(this->file_name_);
     if (!ifs) {
-        std::cout << "ƒtƒ@ƒCƒ‹‚ªŠJ‚¯‚Ü‚¹‚ñ‚Å‚µ‚½B" << std::endl;
+        std::cout << "not found error" << std::endl;
         return;
     }
     std::string line;
-    while (std::getline(ifs, line)) {
+    
+    auto row = ml::my_rand(this->file_row_num_);
+    auto num = 0;
+    //ä»»æ„ã®æ£‹è­œã¸ç§»å‹•
+    //ã‚¯ã‚½ãƒ€ã‚µã„
+    while(std::getline(ifs,line)) {
+        if((num++) >= row) {
+            break;
+        }
+    }
+
+    if (std::getline(ifs, line)) {
         //std::cout << line << std::endl;
         std::string arg;
         std::stringstream ss(line);
-        gGame.clear();
+        this->game_.clear();
         while (ss >> arg) {
             if (arg == "startpos" || arg == "moves") {
                 continue;
             }
             //std::cout << arg << std::endl;
-            Move mv = move::from_usi(arg, gGame.pos());
+            Move mv = move::from_usi(arg, this->game_.pos());
+            //Tee<<move::move_to_string(mv)<<std::endl;
             List list;
-            gen_legals(list, gGame.pos());
+            gen_legals(list, this->game_.pos());
             if (!list::has(list, mv)) {
-                std::cout << gGame.pos() << std::endl;
-                std::cout << move::move_to_string(mv) << std::endl;
+                //Tee<<"thread " <<this->thread_id_<<std::endl;
+                //std::cout << this->game_.pos() << std::endl;
+                //std::cout << move::move_to_string(mv) << std::endl;
             }
             if (!list::has_generally(list,mv)) {
-                std::cout << gGame.pos() << std::endl;
+                std::cout << this->game_.pos() << std::endl;
                 std::cout << move::move_to_string(mv) << std::endl;
                 exit(1);
             }
-            gGame.add_move(mv);
+            this->game_.add_move(mv);
         }
+        auto pos_num = ml::my_rand(this->game_.pos_.size());
+        Pos pos = this->game_.pos(pos_num);
+        Tee<<"thread "<<this->thread_id_<<std::endl;
+        Tee<<pos<<std::endl;
     }
 
 }
@@ -49,9 +70,38 @@ void Learner::phase2() {
 
 namespace learner {
 
-    void learn() {
-        Learner l = Learner(0);
-        l.phase1();
+constexpr int MAX_THREAD = 6;
+static Learner gLearner[MAX_THREAD];
+static std::thread gThreadList[MAX_THREAD];
+    //utilãªããŒã™ã‚‹
+    static int row_num(std::string &filename) {
+        std::ifstream ifs(filename);
+        if (!ifs) {
+            std::cout << "not found error" << std::endl;
+            return -1;
+        }
+        auto num = 0u;
+        std::string line;
+        while(getline(ifs,line)) { ++num; }
+        return num;
     }
-
+    void learn() {
+        Tee<<"start learning\n";
+        auto file_rownum = row_num(SFEN_PATH);
+        for(auto i = 0; i < MAX_THREAD; i++) {
+            gLearner[i] = Learner();
+            gLearner[i].thread_id_ = i;
+            gLearner[i].file_row_num_ = file_rownum;
+            gLearner[i].file_name_ = SFEN_PATH;
+        }
+        for(auto loop = 0; loop < 10; loop++) {
+            for(auto i = 0; i < MAX_THREAD; i++) {
+                gThreadList[i] = std::thread(&Learner::phase1,gLearner[i]);
+            }
+            for(auto &th : gThreadList) {
+                th.join();
+            }
+        }
+        Tee<<"end learning\n";
+    }
 }

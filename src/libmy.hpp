@@ -150,6 +150,7 @@ namespace ml {
 	// math
 
 	uint64 rand_int_64();
+	int my_rand(int i);
 
 	int  round(double x);
 
