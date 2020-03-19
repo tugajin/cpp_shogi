@@ -9,9 +9,13 @@
 ---
 
 以下の環境でコンパイルしています。
-- clang version 6.0.0
-- cmake version 3.10.2
-- Pytorch 1.4
+- cmake version 3.10以上
+ - Pytorch 1.4
+
+- Linuxの場合
+  - gcc version 7.5.0
+- Windowsの場合
+  - Visual Studio 2019
 
 ---
 コンパイル方法
