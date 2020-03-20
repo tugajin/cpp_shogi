@@ -58,6 +58,8 @@ int main(int argc, char** argv) {
 		//pos::test();
 	  //  Tee<<"test end\n";
 	//#else
+	nn::test();
+	exit(0);
 	listen_input();
 	var::update();
 

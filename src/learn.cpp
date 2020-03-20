@@ -9,7 +9,7 @@
 #include <string>
 #include <thread>
 
-std::string SFEN_PATH = "/home/tugajin/Documents/etc/resource/wdoor2019/original.sfen";
+std::string SFEN_PATH = "C:/Users/tugajin/Documents/rsc/all.sfen";
 
 void Learner::phase1() {
 
@@ -70,8 +70,8 @@ void Learner::phase2() {
 
 namespace learner {
 
-constexpr int MAX_THREAD = 6;
-static Learner gLearner[MAX_THREAD];
+constexpr int MAX_THREAD = 1;
+Learner *gLearner;
 static std::thread gThreadList[MAX_THREAD];
     //utilなきがする
     static int row_num(std::string &filename) {
@@ -92,20 +92,24 @@ static std::thread gThreadList[MAX_THREAD];
             Tee<<"file not found\n";
             return;
         }
+
+        gLearner = new Learner[MAX_THREAD];
+
         for(auto i = 0; i < MAX_THREAD; i++) {
-            gLearner[i] = Learner();
             gLearner[i].thread_id_ = i;
             gLearner[i].file_row_num_ = file_rownum;
             gLearner[i].file_name_ = SFEN_PATH;
         }
         for(auto loop = 0; loop < 10; loop++) {
-            for(auto i = 0; i < MAX_THREAD; i++) {
+            for(auto i = 1; i < MAX_THREAD; i++) {
                 gThreadList[i] = std::thread(&Learner::phase1,gLearner[i]);
             }
-            for(auto &th : gThreadList) {
-                th.join();
+            gLearner[0].phase1();
+            for (auto i = 1; i < MAX_THREAD; i++) {
+                gThreadList[i].join();
             }
         }
+        delete[] gLearner;
         Tee<<"end learning\n";
     }
 }
