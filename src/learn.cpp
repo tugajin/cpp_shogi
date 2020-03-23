@@ -14,7 +14,7 @@
 
 std::string SFEN_PATH = "C:/Users/tugajin/Documents/rsc/all.sfen";
 
-void Learner::phase1() {
+void Learner::phase1(torch::optim::Optimizer& optimizer) {
 
     std::ifstream ifs(this->file_name_);
     if (!ifs) {
@@ -24,6 +24,7 @@ void Learner::phase1() {
     std::string line;
     
     auto row = ml::my_rand(this->file_row_num_);
+    row = 10;
     auto num = 0;
     //任意の棋譜へ移動
     //クソダサい
@@ -48,11 +49,7 @@ void Learner::phase1() {
             //Tee<<move::move_to_string(mv)<<std::endl;
             List list;
             gen_legals(list, this->game_.pos());
-            if (!list::has(list, mv)) {
-                //Tee<<"thread " <<this->thread_id_<<std::endl;
-                //std::cout << this->game_.pos() << std::endl;
-                //std::cout << move::move_to_string(mv) << std::endl;
-            }
+
             if (!list::has_generally(list,mv)) {
                 std::cout << this->game_.pos() << std::endl;
                 std::cout << move::move_to_string(mv) << std::endl;
@@ -67,18 +64,36 @@ void Learner::phase1() {
             winner = -1.0;
         }
         auto pos_num = ml::my_rand(this->game_.pos_.size());
+        
+        pos_num = 30;
+
         Pos pos = this->game_.pos(pos_num);
         this->feat_.clear();
+        optimizer.zero_grad();
+
         make_feat(pos, this->feat_);
+        const auto mv = this->game_.move_[pos_num];
+        this->feat_.policy_target_[0][move_to_index(mv, pos.turn())] = 1.0;
+        this->feat_.value_target_[0] = winner;
+
         auto feat2 = this->feat_.feat_.view({ 1,POS_END_SIZE ,9,9 });
         auto data = feat2.to(*this->device_);
         auto policy_targets = this->feat_.policy_target_.to(*this->device_);
         auto value_targets = this->feat_.value_target_.to(*this->device_);
         auto output = this->net_->forward(data);
-        auto policy_loss = torch::mse_loss(output, policy_targets);
-        auto value_loss = torch::mse_loss(output, value_targets);
-        auto loss = policy_loss + value_loss;
+        
+        std::cout << output.sizes() << std::endl;
+        auto output_p = output.view({ -1,CLS_MOVE_END });
+        //auto output_v = output[0][CLS_MOVE_END];
+
+        auto policy_loss = torch::mse_loss(output_p, policy_targets);
+        //auto value_loss = torch::mse_loss(output, value_targets);
+        auto loss = policy_loss/* + value_loss*/;
         std::cout << "loss:" << loss << std::endl;
+        std::cout << "output_p" << output_p.sizes() << std::endl;
+        std::cout << "target" << policy_targets.sizes() << std::endl;
+        loss.backward();
+        optimizer.step();
     }
 
 }
@@ -127,6 +142,8 @@ static std::thread gThreadList[MAX_THREAD];
         Net model;
         model.to(device);
         model.train();
+        torch::optim::SGD optimizer(
+            model.parameters(), torch::optim::SGDOptions(0.01).momentum(0.5));
         gLearner = new Learner[MAX_THREAD];
 
         for(auto i = 0; i < MAX_THREAD; i++) {
@@ -138,20 +155,16 @@ static std::thread gThreadList[MAX_THREAD];
         }
         for (auto epoch = 0; epoch < 10; epoch++) {
             std::cout << "epoch:" << epoch << std::endl;
-            for (auto loop = 0; loop < 10; loop++) {
-                for (auto i = 1; i < MAX_THREAD; i++) {
+            for (auto loop = 0; loop < 1; loop++) {
+                /*for (auto i = 1; i < MAX_THREAD; i++) {
                     gThreadList[i] = std::thread(&Learner::phase1, gLearner[i]);
-                }
+                }*/
                 std::cout << "phase1\n";
-                gLearner[0].phase1();
-                for (auto i = 1; i < MAX_THREAD; i++) {
+                gLearner[0].phase1(optimizer);
+                /*for (auto i = 1; i < MAX_THREAD; i++) {
                     gThreadList[i].join();
-                }
+                }*/
             }
-            //phase2
-            std::cout << "phase2\n";
-            torch::optim::SGD optimizer(
-                model.parameters(), torch::optim::SGDOptions(0.01).momentum(0.5));
         }
 
         delete[] gLearner;

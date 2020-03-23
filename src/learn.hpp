@@ -18,7 +18,7 @@ public:
 	torch::Device *device_;
 	NNFeat feat_;
 
-	void phase1();
+	void phase1(torch::optim::Optimizer& optimizer);
 	void phase2();
 };
 
