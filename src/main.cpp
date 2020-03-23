@@ -47,18 +47,7 @@ int main(int argc, char** argv) {
 	pos::init();
 	var::init();
 	common::init();
-
-	//#ifdef DEBUG
-	 //   Tee<<"test start\n";
-		//nn::test();
-	
-		//search::test();
-		//attack::test();
-		//uct::test();
-		//pos::test();
-	  //  Tee<<"test end\n";
-	//#else
-	nn::test();
+	learner::learn();
 	exit(0);
 	listen_input();
 	var::update();

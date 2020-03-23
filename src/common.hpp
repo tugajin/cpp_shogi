@@ -165,7 +165,7 @@ template<Side sd> bool square_is_prom(const Square sq) {
 	return (sd == BLACK) ? (rank <= Rank_3) : (rank >= Rank_7);
 }
 inline constexpr Square flip_sq(const Square sq) {
-	return Square(SQUARE_SIZE - sq + 1);
+	return Square(SQUARE_SIZE - sq - 1);
 }
 
 Square sq_from_string(const std::string& s);
