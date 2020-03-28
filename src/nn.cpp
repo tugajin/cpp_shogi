@@ -165,11 +165,11 @@ namespace nn {
         torch::manual_seed(1);
 
         torch::DeviceType device_type;
-        if (torch::cuda::is_available()) {
+        /*if (torch::cuda::is_available()) {
             std::cout << "CUDA available! Training on GPU." << std::endl;
             device_type = torch::kCUDA;
         }
-        else {
+        else*/ {
             std::cout << "Training on CPU." << std::endl;
             device_type = torch::kCPU;
         }
@@ -205,14 +205,14 @@ namespace nn {
             auto output = model.forward(data);
             
             //auto loss = torch::l1_loss(output, targets);
-            auto policy_loss = torch::mse_loss(output, policy_targets);
-            auto value_loss = torch::mse_loss(output, value_targets);
+            //auto policy_loss = torch::mse_loss(output_p, policy_targets);
+            //auto value_loss = torch::mse_loss(output_v, value_targets);
             //auto loss = torch::nll_loss(output, targets);
-            auto loss = policy_loss + value_loss;
-            Tee << "loss:" << loss << std::endl;
+            //auto loss = policy_loss + value_loss;
+            //Tee << "loss:" << loss << std::endl;
             //AT_ASSERT(!std::isnan(loss.template item<float>()));
             Tee << "backword\n";
-            loss.backward();
+            //loss.backward();
             Tee << "opt\n";
             optimizer.step();
 

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <tuple>
 #include <torch/torch.h>
 
 
@@ -81,18 +82,22 @@ void Learner::phase1(torch::optim::Optimizer& optimizer) {
         auto policy_targets = this->feat_.policy_target_.to(*this->device_);
         auto value_targets = this->feat_.value_target_.to(*this->device_);
         auto output = this->net_->forward(data);
+        auto output_p = std::get<0>(output);
+        auto output_v = std::get<1>(output);
+        std::cout <<"output_p:"<< output_p.sizes() << std::endl;
+        std::cout <<"output_v:"<< output_v.sizes() << std::endl;
         
-        std::cout << output.sizes() << std::endl;
-        auto output_p = output.view({ -1,CLS_MOVE_END });
-        //auto output_v = output[0][CLS_MOVE_END];
+        output_p = output_p.view({ -1,CLS_MOVE_END });
+        output_v = output_v.view({ -1,1 });
 
         auto policy_loss = torch::mse_loss(output_p, policy_targets);
-        //auto value_loss = torch::mse_loss(output, value_targets);
-        auto loss = policy_loss/* + value_loss*/;
+        auto value_loss = torch::mse_loss(output_v, value_targets);
+        auto loss = policy_loss + value_loss;
         std::cout << "loss:" << loss << std::endl;
         std::cout << "output_p" << output_p.sizes() << std::endl;
         std::cout << "target" << policy_targets.sizes() << std::endl;
         loss.backward();
+        std::cout << loss << std::endl;
         optimizer.step();
     }
 

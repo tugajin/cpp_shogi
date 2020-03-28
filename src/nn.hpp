@@ -156,7 +156,7 @@ struct Net : torch::nn::Module {
         conv15(torch::nn::Conv2dOptions(HIDDEN_NUM, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),
         conv16(torch::nn::Conv2dOptions(HIDDEN_NUM, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),
 
-        conv_p1(torch::nn::Conv2dOptions(HIDDEN_NUM, CLS_MOVE_END, /*kernel_size=*/2)),
+        conv_p1(torch::nn::Conv2dOptions(HIDDEN_NUM, 512, /*kernel_size=*/2)),
         conv_v1(torch::nn::Conv2dOptions(HIDDEN_NUM, 1, /*kernel_size=*/1)),
 
         bn1(torch::nn::BatchNorm2dOptions(HIDDEN_NUM)),
@@ -176,12 +176,12 @@ struct Net : torch::nn::Module {
         bn15(torch::nn::BatchNorm2dOptions(HIDDEN_NUM)),
         bn16(torch::nn::BatchNorm2dOptions(HIDDEN_NUM)),
 
-        bn_p1(torch::nn::BatchNorm2dOptions(CLS_MOVE_END)),
+        bn_p1(torch::nn::BatchNorm2dOptions(512)),
         bn_v1(torch::nn::BatchNorm2dOptions(1)),
 
         fc_v2(SQUARE_SIZE, HIDDEN_NUM),
         fc_v3(HIDDEN_NUM, 1),
-        fc_p2(8 * 8 * CLS_MOVE_END, CLS_MOVE_END)
+        fc_p2(8 * 8 * 512, CLS_MOVE_END)
 
     {
         register_module("conv1", conv1);
@@ -229,7 +229,9 @@ struct Net : torch::nn::Module {
         register_module("fc_p2", fc_p2);
     }
 
-    torch::Tensor forward(torch::Tensor x) {
+    //torch::Tensor forward(torch::Tensor x) {
+    std::tuple<torch::Tensor,torch::Tensor> forward(torch::Tensor x) {
+
         auto h1 = torch::relu(bn1(conv1->forward(x)));
         auto h2 = torch::relu(bn2(conv2->forward(h1)));
         auto h3 = torch::relu(bn3(conv3->forward(h2)) + h1);
@@ -249,22 +251,17 @@ struct Net : torch::nn::Module {
 
         //policy network
         auto hp = torch::relu(bn_p1(conv_p1->forward(h16)));
-        hp = hp.view({ -1, 8 * 8 * CLS_MOVE_END });
+        hp = hp.view({ -1, 8 * 8 * 512 });
         auto out_p = fc_p2->forward(hp);
+   
         //value
         auto hv = torch::relu(bn_v1(conv_v1->forward(h16)));
 
         hv = hv.view({ -1, SQUARE_SIZE });
-
         hv = torch::relu(fc_v2->forward(hv));
         auto out_v = torch::tanh(fc_v3->forward(hv));
-
-        /*std::vector<torch::Tensor> xs;
-        xs.push_back(out_p);
-        xs.push_back(out_v);
-
-        return torch::cat(xs,1);*/
-        return out_p;
+        std::cout << out_v.sizes() << std::endl;
+        return {out_p,out_v};
     }
 
     torch::nn::Conv2d conv1;
