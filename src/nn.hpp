@@ -8,6 +8,9 @@
 constexpr int DIRECTION_SIZE{ 10 };
 constexpr int HAND_FEAT_SIZ{ 10 };
 
+constexpr int HIDDEN_NUM{ 256 };
+constexpr int BATCH_SIZE{ 32 };
+
 enum FeatPos : int { 
     F_HAND_PAWN_POS = 0,
     E_HAND_PAWN_POS = F_HAND_PAWN_POS + 18,
@@ -127,17 +130,16 @@ public:
         this->clear();
     }
     void clear() {
-        this->feat_ = torch::zeros({ POS_END_SIZE, SQUARE_SIZE });
-        this->policy_target_ = torch::zeros({ 1, CLS_MOVE_END });//policy
-        this->value_target_ = torch::zeros({ 1 });//policy
+        this->feat_ = torch::zeros({ BATCH_SIZE, POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));
+        this->policy_target_ = torch::zeros({ BATCH_SIZE }, torch::TensorOptions().dtype(torch::kLong));
+        this->value_target_ = torch::zeros({ BATCH_SIZE}, torch::TensorOptions().dtype(torch::kFloat));
     }
 };
 
 
-#define HIDDEN_NUM 256
 
-struct Net : torch::nn::Module {
-    Net()
+struct NetImpl : torch::nn::Module {
+    NetImpl()
         :
         conv1(torch::nn::Conv2dOptions(POS_END_SIZE, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),
         conv2(torch::nn::Conv2dOptions(HIDDEN_NUM, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),
@@ -229,7 +231,6 @@ struct Net : torch::nn::Module {
         register_module("fc_p2", fc_p2);
     }
 
-    //torch::Tensor forward(torch::Tensor x) {
     std::tuple<torch::Tensor,torch::Tensor> forward(torch::Tensor x) {
 
         auto h1 = torch::relu(bn1(conv1->forward(x)));
@@ -250,18 +251,24 @@ struct Net : torch::nn::Module {
         auto h16 = torch::relu(bn16(conv16->forward(h15)));
 
         //policy network
+
         auto hp = torch::relu(bn_p1(conv_p1->forward(h16)));
+        //std::cout << "hp:" << hp.sizes() << std::endl;
+
         hp = hp.view({ -1, 8 * 8 * 512 });
+        //std::cout << "hp:" << hp.sizes() << std::endl;
+
         auto out_p = fc_p2->forward(hp);
-   
+        //std::cout << "output_p:" << out_p.sizes() << std::endl;
         //value
         auto hv = torch::relu(bn_v1(conv_v1->forward(h16)));
 
         hv = hv.view({ -1, SQUARE_SIZE });
         hv = torch::relu(fc_v2->forward(hv));
         auto out_v = torch::tanh(fc_v3->forward(hv));
-        std::cout << out_v.sizes() << std::endl;
-        return {out_p,out_v};
+        //std::cout << "output_v:" << out_v.sizes() << std::endl;
+
+        return { out_p,out_v };
     }
 
     torch::nn::Conv2d conv1;
@@ -310,7 +317,10 @@ struct Net : torch::nn::Module {
     torch::nn::Linear fc_p2;
 };
 
-void make_feat(const Pos &pos, NNFeat &f);
+TORCH_MODULE(Net);
+
+
+void make_feat(const Pos &pos, torch::Tensor &feat);
 MoveClassPos move_to_index(const Move mv, const Side sd);
 void learn();
 

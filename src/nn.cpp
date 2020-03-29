@@ -5,7 +5,7 @@
 #include <torch/torch.h>
 
 
-void make_feat(const Pos& pos, NNFeat &feat) {
+void make_feat(const Pos& pos, torch::Tensor &feat) {
     
     const auto me = pos.turn();
     SIDE_FOREACH(sd) {
@@ -41,7 +41,7 @@ void make_feat(const Pos& pos, NNFeat &feat) {
             }
             //重ね合わせで表現してみる
             for(auto all_index = 1; all_index <= num; ++all_index) {
-                feat.feat_[all_index + index] = torch::ones({ SQUARE_SIZE });
+                feat[all_index + index] = torch::ones({ SQUARE_SIZE });
             }
         }
         PIECE_FOREACH(pc) {
@@ -96,7 +96,7 @@ void make_feat(const Pos& pos, NNFeat &feat) {
                     assert(false);
                     break;
                 }
-                feat.feat_[index][sq] = 1.0;
+                feat[index][sq] = 1.0;
             }
         }
     }
@@ -162,63 +162,7 @@ namespace nn {
 
     void test() {
 
-        torch::manual_seed(1);
-
-        torch::DeviceType device_type;
-        /*if (torch::cuda::is_available()) {
-            std::cout << "CUDA available! Training on GPU." << std::endl;
-            device_type = torch::kCUDA;
-        }
-        else*/ {
-            std::cout << "Training on CPU." << std::endl;
-            device_type = torch::kCPU;
-        }
-        torch::Device device(device_type);
-
-        Net model;
-        model.to(device);
-
-        torch::optim::SGD optimizer(
-            model.parameters(), torch::optim::SGDOptions(0.01).momentum(0.5));
-
-        Pos pos = pos_from_sfen(START_SFEN);
-        Tee << pos << std::endl;
-        NNFeat f;
-        make_feat(pos, f);
-        //std::cout << f.feat_ << std::endl;
-        Move mv = move::from_usi("7g7f", pos);
-        std::cout << move::move_to_string(mv) << std::endl;
-        f.policy_target_[move_to_index(mv, pos.turn())] = 1.0;
-        f.value_target_[0] = 0.5;
-        std::cout << "target end\n";
-        for (size_t epoch = 1; epoch <= 10; ++epoch) {
-            std::cout << "loop\n";
-            model.train();
-            std::cout << "loop2\n";
-            auto feat2 = f.feat_.view({ 1,POS_END_SIZE ,9,9 });
-            std::cout << "size:" << feat2.sizes() << std::endl;
-            //auto data = f.feat_.to(device);
-            auto data = feat2.to(device);
-            auto policy_targets = f.policy_target_.to(device);
-            auto value_targets = f.value_target_.to(device);
-            std::cout << "loop3\n";
-            auto output = model.forward(data);
-            
-            //auto loss = torch::l1_loss(output, targets);
-            //auto policy_loss = torch::mse_loss(output_p, policy_targets);
-            //auto value_loss = torch::mse_loss(output_v, value_targets);
-            //auto loss = torch::nll_loss(output, targets);
-            //auto loss = policy_loss + value_loss;
-            //Tee << "loss:" << loss << std::endl;
-            //AT_ASSERT(!std::isnan(loss.template item<float>()));
-            Tee << "backword\n";
-            //loss.backward();
-            Tee << "opt\n";
-            optimizer.step();
-
-            //test(model, device, *test_loader, test_dataset_size);
-        }
-        std::cout << "end\n";
+    
     }
 
 }
