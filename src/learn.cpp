@@ -121,6 +121,11 @@ static std::thread gThreadList[MAX_THREAD];
         torch::Device device(device_type);
 
         Net model;
+        if (ml::is_exists_file("model.pt")) {
+            Tee << "load model\n";
+            torch::load(model, "model.pt");
+        }
+               
         model->to(device);
         model->train();
         torch::optim::SGD optimizer(
@@ -192,8 +197,11 @@ static std::thread gThreadList[MAX_THREAD];
             }
             //std::cout << "update\n";
             optimizer.step();
-            auto filename = "model" + ml::to_string(epoch) + ".pt";
-            torch::save(model, filename);
+            if (epoch % 100 == 0) {
+                auto filename = "model" + ml::to_string(epoch) + ".pt";
+                torch::save(model, filename);
+            }
+            torch::save(model, "model.pt");
         }
 
         delete[] gLearner;

@@ -89,4 +89,9 @@ namespace ml {
 		return str;
 	}
 
+	bool is_exists_file(const std::string path) {
+		std::ifstream ifs(path);
+		return ifs.is_open();
+	}
+
 }

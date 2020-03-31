@@ -187,7 +187,7 @@ namespace ml {
 	}
 
 	std::string trim(const std::string s);
-
+	bool is_exists_file(const std::string path);
 
 }
 
