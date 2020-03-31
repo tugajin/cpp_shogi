@@ -182,18 +182,18 @@ static std::thread gThreadList[MAX_THREAD];
                 l2_penalty *= 0.000001;
                 auto loss = policy_loss + value_loss + l2_penalty;
 
-                std::cout << "loss:" << loss << std::endl;
-                std::cout << "loss_p:" << policy_loss << std::endl;
-                std::cout << "loss_v:" << value_loss << std::endl;
-                std::cout << "penalty:" << l2_penalty << std::endl;
                 AT_ASSERT(!std::isnan(loss.template item<float>()));
-
+                std::cout << "loss " << loss.item<float>() << " = " 
+                                     << policy_loss.item<float>() << " + " 
+                                     << value_loss.item<float>() << " + " 
+                                     << l2_penalty.item <float>() << std::endl;
                 loss.backward();
 
             }
-            std::cout << "update\n";
+            //std::cout << "update\n";
             optimizer.step();
-            torch::save(model, "model.pt");
+            auto filename = "model" + ml::to_string(epoch) + ".pt";
+            torch::save(model, filename);
         }
 
         delete[] gLearner;
