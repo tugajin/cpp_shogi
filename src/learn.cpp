@@ -19,6 +19,7 @@ void Learner::phase1() {
     this->feat_.clear();
 
     for (auto batch_index = 0; batch_index < BATCH_SIZE; batch_index++) {
+        std::cout << "batch:" << batch_index << "\r";
         std::ifstream ifs(this->file_name_);
         if (!ifs) {
             std::cout << "not found error" << std::endl;
@@ -77,6 +78,7 @@ void Learner::phase1() {
         }
         ifs.close();
     }
+    std::cout << std::endl;
 }
 
 void Learner::phase2() {
@@ -110,7 +112,7 @@ static std::thread gThreadList[MAX_THREAD];
         torch::manual_seed(1);
 
         torch::DeviceType device_type;
-        if (/*torch::cuda::is_available()*/false) {
+        if (torch::cuda::is_available()) {
             std::cout << "CUDA available! Training on GPU." << std::endl;
             device_type = torch::kCUDA;
         }
@@ -141,20 +143,15 @@ static std::thread gThreadList[MAX_THREAD];
             std::cout << "epoch:" << epoch << std::endl;
             optimizer.zero_grad();
             for (auto loop = 0; loop < 1; loop++) {
-                /*for (auto i = 1; i < MAX_THREAD; i++) {
-                    gThreadList[i] = std::thread(&Learner::phase1, gLearner[i]);
-                }*/
-                //std::cout << "phase1\n";
                 gLearner[0].phase1();
-                /*for (auto i = 1; i < MAX_THREAD; i++) {
-                    gThreadList[i].join();
-                }*/
-                //std::cout << "feat:" << gLearner[0].feat_.feat_.sizes() << std::endl;
 
                 auto feat2 = gLearner[0].feat_.feat_.view({ BATCH_SIZE, POS_END_SIZE ,9,9 });
+                //auto feat2 = torch::ones({ 1, POS_END_SIZE ,9,9 });
+
                 auto data = feat2.to(device);
                 auto policy_targets = gLearner[0].feat_.policy_target_.to(device);
                 auto value_targets = gLearner[0].feat_.value_target_.to(device);
+
                 //std::cout << "data:" << data.sizes() << std::endl;
                 auto output = model->forward(data);
                 auto output_p = std::get<0>(output);
@@ -178,13 +175,16 @@ static std::thread gThreadList[MAX_THREAD];
 
                 auto value_loss = value_loss_func(output_v, value_targets);
                 auto policy_loss = policy_loss_func(output_p, policy_targets);
-                auto l2_penalty = torch::zeros({1});
+                
+                auto l2 = 0.0f;
                 auto param_vec = model->parameters();
                 for (auto &vec : param_vec) {
                     auto tmp = torch::pow(vec,2).view(-1);
-                    l2_penalty += torch::sum(tmp);
+                    l2 += torch::sum(tmp).item<float>();
                 }
-                l2_penalty *= 0.000001;
+                l2 *= 0.000001;
+                auto l2_penalty = torch::full({1},l2);
+                l2_penalty = l2_penalty.to(device);
                 auto loss = policy_loss + value_loss + l2_penalty;
 
                 AT_ASSERT(!std::isnan(loss.template item<float>()));
