@@ -17,11 +17,11 @@ std::string SFEN_PATH = "C:/Users/tugajin/Documents/rsc/all.sfen";
 constexpr int MAX_THREAD = 8;
 constexpr int BATCH_SIZE_FOR_THREAD = BATCH_SIZE / MAX_THREAD;
 
-void Learner::phase1() {
+void Learner::data_load(int batch_size) {
+ 
     this->feat_.clear();
 
-    for (auto batch_index = 0; batch_index < BATCH_SIZE_FOR_THREAD; batch_index++) {
-        Tee <<"thread:"<<this->thread_id_<< " batch:" << batch_index << "\n";
+    for (auto batch_index = 0; batch_index < batch_size; batch_index++) {
         std::ifstream ifs(this->file_name_);
         if (!ifs) {
             Tee << "not found error" << std::endl;
@@ -30,7 +30,6 @@ void Learner::phase1() {
         std::string line;
 
         auto row = ml::my_rand(this->file_row_num_ - 1);
-        Tee << "thread:" << this->thread_id_ << " row:" << row << " ";
         auto num = 0;
         //任意の棋譜へ移動
         while (std::getline(ifs, line)) {
@@ -40,7 +39,6 @@ void Learner::phase1() {
         }
 
         if (std::getline(ifs, line)) {
-            //Tee << line << std::endl;
             std::string arg;
             std::stringstream ss(line);
             this->game_.clear();
@@ -49,9 +47,7 @@ void Learner::phase1() {
                 if (arg == "startpos" || arg == "moves") {
                     continue;
                 }
-                //Tee << arg << std::endl;
                 Move mv = move::from_usi(arg, this->game_.pos());
-                //Tee<<move::move_to_string(mv)<<std::endl;
                 List list;
                 gen_legals(list, this->game_.pos());
 
@@ -69,24 +65,64 @@ void Learner::phase1() {
                 winner = -1.0;
             }
             auto pos_num = ml::my_rand(this->game_.pos_.size() - 1);
-            Tee << "thread:" << this->thread_id_ << " pos:" << pos_num << "\n";
 
             Pos pos = this->game_.pos(pos_num);
-            //Tee << pos << std::endl;
             make_feat(pos, this->feat_.feat_[batch_index]);
             const auto mv = this->game_.move_[pos_num];
-            //Tee << move::move_to_string(mv) << std::endl;
             this->feat_.policy_target_[batch_index] = move_to_index(mv, pos.turn());
             this->feat_.value_target_[batch_index] = winner;
-            //Tee << "end\n";
+            this->feat_.pos_list_.add(pos);
+            this->feat_.move_list_.add(mv);
         }
         ifs.close();
     }
-    //Tee << std::endl;
 }
 
-void Learner::phase2() {
+void Learner::valid(torch::Device & device) {
+    
+    this->data_load(BATCH_SIZE);
+    auto feat2 = this->feat_.feat_.view({ BATCH_SIZE, POS_END_SIZE ,9,9 });
+    
+    auto data = feat2.to(device);
+    Net model;
+    torch::load(model, "model.pt");
+    model->to(device);
+    model->eval();
+    auto output = model->forward(data);
+    auto output_p = std::get<0>(output);
+    auto output_v = std::get<1>(output);
 
+    output_p = output_p.view({ BATCH_SIZE, CLS_MOVE_END });
+    output_v = output_v.view({ BATCH_SIZE });
+    auto correct_num = 0.0f;
+    auto mse = 0.0f;
+    for (auto i = 0; i < BATCH_SIZE; i++) {
+        Pos* pos = &this->feat_.pos_list_[i];
+        //Tee << *pos << std::endl;
+        List list;
+        gen_legals(list, this->feat_.pos_list_[i]);
+        Move best_move;
+        auto best_sc = 0.0f;
+        for (auto j = 0; j < list.size(); j++) {
+            auto index = move_to_index(list[j], pos->turn());
+            auto sc = output_p[i][index].item<float>();
+            if (sc > best_sc) {
+                best_sc = sc;
+                best_move = list[j];
+            }
+        }
+        mse += (output_v[i].item<float>() - this->feat_.value_target_[i].item<float>()) 
+             * (output_v[i].item<float>() - this->feat_.value_target_[i].item<float>());
+        if (best_move == this->feat_.move_list_[i]) {
+            correct_num+=1.0f;
+        }
+        //Tee <<"answer:"<< move::move_to_string(best_move) << std::endl;
+        //Tee <<"target:"<< move::move_to_string(this->feat_.move_list_[i]) << std::endl;
+        //Tee << "asw:" << output_v[i].item<float>() << std::endl;
+        //Tee << "win:" << this->feat_.value_target_[i].item<float>() << std::endl;
+    }
+    Tee << "percent:" << correct_num / double(BATCH_SIZE) << std::endl;
+    Tee << "mse:" << mse / double(BATCH_SIZE) << std::endl;
 }
 
 namespace learner {
@@ -115,7 +151,7 @@ static std::thread gThreadList[MAX_THREAD];
         torch::manual_seed(1);
 
         torch::DeviceType device_type;
-        if (torch::cuda::is_available()) {
+        if (/*torch::cuda::is_available()*/false) {
             Tee << "CUDA available! Training on GPU." << std::endl;
             device_type = torch::kCUDA;
         }
@@ -123,7 +159,6 @@ static std::thread gThreadList[MAX_THREAD];
             Tee << "Training on CPU." << std::endl;
             device_type = torch::kCPU;
         }
-        device_type = torch::kCPU;
 
         torch::Device device(device_type);
 
@@ -148,9 +183,9 @@ static std::thread gThreadList[MAX_THREAD];
             Tee << "iterate:" << iterate << std::endl;
             optimizer.zero_grad();
             for (auto i = 1; i < MAX_THREAD; i++) {
-                gThreadList[i] = std::thread(&Learner::phase1, &gLearner[i]);
+                gThreadList[i] = std::thread(&Learner::data_load, &gLearner[i], BATCH_SIZE_FOR_THREAD);
             }
-            gLearner[0].phase1();
+            gLearner[0].data_load(BATCH_SIZE_FOR_THREAD);
             for (auto i = 1; i < MAX_THREAD; i++) {
                 gThreadList[i].join();
             }
@@ -218,14 +253,15 @@ static std::thread gThreadList[MAX_THREAD];
                                  << l2_penalty.item <float>() << std::endl;
 
             loss.backward();
-
-            //Tee << "update\n";
+            
             optimizer.step();
+            
             if (iterate % 100 == 0) {
+                gLearner[0].valid(device);
                 auto filename = "model" + ml::to_string(iterate) + ".pt";
                 torch::save(model, filename);
+                torch::save(model, "model.pt");
             }
-            torch::save(model, "model.pt");
         }
 
         delete[] gLearner;

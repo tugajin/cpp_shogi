@@ -3,6 +3,8 @@
 
 #include "common.hpp"
 #include "hand.hpp"
+#include "pos.hpp"
+#include "move.hpp"
 #include <torch/torch.h>
 
 constexpr int DIRECTION_SIZE{ 10 };
@@ -118,13 +120,14 @@ enum MoveClassPos : int {
     CLS_MOVE_END = CLS_HAND_ROOK + SQUARE_SIZE,
 };
 
-class Pos;
 
 class NNFeat{
 public:
     torch::Tensor feat_;
     torch::Tensor policy_target_;
     torch::Tensor value_target_;
+    ml::Array<Pos, BATCH_SIZE> pos_list_;
+    ml::Array<Move, BATCH_SIZE> move_list_;
 
     NNFeat() {
         this->clear();
@@ -133,6 +136,8 @@ public:
         this->feat_ = torch::zeros({ BATCH_SIZE, POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));
         this->policy_target_ = torch::zeros({ BATCH_SIZE }, torch::TensorOptions().dtype(torch::kLong));
         this->value_target_ = torch::zeros({ BATCH_SIZE}, torch::TensorOptions().dtype(torch::kFloat));
+        pos_list_.clear();
+        move_list_.clear();
     }
 };
 

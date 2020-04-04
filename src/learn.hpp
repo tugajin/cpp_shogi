@@ -16,8 +16,8 @@ public:
 	Game game_;
 	NNFeat feat_;
 
-	void phase1();
-	void phase2();
+	void data_load(int batch_size);
+	void valid(torch::Device& device);
 };
 
 namespace learner {
