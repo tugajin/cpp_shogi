@@ -8,7 +8,12 @@
 void make_feat(const Pos& pos, torch::Tensor &feat) {
     
     const auto me = pos.turn();
+    const auto opp = flip_turn(me);
+    const auto me_king_sq = (me == BLACK) ? pos.king(me) : flip_sq(pos.king(me));
+    const auto opp_king_sq = (opp == BLACK) ? pos.king(opp) : flip_sq(pos.king(opp));
+
     SIDE_FOREACH(sd) {
+        const auto king_sq = (me == sd) ? me_king_sq : opp_king_sq;
         HAND_FOREACH(hp) {
             const auto num = hand_num(pos.hand(sd), hp);
             if(!num) { continue; }
@@ -41,7 +46,7 @@ void make_feat(const Pos& pos, torch::Tensor &feat) {
             }
             //重ね合わせで表現してみる
             for(auto all_index = 1; all_index <= num; ++all_index) {
-                feat[all_index + index] = torch::ones({ SQUARE_SIZE });
+                feat[king_sq][all_index + index] = torch::ones({ SQUARE_SIZE });
             }
         }
         PIECE_FOREACH(pc) {
@@ -96,7 +101,7 @@ void make_feat(const Pos& pos, torch::Tensor &feat) {
                     assert(false);
                     break;
                 }
-                feat[index][sq] = 1.0;
+                feat[king_sq][index][sq] = 1.0;
             }
         }
     }

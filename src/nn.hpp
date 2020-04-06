@@ -58,35 +58,6 @@ enum FeatPos : int {
     F_POS_PROOK_POS,
     E_POS_PROOK_POS,
     POS_END_SIZE,
-    
-    /*E_POS_PAWN_POS = F_POS_PAWN_POS + SQUARE_SIZE + 1,
-    F_POS_LANCE_POS = E_POS_PAWN_POS + SQUARE_SIZE + 1,
-    E_POS_LANCE_POS = F_POS_LANCE_POS + SQUARE_SIZE + 1,
-    F_POS_KNIGHT_POS = E_POS_LANCE_POS + SQUARE_SIZE + 1,
-    E_POS_KNIGHT_POS = F_POS_KNIGHT_POS + SQUARE_SIZE + 1,
-    F_POS_SILVER_POS = E_POS_KNIGHT_POS + SQUARE_SIZE + 1,
-    E_POS_SILVER_POS = F_POS_SILVER_POS + SQUARE_SIZE + 1,
-    F_POS_GOLD_POS = E_POS_SILVER_POS + SQUARE_SIZE + 1,
-    E_POS_GOLD_POS + SQUARE_SIZE + 1,
-    F_POS_BISHOP_POS + SQUARE_SIZE + 1,
-    E_POS_BISHOP_POS + SQUARE_SIZE + 1,
-    F_POS_ROOK_POS + SQUARE_SIZE + 1,
-    E_POS_ROOK_POS + SQUARE_SIZE + 1,
-    F_POS_KING_POS + SQUARE_SIZE + 1,
-    E_POS_KING_POS + SQUARE_SIZE + 1,
-    F_POS_PPAWN_POS + SQUARE_SIZE + 1,
-    E_POS_PPAWN_POS + SQUARE_SIZE + 1,
-    F_POS_PLANCE_POS + SQUARE_SIZE + 1,
-    E_POS_PLANCE_POS + SQUARE_SIZE + 1,
-    F_POS_PKNIGHT_POS + SQUARE_SIZE + 1,
-    E_POS_PKNIGHT_POS + SQUARE_SIZE + 1,
-    F_POS_PSILVER_POS + SQUARE_SIZE + 1,
-    E_POS_PSILVER_POS + SQUARE_SIZE + 1,
-    F_POS_PBISHOP_POS + SQUARE_SIZE + 1,
-    E_POS_PBISHOP_POS + SQUARE_SIZE + 1,
-    F_POS_PROOK_POS + SQUARE_SIZE + 1,
-    E_POS_PROOK_POS + SQUARE_SIZE + 1,
-    POS_END_SIZE = E_POS_PROOK_POS + SQUARE_SIZE + 1,*/
 };
 
 enum MoveClassPos : int { 
@@ -133,8 +104,11 @@ public:
         this->clear();
     }
     void clear() {
-        this->feat_ = torch::zeros({ BATCH_SIZE, POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));
+        // batch size, self king sq, pc_index, square
+        this->feat_ = torch::zeros({ BATCH_SIZE, SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));
+        // batch size
         this->policy_target_ = torch::zeros({ BATCH_SIZE }, torch::TensorOptions().dtype(torch::kLong));
+        //batch size
         this->value_target_ = torch::zeros({ BATCH_SIZE}, torch::TensorOptions().dtype(torch::kFloat));
         pos_list_.clear();
         move_list_.clear();
@@ -146,7 +120,7 @@ public:
 struct NetImpl : torch::nn::Module {
     NetImpl()
         :
-        conv1(torch::nn::Conv2dOptions(POS_END_SIZE, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),
+        conv1(torch::nn::Conv2dOptions( SQUARE_SIZE * POS_END_SIZE, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),
         conv2(torch::nn::Conv2dOptions(HIDDEN_NUM, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),
         conv3(torch::nn::Conv2dOptions(HIDDEN_NUM, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),
         conv4(torch::nn::Conv2dOptions(HIDDEN_NUM, HIDDEN_NUM, /*kernel_size=*/3).padding(1)),

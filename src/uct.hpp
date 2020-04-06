@@ -4,6 +4,7 @@
 #include "pos.hpp"
 #include "move.hpp"
 #include "search.hpp"
+#include "thread.hpp"
 #include <vector>
 
 class UCTNode;
@@ -100,6 +101,7 @@ public:
 	bool is_draw_;
 	bool used_;
 	ChildNode child_[MAX_LEGAL_MOVES];
+	Lockable node_lock_;
 
 	void clear() {
 		this->po_num_ = 0;
@@ -125,6 +127,7 @@ public:
 	Pos pos_;
 	SearchOutput* so_;
 	Time time_limits_;
+	Lockable tree_lock_;
 
 	void think();
 	void init();

@@ -31,6 +31,7 @@ public:
 	void signal();
 };
 
+
 void listen_input();
 bool get_line(std::string& line);
 bool has_input();

@@ -13,9 +13,10 @@
 #include <torch/torch.h>
 
 
-std::string SFEN_PATH = "C:/Users/tugajin/Documents/rsc/all.sfen";
+std::string SFEN_PATH = "../../all.sfen";
 constexpr int MAX_THREAD = 8;
 constexpr int BATCH_SIZE_FOR_THREAD = BATCH_SIZE / MAX_THREAD;
+std::string MODEL_PATH = "./model.pt";
 
 void Learner::data_load(int batch_size) {
  
@@ -67,7 +68,9 @@ void Learner::data_load(int batch_size) {
             auto pos_num = ml::my_rand(this->game_.pos_.size() - 1);
 
             Pos pos = this->game_.pos(pos_num);
-            make_feat(pos, this->feat_.feat_[batch_index]);
+            torch::Tensor f = torch::zeros({ SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));
+            make_feat(pos, f);
+            this->feat_.feat_[batch_index] = f;
             const auto mv = this->game_.move_[pos_num];
             this->feat_.policy_target_[batch_index] = move_to_index(mv, pos.turn());
             this->feat_.value_target_[batch_index] = winner;
@@ -81,11 +84,11 @@ void Learner::data_load(int batch_size) {
 void Learner::valid(torch::Device & device) {
     
     this->data_load(BATCH_SIZE);
-    auto feat2 = this->feat_.feat_.view({ BATCH_SIZE, POS_END_SIZE ,9,9 });
+    auto feat2 = this->feat_.feat_.view({ BATCH_SIZE, SQUARE_SIZE * POS_END_SIZE ,9,9 });
     
     auto data = feat2.to(device);
     Net model;
-    torch::load(model, "model.pt");
+    torch::load(model, MODEL_PATH);
     model->to(device);
     model->eval();
     auto output = model->forward(data);
@@ -101,7 +104,7 @@ void Learner::valid(torch::Device & device) {
         //Tee << *pos << std::endl;
         List list;
         gen_legals(list, this->feat_.pos_list_[i]);
-        Move best_move;
+        Move best_move = move::MOVE_NONE;
         auto best_sc = 0.0f;
         for (auto j = 0; j < list.size(); j++) {
             auto index = move_to_index(list[j], pos->turn());
@@ -163,9 +166,9 @@ static std::thread gThreadList[MAX_THREAD];
         torch::Device device(device_type);
 
         Net model;
-        if (ml::is_exists_file("model.pt")) {
+        if (ml::is_exists_file(MODEL_PATH)) {
             Tee << "load model\n";
-            torch::load(model, "model.pt");
+            torch::load(model, MODEL_PATH);
         }
                
         model->to(device);
@@ -200,7 +203,7 @@ static std::thread gThreadList[MAX_THREAD];
                         gLearner[thread_id].feat_.value_target_[batch_id];
                 }
             }
-            auto feat2 = gLearner[0].feat_.feat_.view({ BATCH_SIZE, POS_END_SIZE ,9,9 });
+            auto feat2 = gLearner[0].feat_.feat_.view({ BATCH_SIZE, SQUARE_SIZE * POS_END_SIZE ,9,9 });
 
             auto data = feat2.to(device);
 
@@ -231,7 +234,7 @@ static std::thread gThreadList[MAX_THREAD];
             //Tee << output_p[0] << std::endl;
             
 
-            auto value_loss = value_loss_func(output_v, value_targets);
+            auto value_loss = 5 * value_loss_func(output_v, value_targets);
             auto policy_loss = policy_loss_func(output_p, policy_targets);
 
             auto l2 = 0.0f;
@@ -257,10 +260,11 @@ static std::thread gThreadList[MAX_THREAD];
             optimizer.step();
             
             if (iterate % 100 == 0) {
-                gLearner[0].valid(device);
-                auto filename = "model" + ml::to_string(iterate) + ".pt";
+            	auto no = iterate % 5;
+                auto filename = "model" + ml::to_string(no) + ".pt";
                 torch::save(model, filename);
-                torch::save(model, "model.pt");
+                torch::save(model, MODEL_PATH);
+                gLearner[0].valid(device);
             }
         }
 

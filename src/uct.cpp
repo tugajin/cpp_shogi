@@ -193,9 +193,6 @@ void UCTSearcher::disp_info(const uint64 loop, const Line& pv, const UCTScore sc
 		Tee << line << std::endl;
 
 	}
-
-
-
 }
 ChildNode* select_child(UCTNode* node, const Pos& pos) {
 
