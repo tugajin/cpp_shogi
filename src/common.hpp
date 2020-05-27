@@ -105,6 +105,29 @@ inline constexpr Side flip_turn(const Side sd) {
 	return Side(sd ^ 1);
 }
 
+inline constexpr bool piece_can_prom(const Piece p) {
+	switch(p) {
+		case Pawn:
+		case Lance:
+		case Knight:
+		case Silver:
+		case Bishop:
+		case Rook:
+			return true;
+		case Gold:
+		case King:
+		case PPawn:
+		case PLance:
+		case PKnight:
+		case PSilver:
+		case PBishop:
+		case PRook:
+			return false;		
+		default:
+			assert(false);
+	}
+}
+
 OverloadEnumOperators(Square)
 OverloadEnumOperators(File)
 OverloadEnumOperators(Rank)
@@ -164,6 +187,7 @@ template<Side sd> bool square_is_prom(const Square sq) {
 	const auto rank = square_rank(sq);
 	return (sd == BLACK) ? (rank <= Rank_3) : (rank >= Rank_7);
 }
+bool square_is_prom(const Side sd, const Square sq);
 inline constexpr Square flip_sq(const Square sq) {
 	return Square(SQUARE_SIZE - sq - 1);
 }

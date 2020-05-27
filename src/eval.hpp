@@ -16,4 +16,5 @@ inline double sigmoid_inverse(double x) {
 	return std::log(x / (1 - x)) * 2000;
 }
 
+
 #endif

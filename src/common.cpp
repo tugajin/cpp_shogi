@@ -14,7 +14,10 @@ std::string sq_to_string(const Square sq) {
 	s += 'a' + square_rank(sq);
 	return s;
 }
-
+bool square_is_prom(const Side sd, const Square sq) {
+	const auto rank = square_rank(sq);
+	return (sd == BLACK) ? (rank <= Rank_3) : (rank >= Rank_7);
+}
 namespace common {
 
 	void init() {

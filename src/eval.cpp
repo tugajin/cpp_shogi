@@ -1,8 +1,9 @@
 #include "eval.hpp"
 #include "pos.hpp"
+#include "eval.hpp"
 #include <cmath>
 #include <random>
-//#include <torch/torch.h>
+#include <torch/torch.h>
 
 constexpr Score piece_value[] =
 { Score(0),  Score(100), Score(300), Score(300), Score(400), Score(700), Score(800), Score(500), Score(15000),
@@ -66,3 +67,4 @@ Score material(const Pos& pos) {
 UCTScore uct_eval(const Pos& pos) {
 	return pos.turn() == BLACK ? uct_eval<BLACK>(pos) : uct_eval<WHITE>(pos);
 }
+

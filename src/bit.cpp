@@ -12,7 +12,8 @@ namespace bit {
 
 	std::array<Bitboard, SIDE_SIZE> g_prom; //1~3
 	std::array<Bitboard, SIDE_SIZE> g_middle; //4~9
-	bit::Bitboard G_ALL_ONE_BB;
+	bit::Bitboard g_all_one_bb;
+	bit::Bitboard g_all_zero_bb;
 	std::array<std::array<bit::Bitboard, 1 << 9>, SIDE_SIZE> g_double_pawn_mask;
 
 	bw_square_t g_knight_attacks;
@@ -33,6 +34,8 @@ namespace bit {
 
 	int gBetweenIndex[SQUARE_SIZE][SQUARE_SIZE];
 	int gBeyondIndex[SQUARE_SIZE][SQUARE_SIZE];
+
+	bit::Bitboard g_check_area[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE];
 
 
 	static void valid_set(bit::Bitboard& bb, File f, Rank r) {
@@ -166,9 +169,10 @@ namespace bit {
 				g_mask[i].select_set(1, (1ull << (i - 63)));
 		}
 		//all_one
-		G_ALL_ONE_BB.init();
+		g_all_one_bb.init();
+		g_all_zero_bb.init();
 		SQUARE_FOREACH(sq) {
-			G_ALL_ONE_BB.set(sq);
+			g_all_one_bb.set(sq);
 		}
 		//rank mask init
 		//file_mask init
@@ -416,6 +420,72 @@ namespace bit {
 		//Tee << "between:" << between_sq << std::endl;
 		//Tee << "beyond:" << beyond_sq << std::endl;
 
+		//init check area
+		SIDE_FOREACH(sd) {
+			PIECE_FOREACH(pc) {
+				SQUARE_FOREACH(king_sq) {
+					auto result_bb = bit::g_all_zero_bb;
+					auto prom_pc = piece_can_prom(pc) ? piece_prom(pc) : pc;
+					auto opp = flip_turn(sd);
+					auto occ = bit::g_all_zero_bb;
+					//noprom -> noprom
+					auto attack_bb = piece_attacks(pc,opp,king_sq,occ);
+					
+					while(attack_bb) {
+						auto to_sq = attack_bb.lsb();
+						auto attack_bb2 = piece_attacks(pc,opp,to_sq,occ);
+						auto to_can_prom = square_is_prom(sd,to_sq);
+						while(attack_bb2) {
+							auto from_sq = attack_bb2.lsb();
+							auto from_can_prom = square_is_prom(sd,from_sq);
+							result_bb.set(from_sq);
+						}
+					}
+
+					//noprom -> prom
+					attack_bb = piece_attacks(prom_pc,opp,king_sq,occ);
+					while(attack_bb) {
+						auto to_sq = attack_bb.lsb();
+						auto attack_bb2 = piece_attacks(pc,opp,to_sq,occ);
+						auto to_can_prom = square_is_prom(sd,to_sq);
+						while(attack_bb2) {
+							auto from_sq = attack_bb2.lsb();
+							auto from_can_prom = square_is_prom(sd,from_sq);
+							if(from_can_prom || to_can_prom) {
+								result_bb.set(from_sq);
+							}
+						}
+					}
+
+					g_check_area[sd][pc][king_sq] = result_bb;
+					//Tee<<"sd:"<<sd<<"pc:"<<pc<<"king_sq:"<<king_sq<<std::endl;
+					//Tee<<result_bb<<std::endl;
+
+				}
+			}
+		}
+
+	}
+
+	Bitboard piece_attacks(const Piece pc, const Side sd, const Square from, const Bitboard& pieces) {
+		switch (pc) {
+		case Pawn: return get_pawn_attack(sd, from);
+		case Knight: return get_knight_attack(sd, from);
+		case Silver: return get_silver_attack(sd, from);
+		case Gold:
+		case Golds:
+		case PPawn:
+		case PLance:
+		case PKnight:
+		case PSilver: return get_gold_attack(sd, from);
+		case King: return get_king_attack(from);
+		case Rook: return get_rook_attack(from, pieces);
+		case Bishop: return get_bishop_attack(from, pieces);
+		case PRook: return get_prook_attack(from, pieces);
+		case PBishop: return get_pbishop_attack(from, pieces);
+		case Lance: return get_lance_attack(sd, from, pieces);
+		default: return Bitboard(0ull, 0ull);
+		}
 	}
 
 	void test() {

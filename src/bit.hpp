@@ -185,7 +185,8 @@ namespace bit {
 
 	extern std::array<Bitboard, SIDE_SIZE> g_prom; //1~3
 	extern std::array<Bitboard, SIDE_SIZE> g_middle; //4~9
-	extern Bitboard G_ALL_ONE_BB;
+	extern Bitboard g_all_one_bb;
+	extern Bitboard g_all_zero_bb;
 	extern std::array<std::array<Bitboard, 1 << 9>, SIDE_SIZE> g_double_pawn_mask;
 	const std::array<int, SQUARE_SIZE> g_file_shift = {
 	  1, 1, 1, 1, 1, 1, 1,1, 1,
@@ -218,6 +219,9 @@ namespace bit {
 	extern int gBetweenIndex[SQUARE_SIZE][SQUARE_SIZE];
 	extern int gBeyondIndex[SQUARE_SIZE][SQUARE_SIZE];
 
+	extern bit::Bitboard g_check_area[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE];
+	extern bit::Bitboard g_prom_area[SIDE_SIZE];
+
 	inline Bitboard Bitboard::operator &=(const int xy) {
 		*this &= g_mask[xy];
 		return *this;
@@ -238,7 +242,7 @@ namespace bit {
 		return (bool)((*this) & sq);
 	}
 
-	inline Bitboard operator ~ (const Bitboard& bb) { return bb ^ G_ALL_ONE_BB; }
+	inline Bitboard operator ~ (const Bitboard& bb) { return bb ^ g_all_one_bb; }
 
 	inline uint64 occ_to_index(const bit::Bitboard& bb, const bit::Bitboard& mask) {
 		return ml::pext(bb.merge(), mask.merge());
@@ -401,6 +405,8 @@ namespace bit {
 		default: return Bitboard(0ull, 0ull);
 		}
 	}
+	Bitboard piece_attacks(const Piece pc, const Side sd, const Square from, const Bitboard &pieces);
+
 	template<Piece pc>bool piece_pseudo_attack(const Side sd, const Square from, const Square to) {
 		return piece_pseudo_attacks<pc>(sd, from).is_set(to);
 	}
