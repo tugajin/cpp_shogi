@@ -288,7 +288,7 @@ static void usi_loop(std::vector<std::string> arg) {
 		else if (command == "test") {
 			// bit::test();
 			// pos::test();
-		   //  gen::test();
+		     gen::test();
 		}
 		else if (command == "show") {
 			Tee << gGame.pos() << std::endl;

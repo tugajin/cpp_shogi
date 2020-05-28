@@ -11,7 +11,7 @@ namespace bit {
 }
 
 enum MoveType {
-	TACTICAL, QUIET, DROP, EVASION,
+	TACTICAL, QUIET, DROP, EVASION, CHECK,
 };
 
 template<Side sd>void gen_legals(List& list, const Pos& pos);

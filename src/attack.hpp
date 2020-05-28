@@ -22,7 +22,7 @@ template<bool skip_king, bool skip_pawn>bit::Bitboard attacks_to(const Pos& pos,
 
 bool is_pinned(const Pos& pos, const Square king, const Square sq, const Side sd);
 Square pinned_by(const Pos& pos, const Square king, const Square sq, const Side sd);
-bit::Bitboard pins(const Pos& pos, const Square king);
+bit::Bitboard pins(const Pos& pos);
 
 bool is_mate_with_pawn_drop(const Square to, const Pos& pos);
 

@@ -11,7 +11,7 @@ template<Piece pc, MoveType mt, Side sd>void add_noprom_move(List& ml, const Pos
 	auto piece = (pc == Golds) ? pos.golds(sd) : pos.pieces(pc, sd);
 	while (piece) {
 		const auto from = piece.lsb();
-		for (auto att = piece_attacks<pc>(sd, from, pos.pieces())& target; att;) {
+		for (auto att = piece_attacks<pc>(sd, from, pos.pieces()) & target; att;) {
 			const auto to = att.lsb();
 			ml.add(move::make_move(from, to, pos.piece(from), pos.piece(to)));
 		}
@@ -260,6 +260,18 @@ void add_drop_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 #undef ADD_DROP_MOVE
 }
 
+template<Side sd>void add_direct_check(List& list, const Pos& pos) {
+
+}
+
+template<Side sd>void add_discover_check(List& list, const Pos& pos) {
+
+}
+
+template<Side sd>void add_drop_check(List& list, const Pos& pos) {
+
+}
+
 template<Side sd>void gen_legals(List& list, const Pos& pos) {
 	List tmp;
 	gen_moves<sd>(tmp, pos);
@@ -291,6 +303,10 @@ void gen_moves(List& ml, const Pos& pos, const bit::Bitboard* checks) {
 		break;
 	case DROP:
 		target = ~pos.pieces();
+		break;
+	case CHECK:
+		target = ~pos.pieces(sd);
+		target2 = ~pos.pieces();
 		break;
 	case EVASION: {
 		//取れるなら取ってしまったほうがいい気がする
@@ -325,6 +341,11 @@ void gen_moves(List& ml, const Pos& pos, const bit::Bitboard* checks) {
 	switch (mt) {
 	case DROP:
 		add_drop_move<sd>(ml, pos, target);
+		break;
+	case CHECK:
+		add_direct_check<sd>(ml, pos);
+		add_discover_check<sd>(ml, pos);
+		add_drop_check<sd>(ml, pos);
 		break;
 	default:
 		add_pawn_move<mt, sd>(ml, pos, target2);
@@ -376,6 +397,8 @@ template void gen_moves<DROP, WHITE>(List& ml, const Pos& pos, const bit::Bitboa
 template void gen_moves<EVASION, BLACK>(List& ml, const Pos& pos, const bit::Bitboard* checks);
 template void gen_moves<EVASION, WHITE>(List& ml, const Pos& pos, const bit::Bitboard* checks);
 
+template void gen_moves<CHECK, BLACK>(List& ml, const Pos& pos, const bit::Bitboard* checks);
+template void gen_moves<CHECK, WHITE>(List& ml, const Pos& pos, const bit::Bitboard* checks);
 
 namespace gen {
 
@@ -422,6 +445,25 @@ namespace gen {
 			List list;
 			gen_moves<WHITE>(list, pos);
 			Tee << list << std::endl;
+
+		}
+		{
+			Pos pos = pos_from_sfen("4k4/4l4/9/9/9/9/4B4/9/r3K4 b ");
+			Tee << pos << std::endl;
+			List list;
+			gen_legals<BLACK>(list,pos);
+			Tee << list << std::endl;
+
+		}
+		{
+			Pos pos = pos_from_sfen("4k4/9/2L6/9/B8/9/9/9/4K4 b ");
+			Tee << pos << std::endl;
+			List list;
+			gen_legals<BLACK>(list,pos);
+			for(auto i = 0; i < list.size(); i++) {
+				Tee<<move::move_to_string(list.move(i))<<std::endl;
+				Tee<<move::is_check(list.move(i),pos)<<std::endl;
+			}
 
 		}
 	}

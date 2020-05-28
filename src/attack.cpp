@@ -140,8 +140,39 @@ Square pinned_by(const Pos&/*pos*/, const Square /*king*/, const Square /*sq*/, 
 
 	return SQ_11;
 }
-bit::Bitboard pins(const Pos&/*pos*/, const Square /*king*/) {
-	return Bitboard(0, 0);
+bit::Bitboard pins(const Pos& pos) {
+	auto pins = g_all_zero_bb;
+	const auto sd = pos.turn();
+	const auto xd = flip_turn(sd);
+	const auto king = pos.king(sd);
+	auto attacks = get_pseudo_bishop_attack(king);
+	auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(xd) & attacks;
+	while (b) {
+		const auto ds = b.lsb();
+		const auto btwn_bb = between(king,ds) & pos.pieces();
+		if (btwn_bb.pop_cnt() == 1) {
+			pins |= btwn_bb;
+		}
+	}
+	attacks = get_pseudo_rook_attack(king);
+	b = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(xd) & attacks;
+	while (b) {
+		const auto ds = b.lsb();
+		const auto btwn_bb = between(king,ds) & pos.pieces();
+		if (btwn_bb.pop_cnt() == 1) {
+			pins |= btwn_bb;
+		}
+	}
+	//縦のattacksが残っている
+	b = pos.pieces(Lance, xd) & g_lance_mask[sd][king] & attacks;
+	while (b) {
+		const auto ds = b.lsb();
+		const auto btwn_bb = between(king,ds) & pos.pieces();
+		if (btwn_bb.pop_cnt() == 1) {
+			pins |= btwn_bb;
+		}
+	}
+	return pins;
 }
 
 bool is_mate_with_pawn_drop(const Square to, const Pos& pos) {

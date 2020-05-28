@@ -220,7 +220,6 @@ namespace bit {
 	extern int gBeyondIndex[SQUARE_SIZE][SQUARE_SIZE];
 
 	extern bit::Bitboard g_check_area[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE];
-	extern bit::Bitboard g_prom_area[SIDE_SIZE];
 
 	inline Bitboard Bitboard::operator &=(const int xy) {
 		*this &= g_mask[xy];

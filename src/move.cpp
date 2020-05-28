@@ -6,7 +6,7 @@
 namespace move {
 
 	bool pseudo_is_legal(const Move mv, const Pos& pos) {
-
+	
 #ifdef DEBUG
 		if (!move_is_ok(mv, pos)) {
 			Tee << pos << std::endl;
@@ -23,6 +23,7 @@ namespace move {
 		if (move::move_is_drop(mv)) {
 			return true;
 		}
+		
 		const auto from = move::move_from(mv);
 		const auto to = move::move_to(mv);
 		const auto pc = move::move_piece(mv);
@@ -38,26 +39,36 @@ namespace move {
 		if (pc == King) {
 			return !has_attack(pos, xd, to, pieces);
 		}
+	
+
 		//pinned piece
 		auto beyond = bit::beyond(king, from);
-		auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(xd) & beyond;
+		auto not_to = g_all_zero_bb;
+		not_to.set(to);
+		not_to = ~not_to;
+		auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(xd) & beyond & not_to;
 		while (b) {
 			const auto ds = b.lsb();
-			if (ds != to && piece_attack<Bishop>(xd, ds, king, pieces)) {
+			if (piece_attack<Bishop>(xd, ds, king, pieces)) {
 				return false;
 			}
 		}
-		b = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(xd) & beyond;
+
+		
+
+		b = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(xd) & beyond & not_to;
 		while (b) {
 			const auto ds = b.lsb();
-			if (ds != to && piece_attack<Rook>(xd, ds, king, pieces)) {
+			if (piece_attack<Rook>(xd, ds, king, pieces)) {
 				return false;
 			}
 		}
-		b = pos.pieces(Lance, xd) & g_lance_mask[sd][king];
+
+		b = pos.pieces(Lance, xd) & g_lance_mask[sd][king] & not_to;
+		
 		while (b) {
 			const auto ds = b.lsb();
-			if (ds != to && line_is_empty(ds, king, pieces)) {
+			if (line_is_empty(ds, king, pieces)) {
 				return false;
 			}
 		}
@@ -67,7 +78,9 @@ namespace move {
 	}
 
 	bool pseudo_is_legal_debug(const Move mv, const Pos& pos) {
-		return true;
+		const auto sd = pos.turn();
+		auto new_pos = pos.do_move(mv);
+		return is_legal(new_pos);
 	}
 
 	bool is_check(const Move mv, const Pos& pos) {
@@ -79,6 +92,7 @@ namespace move {
 		const auto to = move_to(mv);
 		auto pieces = pos.pieces();
 		pieces.set(to);
+
 		auto pc = move_piece(mv);
 		if (move_is_drop(mv)) {
 			//direct check
@@ -97,26 +111,26 @@ namespace move {
 
 			//discover check
 			auto beyond = bit::beyond(king, from);
-
 			auto b = (pos.pieces(Bishop) | pos.pieces(PBishop)) & pos.pieces(sd) & beyond;
 			while (b) {
 				const auto ds = b.lsb();
 				if (piece_attack<Bishop>(sd, ds, king, pieces)) {
-					return false;
+					return true;
 				}
 			}
 			b = (pos.pieces(Rook) | pos.pieces(PRook)) & pos.pieces(sd) & beyond;
 			while (b) {
 				const auto ds = b.lsb();
 				if (piece_attack<Rook>(sd, ds, king, pieces)) {
-					return false;
+					return true;
 				}
 			}
-			b = pos.pieces(Lance, sd) & g_lance_mask[sd][king];
+			b = pos.pieces(Lance, sd) & beyond;
+
 			while (b) {
 				const auto ds = b.lsb();
 				if (line_is_empty(ds, king, pieces)) {
-					return false;
+					return true;
 				}
 			}
 		}
