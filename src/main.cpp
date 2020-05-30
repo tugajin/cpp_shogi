@@ -31,7 +31,7 @@
 #include "nn.hpp"
 #include "learn.hpp"
 
-const std::string EngineName{ "jugemu" };
+const std::string EngineName{ "deep_sawa" };
 const std::string EngineVersion{ "1.0" };
 
 TeeStream Tee;
@@ -115,9 +115,9 @@ static void usi_loop(std::vector<std::string> arg) {
 
 		if (command == "usi") {
 #ifdef DEBUG
-			Tee << "id name SHOGI_DEBUG" << std::endl;
+			Tee << "id name SAWA_DEBUG" << std::endl;
 #else
-			Tee << "id name SHOGI" << std::endl;
+			Tee << "id name SAWA" << std::endl;
 #endif
 			Tee << "usiok" << std::endl;
 
@@ -288,7 +288,8 @@ static void usi_loop(std::vector<std::string> arg) {
 		else if (command == "test") {
 			// bit::test();
 			// pos::test();
-		     gen::test();
+		    //gen::test();
+			search::test_perft();
 		}
 		else if (command == "show") {
 			Tee << gGame.pos() << std::endl;

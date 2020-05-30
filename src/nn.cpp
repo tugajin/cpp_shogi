@@ -135,7 +135,6 @@ MoveClassPos move_to_index(const Move mv, const Side sd) {
         const auto from = (sd == BLACK) ? move::move_from(mv) : flip_sq(move::move_from(mv));
         const auto to = (sd == BLACK) ? move::move_to(mv) : flip_sq(move::move_to(mv));
         const auto prom = move::move_is_prom(mv);
-        const auto dir = get_direction(from, to);
         switch (get_direction(from,to)) {
         case DIR_UP:
             return (prom) ? MoveClassPos(int(CLS_UP_PROM) + int(to)) : MoveClassPos(int(CLS_UP) + int(to));

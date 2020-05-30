@@ -21,7 +21,6 @@ bool square_is_prom(const Side sd, const Square sq) {
 namespace common {
 
 	void init() {
-		auto index = 0;
 		SQUARE_FOREACH(from) {
 			SQUARE_FOREACH(to) {
 				gDirection[from][to] = DIR_NONE;

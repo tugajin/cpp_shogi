@@ -28,11 +28,15 @@ template<Side sd, bool is_root> static uint64 perft(const Pos& pos, const Ply pl
 	}
 	List list;
 	gen_moves<sd>(list, pos);
+	
+	List check_list;
+	gen_moves<CHECK,sd>(check_list,pos,nullptr);
+
 	uint64 num = 0;
 	for (auto i = 0; i < list.size(); ++i) {
 		auto mv = list[i];
 		if (is_root) {
-			Tee << i << "/" << list.size() << ":" << move::move_to_string(mv);
+			//Tee << i << "/" << list.size() << ":" << move::move_to_string(mv);
 		}
 #ifdef DEBUG
 		if (!move::move_is_ok(mv, pos)) {
@@ -42,17 +46,58 @@ template<Side sd, bool is_root> static uint64 perft(const Pos& pos, const Ply pl
 			exit(EXIT_FAILURE);
 
 		}
-		//auto pl = move::pseudo_is_legal(mv,pos);
-		//auto debug_pl = move::pseudo_is_legal_debug(mv,pos);
+		const auto pseudo = move::pseudo_is_legal(mv,pos);
+		const auto pseudo_debug = move::pseudo_is_legal_debug(mv,pos);
+		if(pseudo != pseudo_debug) {
+			Tee<<"pseudo not eq\n";
+			Tee<<pos<<std::endl;
+			Tee<<move::move_to_string(mv)<<std::endl;
+			exit(EXIT_FAILURE);
+		}
 #endif
+
 		if (!move::pseudo_is_legal(mv, pos)) {
 			continue;
 		}
-		//Tee<<move::move_to_string(mv)<<" ply:" <<int(ply)<<std::endl;
+		const auto check = move::is_check(mv,pos);
+#ifdef DEBUG
+		if(check) {
+			if(!list::has(check_list,mv)) {
+				Tee<<"check move erro1\n";
+				Tee<<pos<<std::endl;
+				Tee<<move::move_to_string(mv)<<std::endl;
+				Tee<<"\n";
+				Tee<<check_list<<std::endl;
+				exit(EXIT_FAILURE);
+			}
+		} else {
+			if(list::has(check_list,mv)) {
+				Tee<<"check move erro2\n";
+				Tee<<pos<<std::endl;
+				Tee<<move::move_to_string(mv)<<std::endl;
+				Tee<<"\n";
+				Tee<<check_list<<std::endl;
+				exit(EXIT_FAILURE);
+			}
+		}
+#endif
+
 		auto new_pos = pos.succ(mv);
+#ifdef DEBUG
+
+		const auto check_debug = in_check(new_pos);
+		if(check != check_debug) {
+			Tee<<"check not eq\n";
+			Tee<<pos<<std::endl;
+			Tee<<move::move_to_string(mv)<<std::endl;
+			Tee<<check<<std::endl;
+			Tee<<check_debug<<std::endl;
+			exit(EXIT_FAILURE);
+		}
+#endif
 		const auto n = perft<flip_turn(sd), false>(new_pos, ply - 1);
 		if (is_root) {
-			Tee << " nodes:" << n << std::endl;
+			//Tee << " nodes:" << n << std::endl;
 		}
 
 		num += n;
@@ -121,5 +166,24 @@ namespace search {
 		t.stop();
 		std::cout << num << std::endl;
 		std::cout << t.elapsed() << std::endl;
+	}
+
+	void test_perft() {
+		for(auto i = 0; i < 100000; i++) {
+			Pos pos = pos_from_sfen(START_SFEN);
+			for(auto j = 0; j < 512; j++) {
+				List ml;
+				Tee<<pos<<std::endl;
+				gen_legals(ml,pos);
+				const auto num = perft(pos,Ply(3));
+				std::cout<<"num:"<<num<<std::endl;
+				if (ml.size() == 0) {
+					break;
+				}
+				const auto index = ml::my_rand(ml.size());
+				const auto mv = ml.move(index);
+				pos = pos.succ(mv);
+			}
+		}
 	}
 }

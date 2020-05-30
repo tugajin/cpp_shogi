@@ -434,10 +434,8 @@ namespace bit {
 					while(attack_bb) {
 						auto to_sq = attack_bb.lsb();
 						auto attack_bb2 = piece_attacks(pc,opp,to_sq,occ);
-						auto to_can_prom = square_is_prom(sd,to_sq);
 						while(attack_bb2) {
 							auto from_sq = attack_bb2.lsb();
-							auto from_can_prom = square_is_prom(sd,from_sq);
 							result_bb.set(from_sq);
 						}
 					}

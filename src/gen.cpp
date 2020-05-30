@@ -7,7 +7,7 @@
 #include "sfen.hpp"
 
 
-template<Piece pc, MoveType mt, Side sd>void add_noprom_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
+template<Piece pc, Side sd>void add_noprom_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 	auto piece = (pc == Golds) ? pos.golds(sd) : pos.pieces(pc, sd);
 	while (piece) {
 		const auto from = piece.lsb();
@@ -17,35 +17,35 @@ template<Piece pc, MoveType mt, Side sd>void add_noprom_move(List& ml, const Pos
 		}
 	}
 }
-template<MoveType mt, Side sd>void add_king_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
+template<Side sd>void add_king_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 	const auto from = pos.king(sd);
 	for (auto att = get_king_attack(from) & target; att;) {
 		const auto to = att.lsb();
 		ml.add(move::make_move(from, to, King, pos.piece(to)));
 	}
 }
-template<MoveType mt, Side sd>void add_pawn_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
-	for (auto att = get_pawn_attack<sd>(pos.pieces(Pawn, sd))& target; att;) {
+template<Side sd>void add_pawn_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
+	for (auto att = get_pawn_attack<sd>(pos.pieces(Pawn, sd)) & target; att;) {
 		const auto to = att.lsb();
 		const auto from = (sd == BLACK) ? to + SQ_RANK_INC : to - SQ_RANK_INC;
 		ml.add(move::make_move(from, to, Pawn, pos.piece(to), square_is_prom<sd>(to)));
 	}
 }
-template<Piece pc, MoveType mt, Side sd>void add_bishop_rook_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
+template<Piece pc, Side sd>void add_bishop_rook_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 	static_assert(pc == Bishop || pc == Rook, "pc error");
 	for (auto piece = pos.pieces(pc, sd); piece;) {
 		const auto from = piece.lsb();
-		for (auto att = piece_attacks<pc>(sd, from, pos.pieces())& target; att;) {
+		for (auto att = piece_attacks<pc>(sd, from, pos.pieces()) & target; att;) {
 			const auto to = att.lsb();
 			const auto prom = square_is_prom<sd>(from) || square_is_prom<sd>(to);
-			ml.add(move::make_move(from, to, pos.piece(from), pos.piece(to), prom));
+			ml.add(move::make_move(from, to, pc, pos.piece(to), prom));
 		}
 	}
 }
-template<MoveType mt, Side sd>void add_silver_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
+template<Side sd>void add_silver_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 	for (bit::Bitboard piece = pos.pieces(Silver, sd); piece;) {
 		const auto from = piece.lsb();
-		for (auto att = piece_attacks<Silver>(sd, from, pos.pieces())& target; att;) {
+		for (auto att = piece_attacks<Silver>(sd, from, pos.pieces()) & target; att;) {
 			const auto to = att.lsb();
 			const auto prom = square_is_prom<sd>(from) || square_is_prom<sd>(to);
 			if (prom) {
@@ -55,7 +55,7 @@ template<MoveType mt, Side sd>void add_silver_move(List& ml, const Pos& pos, con
 		}
 	}
 }
-template<Piece pc, MoveType mt, Side sd>void add_lance_knight_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
+template<Piece pc, Side sd>void add_lance_knight_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 	static_assert(pc == Lance || pc == Knight, "pc error");
 	for (auto piece = pos.pieces(pc, sd); piece;) {
 		const auto from = piece.lsb();
@@ -63,14 +63,14 @@ template<Piece pc, MoveType mt, Side sd>void add_lance_knight_move(List& ml, con
 			const auto to = att.lsb();
 			const auto to_rank = side_rank<sd>(square_rank(to));
 			if (to_rank == Rank_1 || to_rank == Rank_2) {
-				ml.add(move::make_move(from, to, pos.piece(from), pos.piece(to), true));
+				ml.add(move::make_move(from, to, pc, pos.piece(to), true));
 			}
 			else if (to_rank == Rank_3) {
-				ml.add(move::make_move(from, to, pos.piece(from), pos.piece(to), true));
-				ml.add(move::make_move(from, to, pos.piece(from), pos.piece(to), false));
+				ml.add(move::make_move(from, to, pc, pos.piece(to), true));
+				ml.add(move::make_move(from, to, pc, pos.piece(to), false));
 			}
 			else {
-				ml.add(move::make_move(from, to, pos.piece(from), pos.piece(to), false));
+				ml.add(move::make_move(from, to, pc, pos.piece(to), false));
 			}
 		}
 	}
@@ -101,7 +101,7 @@ void add_drop_move(List& ml, const Pos& pos, const bit::Bitboard& target, const 
 			&& is_mate_with_pawn_drop(mate_with_sq, pos)) {
 			pawn_target.clear(mate_with_sq);
 		}
-		while (bool(pawn_target)) {
+		while (pawn_target) {
 			ml.add(move::make_move(pawn_target.lsb(), Pawn));
 		}
 
@@ -261,14 +261,353 @@ void add_drop_move(List& ml, const Pos& pos, const bit::Bitboard& target) {
 }
 
 template<Side sd>void add_direct_check(List& list, const Pos& pos) {
+	const auto xd = flip_turn(sd);
+	const auto king = pos.king(xd);
+	const auto occ = pos.pieces();
+	const auto global_target = ~pos.pieces(sd);
+	{
+		auto target = ((get_gold_attack(xd,king) & g_prom[sd] ) | (get_pawn_attack(xd,king) & g_middle[sd])) & global_target;
+		add_pawn_move<sd>(list, pos, target);
+	} {
+		const auto target1 = get_gold_attack(xd,king) & g_prom[sd]  & global_target;
+		const auto rank3_bb = (sd == BLACK) ? g_rank_mask[Rank_3] : g_rank_mask[Rank_7];
+		const auto target2 = get_lance_attack(xd,king,occ) & (g_middle[sd] | rank3_bb) & global_target;
+		for (auto piece = pos.pieces(Lance, sd); piece;) {
+			const auto from = piece.lsb();
+			const auto attacks = get_lance_attack(sd, from, pos.pieces());
+			for (auto att = attacks & target1; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Lance, pos.piece(to), true));
+			}
+			for (auto att = attacks & target2; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Lance, pos.piece(to), false));
+			}
+		}
+	} {
+		auto target1 = get_gold_attack(xd,king) & g_prom[sd]  & global_target;
+		const auto rank3_bb = (sd == BLACK) ? g_rank_mask[Rank_3] : g_rank_mask[Rank_7];
+		auto target2 = get_knight_attack(xd,king) & (g_middle[sd] | rank3_bb) & global_target;
+		for (auto piece = pos.pieces(Knight, sd); piece;) {
+			const auto from = piece.lsb();
+			const auto attacks = get_knight_attack(sd, from);
+			for (auto att = attacks & target1; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Knight, pos.piece(to), true));
+			}
+			for (auto att = attacks & target2; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Knight, pos.piece(to), false));
+			}
+		}
+	}{
+		auto target1 = get_gold_attack(xd,king) & global_target;
+		auto target2 = get_silver_attack(xd,king) & global_target;
+		const auto rank4_bb = (sd == BLACK) ? g_rank_mask[Rank_4] : g_rank_mask[Rank_6];
 
+		//prom
+		auto piece = pos.pieces(Silver, sd) & (g_prom[sd] | rank4_bb);
+		while (piece) {
+			const auto from = piece.lsb();
+			const auto attacks = get_silver_attack(sd, from);
+			for (auto att = attacks & target1; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Silver, pos.piece(to), true));
+			}
+		}
+		//noprom
+		piece = pos.pieces(Silver, sd);
+		while (piece) {
+			const auto from = piece.lsb();
+			const auto attacks = get_silver_attack(sd, from);
+			for (auto att = attacks & target2; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Silver, pos.piece(to), false));
+			}
+		}
+	} {
+		auto target = get_gold_attack(xd,king) & global_target;
+		add_noprom_move<Golds, sd>(list, pos, target);
+	} {
+		//add_king_move<sd>(list, pos, target);
+	} {
+		auto bishop_bb = get_bishop_attack(king,occ);
+		auto target_bishop = bishop_bb & g_middle[sd] & global_target;
+		auto target_pbishop = (bishop_bb | get_king_attack(king)) & global_target;
+		//prom
+		auto piece = pos.pieces(Bishop,sd) & g_prom[sd];
+		while (piece) {
+			const auto from = piece.lsb();
+			for (auto att = get_bishop_attack(from, pos.pieces()) & target_pbishop; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Bishop, pos.piece(to),true));
+			}
+		}
+		//prom
+		target_pbishop &= g_prom[sd]; 
+		piece = pos.pieces(Bishop,sd) & g_middle[sd];
+		while (piece) {
+			const auto from = piece.lsb();
+			for (auto att = get_bishop_attack(from, pos.pieces()) & target_pbishop; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Bishop, pos.piece(to),true));
+			}
+		}
+
+		//noprom
+		piece = pos.pieces(Bishop,sd) & g_middle[sd];
+		while (piece) {
+			const auto from = piece.lsb();
+			for (auto att = get_bishop_attack(from, pos.pieces()) & target_bishop; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Bishop, pos.piece(to)));
+			}
+		}
+	} {
+		auto rook_bb = get_rook_attack(king,occ);
+		auto target_rook = rook_bb & g_middle[sd] & global_target;
+		auto target_prook = (rook_bb | get_king_attack(king)) & global_target;
+		//prom
+		auto piece = pos.pieces(Rook,sd) & g_prom[sd];
+		while (piece) {
+			const auto from = piece.lsb();
+			for (auto att = get_rook_attack(from, pos.pieces()) & target_prook; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Rook, pos.piece(to),true));
+			}
+		}
+		//prom
+		target_prook &= g_prom[sd]; 
+		piece = pos.pieces(Rook,sd) & g_middle[sd];
+		while (piece) {
+			const auto from = piece.lsb();
+			for (auto att = get_rook_attack(from, pos.pieces()) & target_prook; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Rook, pos.piece(to),true));
+			}
+		}
+		//noprom
+		piece = pos.pieces(Rook,sd) & g_middle[sd];
+		while (piece) {
+			const auto from = piece.lsb();
+			for (auto att = get_rook_attack(from, pos.pieces()) & target_rook; att;) {
+				const auto to = att.lsb();
+				list.add(move::make_move(from, to, Rook, pos.piece(to)));
+			}
+		}
+	} {
+		auto target = get_pbishop_attack(king,occ) & global_target;
+		add_noprom_move<PBishop, sd>(list, pos, target);
+	} {
+		auto target = get_prook_attack(king,occ) & global_target;
+		add_noprom_move<PRook, sd>(list, pos, target);
+	}
 }
 
 template<Side sd>void add_discover_check(List& list, const Pos& pos) {
+	const auto xd = flip_turn(sd);
+	auto pins_bb = pins(pos,xd) & pos.pieces(sd);
+	const auto king = pos.king(xd);
+	const auto occ = pos.pieces();
+	const auto target = ~pos.pieces(sd);
 
+	while(pins_bb) {
+		const auto from = pins_bb.lsb();
+		const auto pc = pos.piece(from);
+		const auto ray = ~(between(king, from) | beyond(king, from));
+		switch (pc) {
+			case Pawn: {
+				const auto to = (sd == BLACK) ? from + Inc_N : from + Inc_S;
+				if(is_valid_sq(to) && ray.is_set(to)) {
+					if (square_is_prom<sd>(to)) {
+						const auto direct_bb = get_gold_attack(xd,king) & target;
+						if(!direct_bb.is_set(to)) {
+							list.add(move::make_move(from, to, Pawn, pos.piece(to), true));
+						}
+					} else {
+						const auto direct_sq = (sd == BLACK) ? from + Inc_S : from + Inc_N;
+						if(direct_sq != to && is_valid_sq(direct_sq) && target.is_set(to)) {
+							list.add(move::make_move(from, to, Pawn, pos.piece(to), false));
+						}
+					}
+				}
+				break;
+			}
+			case Lance: {
+				auto direct_bb = ~(get_lance_attack(xd,king,occ));
+				const auto rank3_bb = (sd == BLACK) ? g_rank_mask[Rank_3] : g_rank_mask[Rank_7];
+				const auto lance_attack = get_lance_attack(sd,from,occ);
+				auto attack_bb = lance_attack & (g_middle[sd] | rank3_bb) & target & ray & direct_bb;
+				//noprom
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, Lance, pos.piece(to)));
+				}
+				direct_bb = ~(get_gold_attack(xd,king) & g_prom[sd]);
+				attack_bb = lance_attack & g_prom[sd] & target & ray & direct_bb;
+				//prom
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, Lance, pos.piece(to),true));
+				}
+				break;
+			}
+			case Knight: {
+				auto direct_bb = ~(get_knight_attack(xd,king));
+				const auto rank3_bb = (sd == BLACK) ? g_rank_mask[Rank_3] : g_rank_mask[Rank_7];
+				const auto knight_attack = get_knight_attack(sd,from);
+				auto attack_bb = knight_attack & (g_middle[sd] | rank3_bb) & target & ray & direct_bb;
+				//noprom
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, Knight, pos.piece(to)));
+				}
+				direct_bb = ~(get_gold_attack(xd,king) & g_prom[sd]);
+				attack_bb = knight_attack & g_prom[sd] & target & ray & direct_bb;
+				//prom
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, Knight, pos.piece(to),true));
+				}
+				break;
+			}
+			case Silver: {
+				auto direct_bb = ~(get_silver_attack(xd,king));
+				auto attack_bb = get_silver_attack(sd,from) & target & ray & direct_bb;
+				//noprom
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, Silver, pos.piece(to)));
+				}
+				const auto rank4_bb = (sd == BLACK) ? g_rank_mask[Rank_4] : g_rank_mask[Rank_6];
+				direct_bb = ~(get_gold_attack(xd,king) & (g_prom[sd] | rank4_bb));
+				attack_bb = get_silver_attack(sd,from) & (g_prom[sd] | rank4_bb) & target & ray & direct_bb;
+				//prom
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, Silver, pos.piece(to),true));
+				}
+				break;
+			}
+			case Gold: 
+			case PPawn:
+			case PLance:
+			case PKnight:
+			case PSilver: {
+				const auto direct_bb = ~get_gold_attack(xd,king);
+				auto attack_bb = get_gold_attack(sd,from) & target & ray & direct_bb;
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, pos.piece(from), pos.piece(to)));
+				}
+				break;
+			}
+			case Bishop: {
+				if (square_is_prom<sd>(from)) {
+					auto direct_bb = ~(get_pbishop_attack(king,occ));
+					auto attack_bb = get_bishop_attack(from,occ) & target & ray & direct_bb;
+					//prom
+					while(attack_bb) {
+						const auto to = attack_bb.lsb();
+						list.add(move::make_move(from, to, Bishop, pos.piece(to),true));
+					}
+				} else {
+					auto direct_bb = ~(get_bishop_attack(king,occ) | (get_king_attack(king) & g_prom[sd]));
+					auto attack_bb = get_bishop_attack(from,occ) & target & ray & direct_bb;
+					while(attack_bb) {
+						const auto to = attack_bb.lsb();
+						list.add(move::make_move(from, to, Bishop, pos.piece(to),square_is_prom<sd>(to)));
+					}
+				}
+				break;
+			}
+			case Rook: {
+				if (square_is_prom<sd>(from)) {
+					auto direct_bb = ~(get_prook_attack(king,occ));
+					auto attack_bb = get_rook_attack(from,occ) & target & ray & direct_bb;
+					//prom
+					while(attack_bb) {
+						const auto to = attack_bb.lsb();
+						list.add(move::make_move(from, to, Rook, pos.piece(to),true));
+					}
+				} else {
+					auto direct_bb = ~(get_rook_attack(king,occ) | (get_king_attack(king) & g_prom[sd]));
+					auto attack_bb = get_rook_attack(from,occ) & target & ray & direct_bb;
+					while(attack_bb) {
+						const auto to = attack_bb.lsb();
+						list.add(move::make_move(from, to, Rook, pos.piece(to),square_is_prom<sd>(to)));
+					}
+				}
+				break;
+			}
+			case King: {
+				const auto direct_bb = ~get_king_attack(king);
+				auto attack_bb = get_king_attack(from) & target & ray & direct_bb;
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, King, pos.piece(to)));
+				}
+				break;
+			}
+			case PBishop: {
+				const auto direct_bb = ~get_pbishop_attack(king,occ);
+				auto attack_bb = get_pbishop_attack(from,occ) & target & ray & direct_bb;
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, PBishop, pos.piece(to)));
+				}
+				break;
+			}
+			case PRook: {
+				const auto direct_bb = ~get_prook_attack(king,occ);
+				auto attack_bb = get_prook_attack(from,occ) & target & ray & direct_bb;
+				while(attack_bb) {
+					const auto to = attack_bb.lsb();
+					list.add(move::make_move(from, to, PRook, pos.piece(to)));
+				}
+				break;
+			}
+			default:
+				assert(false);
+				break;
+		}
+	}
 }
 
 template<Side sd>void add_drop_check(List& list, const Pos& pos) {
+	const auto hand = pos.hand(sd);
+	const auto xd = flip_turn(sd);
+	const auto king = pos.king(xd);
+	const auto occ = pos.pieces();
+	const auto target = ~occ;
+
+#define ADD_CHECK_MOVE(Piece) do { \
+	if(hand_has(hand,Piece)) {\
+		auto tmp_target = piece_attacks<Piece>(xd,king,occ) & target;\
+		while(tmp_target) {\
+			const auto to = tmp_target.lsb();\
+			list.add(move::make_move(to, Piece));\
+		}\
+	} }while(0)
+
+	ADD_CHECK_MOVE(Gold);
+	ADD_CHECK_MOVE(Silver);
+	ADD_CHECK_MOVE(Rook);
+	ADD_CHECK_MOVE(Bishop);
+	ADD_CHECK_MOVE(Lance);
+	ADD_CHECK_MOVE(Knight);
+	//pawn
+	if(hand_has(hand,Pawn)) {
+		const auto to = (sd == BLACK) ? king + Inc_S : king + Inc_N;
+		if(is_valid_sq(to) && pos.piece(to) == PieceNone) {
+			//check double pawn and mwpd
+			if(!(get_pseudo_file_attack(king) & pos.pieces(Pawn,sd)) 
+			&& !is_mate_with_pawn_drop(to,pos)) {
+				list.add(move::make_move(to, Pawn));
+			}
+		}
+	}
+#undef ADD_CHECK_MOVE
 
 }
 
@@ -311,7 +650,7 @@ void gen_moves(List& ml, const Pos& pos, const bit::Bitboard* checks) {
 	case EVASION: {
 		//取れるなら取ってしまったほうがいい気がする
 		target = ~pos.pieces(sd);
-		add_king_move<mt, sd>(ml, pos, target);
+		add_king_move<sd>(ml, pos, target);
 		assert(checks != nullptr);
 		if (checks->pop_cnt() == 2) {
 			return;
@@ -321,15 +660,15 @@ void gen_moves(List& ml, const Pos& pos, const bit::Bitboard* checks) {
 		const auto checker_sq = check_bb.lsb<false>();
 		target = target2 = between(checker_sq, pos.king(sd));
 		target.set(checker_sq);//capture checker
-		add_pawn_move<mt, sd>(ml, pos, target);
-		add_lance_knight_move<Lance, mt, sd>(ml, pos, target);
-		add_lance_knight_move<Knight, mt, sd>(ml, pos, target);
-		add_silver_move<mt, sd>(ml, pos, target);
-		add_noprom_move<Golds, mt, sd>(ml, pos, target);
-		add_bishop_rook_move<Bishop, mt, sd>(ml, pos, target);
-		add_bishop_rook_move<Rook, mt, sd>(ml, pos, target);
-		add_noprom_move<PBishop, mt, sd>(ml, pos, target);
-		add_noprom_move<PRook, mt, sd>(ml, pos, target);
+		add_pawn_move<sd>(ml, pos, target);
+		add_lance_knight_move<Lance, sd>(ml, pos, target);
+		add_lance_knight_move<Knight, sd>(ml, pos, target);
+		add_silver_move<sd>(ml, pos, target);
+		add_noprom_move<Golds, sd>(ml, pos, target);
+		add_bishop_rook_move<Bishop, sd>(ml, pos, target);
+		add_bishop_rook_move<Rook, sd>(ml, pos, target);
+		add_noprom_move<PBishop, sd>(ml, pos, target);
+		add_noprom_move<PRook, sd>(ml, pos, target);
 
 		add_drop_move<sd>(ml, pos, target2);
 		return;
@@ -348,16 +687,16 @@ void gen_moves(List& ml, const Pos& pos, const bit::Bitboard* checks) {
 		add_drop_check<sd>(ml, pos);
 		break;
 	default:
-		add_pawn_move<mt, sd>(ml, pos, target2);
-		add_lance_knight_move<Lance, mt, sd>(ml, pos, target);
-		add_lance_knight_move<Knight, mt, sd>(ml, pos, target);
-		add_silver_move<mt, sd>(ml, pos, target);
-		add_noprom_move<Golds, mt, sd>(ml, pos, target);
-		add_king_move<mt, sd>(ml, pos, target);
-		add_bishop_rook_move<Bishop, mt, sd>(ml, pos, target);
-		add_bishop_rook_move<Rook, mt, sd>(ml, pos, target);
-		add_noprom_move<PBishop, mt, sd>(ml, pos, target);
-		add_noprom_move<PRook, mt, sd>(ml, pos, target);
+		add_pawn_move<sd>(ml, pos, target2);
+		add_lance_knight_move<Lance, sd>(ml, pos, target);
+		add_lance_knight_move<Knight, sd>(ml, pos, target);
+		add_silver_move<sd>(ml, pos, target);
+		add_noprom_move<Golds, sd>(ml, pos, target);
+		add_king_move<sd>(ml, pos, target);
+		add_bishop_rook_move<Bishop, sd>(ml, pos, target);
+		add_bishop_rook_move<Rook, sd>(ml, pos, target);
+		add_noprom_move<PBishop, sd>(ml, pos, target);
+		add_noprom_move<PRook, sd>(ml, pos, target);
 		break;
 	}
 }
@@ -463,6 +802,16 @@ namespace gen {
 			for(auto i = 0; i < list.size(); i++) {
 				Tee<<move::move_to_string(list.move(i))<<std::endl;
 				Tee<<move::is_check(list.move(i),pos)<<std::endl;
+			}
+
+		}
+		{
+			Pos pos = pos_from_sfen("1nk6/2g1p3p/1rs1g3l/lppp1+B2P/P1P2PpPb/p1N1PrPp1/NP1P1G2L/L1S2K1+p1/1+s2G1SN w ");
+			Tee << pos << std::endl;
+			List list;
+			gen_moves<CHECK,WHITE>(list,pos,nullptr);
+			for(auto i = 0; i < list.size(); i++) {
+				Tee<<move::move_to_string(list.move(i))<<std::endl;
 			}
 
 		}

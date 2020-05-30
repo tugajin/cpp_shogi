@@ -110,5 +110,6 @@ Score quick_score(const Pos& pos);
 
 namespace search {
 	void test();
+	void test_perft();
 }
 #endif

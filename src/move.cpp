@@ -68,7 +68,7 @@ namespace move {
 		
 		while (b) {
 			const auto ds = b.lsb();
-			if (line_is_empty(ds, king, pieces)) {
+			if (piece_attack<Lance>(xd, ds, king, pieces)) {
 				return false;
 			}
 		}
@@ -78,8 +78,7 @@ namespace move {
 	}
 
 	bool pseudo_is_legal_debug(const Move mv, const Pos& pos) {
-		const auto sd = pos.turn();
-		auto new_pos = pos.do_move(mv);
+		auto new_pos = pos.succ(mv);
 		return is_legal(new_pos);
 	}
 
@@ -129,7 +128,7 @@ namespace move {
 
 			while (b) {
 				const auto ds = b.lsb();
-				if (line_is_empty(ds, king, pieces)) {
+				if (piece_attack<Lance>(sd, ds, king, pieces)) {
 					return true;
 				}
 			}

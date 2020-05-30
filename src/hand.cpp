@@ -3,11 +3,12 @@
 
 std::string hand_to_string(const Hand hand) {
 	std::string s = "";
+	std::string piece_str[] = {" ・","歩","香","桂","銀","角","飛","金",};
 	PIECE_FOREACH(pc) {
 		if (pc == King) {
 			break;
 		}
-		s += ml::trim(piece_to_sfen(pc)) + "/"
+		s += piece_str[pc] + "/"
 			+ ml::to_string(hand_num(hand, pc)) + " ";
 	}
 	return s;

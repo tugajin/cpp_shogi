@@ -24,8 +24,8 @@ void SelfPlay::episode() {
 	gGame.clear();
 	gGame.init(pos_from_sfen(START_SFEN));
 	//gGame.init(pos_from_sfen("lns2k3/3g5/ppppppp2/3ll4/9/7P1/P1N2PP2/5G3/2G1K1+p b B6pl2n3sb2rg"));
-	auto tesu = 0;
-	auto result = 2;//0:æè‚ªŸ‚¿ 1:Œãè‚ªŸ‚¿ 2:ˆø‚«•ª‚¯
+	auto tesu = 0u;
+	auto result = 2;//0:ï¿½ï¿½è‚ªï¿½ï¿½ï¿½ï¿½ 1:ï¿½ï¿½è‚ªï¿½ï¿½ï¿½ï¿½ 2:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	const auto rand_tesu = ml::rand_int_64() % 150;
 	//const int rand_tesu = 0;
 
@@ -42,7 +42,7 @@ void SelfPlay::episode() {
 
 		if (list.size() == 0) {
 			Tee << "aa\n";
-			//•Û‘¶‚µ‚È‚¢
+			//ï¿½Û‘ï¿½ï¿½ï¿½ï¿½È‚ï¿½
 			if (tesu < rand_tesu) {
 				Tee << "bb\n";
 				return;
@@ -91,8 +91,8 @@ void SelfPlay::episode() {
 			HAND_FOREACH(p) {
 				num += hand_num(gGame.pos().hand(turn), p);
 			}
-			if (num < 5) {//•‰‚¯‚Å‚¢‚¢‚Å‚µ‚å‚¤B
-				Tee << "“Á•Êƒ‹[ƒ‹\n";
+			if (num < 5) {//ï¿½ï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½å‚¤ï¿½B
+				Tee << "ï¿½ï¿½ï¿½Êƒï¿½ï¿½[ï¿½ï¿½\n";
 				if (turn == BLACK) {
 					result = 1;
 				}

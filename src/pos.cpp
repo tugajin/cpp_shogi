@@ -193,6 +193,10 @@ std::ostream& operator<<(std::ostream& os, const Pos& b) {
 		os << "WHITE" << std::endl;
 	}
 
+	std::string piece_str[] = {" ・"," 歩"," 香"," 桂"," 銀"," 角"," 飛"," 金"," 玉"," と"," 杏"," 圭"," 全"," 馬"," 龍",
+						" ・", " ・","v歩","v香","v桂","v銀","v角","v飛","v金","v玉","vと","v杏","v圭","v全","v馬","v龍",};
+	
+
 	os << "pos_key:" << uint64(b.pos_key()) << std::endl;
 	os << "hand_key:" << uint64(b.hand_key()) << std::endl;
 	os << "ply:" << b.ply() << std::endl;
@@ -202,7 +206,7 @@ std::ostream& operator<<(std::ostream& os, const Pos& b) {
 		if (!rank) {
 			os << "  ";
 			FILE_FOREACH_REV(file) {
-				os << " " << file + 1;
+				os << "  " << file + 1;
 			}
 			os << "\n";
 		}
@@ -213,12 +217,12 @@ std::ostream& operator<<(std::ostream& os, const Pos& b) {
 			const auto sq = square_make(file, rank);
 			const auto pc = b.piece(sq);
 			if (pc == PieceNone) {
-				os << " .";
+				os << piece_str[pc];
 			}
 			else {
 				const auto sd = b.side(sq);
 				const auto p32 = piece_side_make(pc, sd);
-				os << piece_side_to_sfen(p32);
+				os << piece_str[p32];
 			}
 		}
 		os << "\n";

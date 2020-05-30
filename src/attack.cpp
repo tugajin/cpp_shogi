@@ -140,9 +140,8 @@ Square pinned_by(const Pos&/*pos*/, const Square /*king*/, const Square /*sq*/, 
 
 	return SQ_11;
 }
-bit::Bitboard pins(const Pos& pos) {
+bit::Bitboard pins(const Pos& pos, const Side sd) {
 	auto pins = g_all_zero_bb;
-	const auto sd = pos.turn();
 	const auto xd = flip_turn(sd);
 	const auto king = pos.king(sd);
 	auto attacks = get_pseudo_bishop_attack(king);
