@@ -479,13 +479,23 @@ template<Side sd>void add_discover_check(List& list, const Pos& pos) {
 					const auto to = attack_bb.lsb();
 					list.add(move::make_move(from, to, Silver, pos.piece(to)));
 				}
-				const auto rank4_bb = (sd == BLACK) ? g_rank_mask[Rank_4] : g_rank_mask[Rank_6];
-				direct_bb = ~(get_gold_attack(xd,king) & (g_prom[sd] | rank4_bb));
-				attack_bb = get_silver_attack(sd,from) & (g_prom[sd] | rank4_bb) & target & ray & direct_bb;
-				//prom
-				while(attack_bb) {
-					const auto to = attack_bb.lsb();
-					list.add(move::make_move(from, to, Silver, pos.piece(to),true));
+				if (square_is_prom<sd>(from)) {
+					const auto rank4_bb = (sd == BLACK) ? g_rank_mask[Rank_4] : g_rank_mask[Rank_6];
+					direct_bb = (~get_gold_attack(xd,king) & (g_prom[sd] | rank4_bb));
+					attack_bb = get_silver_attack(sd,from) & (g_prom[sd] | rank4_bb) & target & ray & direct_bb;
+					//prom
+					while(attack_bb) {
+						const auto to = attack_bb.lsb();
+						list.add(move::make_move(from, to, Silver, pos.piece(to),true));
+					}
+				} else {
+					direct_bb = (~get_gold_attack(xd,king)) & g_prom[sd];
+					attack_bb = get_silver_attack(sd,from) & g_prom[sd] & target & ray & direct_bb;
+					//prom
+					while(attack_bb) {
+						const auto to = attack_bb.lsb();
+						list.add(move::make_move(from, to, Silver, pos.piece(to),true));
+					}
 				}
 				break;
 			}
@@ -820,6 +830,15 @@ namespace gen {
 			Tee << pos << std::endl;
 			List list;
 			gen_moves<CHECK,WHITE>(list,pos,nullptr);
+			for(auto i = 0; i < list.size(); i++) {
+				Tee<<move::move_to_string(list.move(i))<<std::endl;
+			}
+		}
+		{
+			Pos pos = pos_from_sfen("1G4sk1/1np6/l1n3nBl/pG4p1p/3Sppsp1/LpB2P2P/5n2G/PG1R3KL/1S1P b P5pr");
+			Tee << pos << std::endl;
+			List list;
+			gen_moves<CHECK,BLACK>(list,pos,nullptr);
 			for(auto i = 0; i < list.size(); i++) {
 				Tee<<move::move_to_string(list.move(i))<<std::endl;
 			}
