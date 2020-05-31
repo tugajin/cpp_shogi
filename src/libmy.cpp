@@ -29,8 +29,11 @@ namespace ml {
 	// math
 
 	uint64 rand_int_64() {
-		static std::mt19937_64 gen;
-		return gen();
+		//static std::mt19937_64 gen;
+		//return gen();
+		std::random_device seed_gen;
+  		std::mt19937_64 engine(seed_gen());
+		return engine();
 	}
 
 	int my_rand(int i) {

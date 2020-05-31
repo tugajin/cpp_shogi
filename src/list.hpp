@@ -44,6 +44,7 @@ public:
 	}
 };
 
+class List;
 
 namespace list {
 

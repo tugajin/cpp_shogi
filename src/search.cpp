@@ -6,6 +6,7 @@
 #include "list.hpp"
 #include "uct.hpp"
 #include "var.hpp"
+#include "mate_search.hpp"
 
 template<Side sd, bool is_root> static uint64 perft(const Pos& pos, const Ply ply) {
 #ifdef DEBUG
@@ -26,6 +27,17 @@ template<Side sd, bool is_root> static uint64 perft(const Pos& pos, const Ply pl
 	if (ply <= 0) {
 		return 1;
 	}
+
+	if(!in_check(pos)) {
+		const auto mv = mate_search(pos,Ply(5));
+		if(mv != move::MOVE_NONE) {
+			Tee<<"mate!!!!\n";
+			Tee<<pos<<std::endl;
+			Tee<<move::move_to_string(mv)<<std::endl;
+		}
+	}
+
+
 	List list;
 	gen_moves<sd>(list, pos);
 	

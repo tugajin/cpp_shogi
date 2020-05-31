@@ -30,6 +30,7 @@
 #include "var.hpp"
 #include "nn.hpp"
 #include "learn.hpp"
+#include "mate_search.hpp"
 
 const std::string EngineName{ "deep_sawa" };
 const std::string EngineVersion{ "1.0" };
@@ -290,6 +291,7 @@ static void usi_loop(std::vector<std::string> arg) {
 			// pos::test();
 		    //gen::test();
 			search::test_perft();
+			//mate::test();
 		}
 		else if (command == "show") {
 			Tee << gGame.pos() << std::endl;

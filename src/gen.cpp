@@ -301,9 +301,9 @@ template<Side sd>void add_direct_check(List& list, const Pos& pos) {
 			}
 		}
 	}{
-		auto target1 = get_gold_attack(xd,king) & global_target;
-		auto target2 = get_silver_attack(xd,king) & global_target;
 		const auto rank4_bb = (sd == BLACK) ? g_rank_mask[Rank_4] : g_rank_mask[Rank_6];
+		auto target1 = get_gold_attack(xd,king) & (g_prom[sd] | rank4_bb) & global_target;
+		auto target2 = get_silver_attack(xd,king) & global_target;
 
 		//prom
 		auto piece = pos.pieces(Silver, sd) & (g_prom[sd] | rank4_bb);
@@ -814,6 +814,15 @@ namespace gen {
 				Tee<<move::move_to_string(list.move(i))<<std::endl;
 			}
 
+		}
+		{
+			Pos pos = pos_from_sfen("lns3snl/1rg2kg2/pppp1p1pp/4p4/4P1p2/1P3PsK1/P2P3PP/2+b3S2/LNBG1GRNL w 2p");
+			Tee << pos << std::endl;
+			List list;
+			gen_moves<CHECK,WHITE>(list,pos,nullptr);
+			for(auto i = 0; i < list.size(); i++) {
+				Tee<<move::move_to_string(list.move(i))<<std::endl;
+			}
 		}
 	}
 

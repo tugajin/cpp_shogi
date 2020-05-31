@@ -25,7 +25,7 @@ void SelfPlay::episode() {
 	gGame.init(pos_from_sfen(START_SFEN));
 	//gGame.init(pos_from_sfen("lns2k3/3g5/ppppppp2/3ll4/9/7P1/P1N2PP2/5G3/2G1K1+p b B6pl2n3sb2rg"));
 	auto tesu = 0u;
-	auto result = 2;//0:��肪���� 1:��肪���� 2:��������
+	auto result = 2;//0:先手が勝ち 1:後手が勝ち 2:引き分け
 	const auto rand_tesu = ml::rand_int_64() % 150;
 	//const int rand_tesu = 0;
 
@@ -42,7 +42,7 @@ void SelfPlay::episode() {
 
 		if (list.size() == 0) {
 			Tee << "aa\n";
-			//�ۑ����Ȃ�
+			//保存しない
 			if (tesu < rand_tesu) {
 				Tee << "bb\n";
 				return;
@@ -91,8 +91,8 @@ void SelfPlay::episode() {
 			HAND_FOREACH(p) {
 				num += hand_num(gGame.pos().hand(turn), p);
 			}
-			if (num < 5) {//�����ł����ł��傤�B
-				Tee << "���ʃ��[��\n";
+			if (num < 5) {//負けでいいでしょう。
+				Tee << "特別ルール\n";
 				if (turn == BLACK) {
 					result = 1;
 				}
