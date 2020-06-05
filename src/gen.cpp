@@ -420,14 +420,14 @@ template<Side sd>void add_discover_check(List& list, const Pos& pos) {
 				const auto to = (sd == BLACK) ? from + Inc_N : from + Inc_S;
 				if(is_valid_sq(to) && ray.is_set(to)) {
 					if (square_is_prom<sd>(to)) {
-						const auto direct_bb = get_gold_attack(xd,king) & target;
-						if(!direct_bb.is_set(to)) {
+						const auto direct_bb = (~get_gold_attack(xd,king)) & target;
+						if(direct_bb.is_set(to)) {
 							list.add(move::make_move(from, to, Pawn, pos.piece(to), true));
 						}
 					} else {
 						const auto direct_sq = (sd == BLACK) ? from + Inc_S : from + Inc_N;
 						if(direct_sq != to && is_valid_sq(direct_sq) && target.is_set(to)) {
-							list.add(move::make_move(from, to, Pawn, pos.piece(to), false));
+							list.add(move::make_move(from, to, Pawn, pos.piece(to)));
 						}
 					}
 				}
@@ -608,6 +608,9 @@ template<Side sd>void add_drop_check(List& list, const Pos& pos) {
 	ADD_CHECK_MOVE(Knight);
 	//pawn
 	if(hand_has(hand,Pawn)) {
+		const auto king_rank = square_rank(king);
+		if(sd == BLACK && king_rank == Rank_9) { return; }
+		if(sd == WHITE && king_rank == Rank_1) { return; }
 		const auto to = (sd == BLACK) ? king + Inc_S : king + Inc_N;
 		if(is_valid_sq(to) && pos.piece(to) == PieceNone) {
 			//check double pawn and mwpd
@@ -665,6 +668,14 @@ void gen_moves(List& ml, const Pos& pos, const bit::Bitboard* checks) {
 		if (checks->pop_cnt() == 2) {
 			return;
 		}
+#ifdef DEBUG
+		if(checks->pop_cnt() != 1) {
+			Tee<<"error evasion\n";
+			Tee<<pos<<std::endl;
+			Tee<<move::move_to_string(pos.last_move())<<std::endl;
+			Tee<<*checks<<std::endl;
+		}
+#endif
 		assert(checks->pop_cnt() == 1);
 		auto check_bb = *checks;
 		const auto checker_sq = check_bb.lsb<false>();
@@ -839,6 +850,15 @@ namespace gen {
 			Tee << pos << std::endl;
 			List list;
 			gen_moves<CHECK,BLACK>(list,pos,nullptr);
+			for(auto i = 0; i < list.size(); i++) {
+				Tee<<move::move_to_string(list.move(i))<<std::endl;
+			}
+		}
+		{
+			Pos pos = pos_from_sfen("r4g3/p+P1s2s2/2s+P2+P1P/l1P2p3/Ppb1ps3/GNRpPP2k/1GNlK1+pn+l/7pL/B4GP w PNp");
+			Tee << pos << std::endl;
+			List list;
+			gen_moves<CHECK,WHITE>(list,pos,nullptr);
 			for(auto i = 0; i < list.size(); i++) {
 				Tee<<move::move_to_string(list.move(i))<<std::endl;
 			}
