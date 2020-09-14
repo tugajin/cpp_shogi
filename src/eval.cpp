@@ -9,6 +9,14 @@ constexpr Score piece_value[] =
 { Score(0),  Score(100), Score(300), Score(300), Score(400), Score(700), Score(800), Score(500), Score(15000),
 			 Score(510) ,Score(500), Score(500), Score(500), Score(850),Score(900),
 };
+constexpr Score piece_value_ex[] =
+{ Score(0),  Score(100 + 100) , Score(400 + 400), Score(700 + 700), Score(800 + 800), Score(500 + 500), Score(15000),Score(0),Score(0),
+			 Score(510 + 100), Score(500 + 400), Score(850 + 700),Score(900 + 800),
+};
+constexpr Score piece_value_pm[] =
+{ Score(0),  Score(510-100), Score(500-400), Score(850-700), Score(900-800), Score(0), Score(0),Score(0),Score(0),
+			 Score(0), Score(0), Score(0),Score(0),
+};
 static_assert(piece_value[Pawn] == Score(100), "pawn value error");
 static_assert(piece_value[Lance] == Score(300), "lance value error");
 static_assert(piece_value[Knight] == Score(300), "knight value error");
@@ -24,14 +32,20 @@ static_assert(piece_value[PSilver] == Score(500), "psilver value error");
 static_assert(piece_value[PBishop] == Score(850), "pbishop value error");
 static_assert(piece_value[PRook] == Score(900), "prook value error");
 
-
+Score piece_material(const Piece pc) {
+	return piece_value[pc];
+}
+Score piece_material_ex(const Piece pc) {
+	return piece_value_ex[pc];
+}
+Score piece_material_pm(const Piece pc) {
+	return piece_value_pm[pc];
+}
 template<Side sd> UCTScore uct_eval(const Pos& pos) {
 	auto score = eval<sd>(pos);
 	std::random_device rd;
 	score += Score(rd() % 30);
-	auto uct_score = sigmoid(double(score));
-	// torch::Tensor tensor = torch::rand({ 2, 3 });
-	// std::cout << tensor << std::endl;
+	auto uct_score = tanh(double(score)/2000);
 	return uct_score;
 }
 
@@ -56,6 +70,8 @@ template<Side sd> Score material(const Pos& pos) {
 		score += piece_value[pc] * hand_num(pos.hand(BLACK), pc);
 		score -= piece_value[pc] * hand_num(pos.hand(WHITE), pc);
 	}
+	std::random_device rd;
+	score += Score(rd() % 30);
 	return (sd == BLACK) ? score : -score;
 }
 Score eval(const Pos& pos) {

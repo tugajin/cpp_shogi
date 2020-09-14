@@ -26,6 +26,8 @@ bit::Bitboard pins(const Pos& pos, const Side sd);
 
 bool is_mate_with_pawn_drop(const Square to, const Pos& pos);
 
+Score see(const Move mv, const Pos & pos);
+
 namespace attack {
 	void test();
 }

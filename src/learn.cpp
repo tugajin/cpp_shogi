@@ -1,3 +1,4 @@
+#ifndef NO_GPU
 #include "learn.hpp"
 #include "game.hpp"
 #include "pos.hpp"
@@ -272,3 +273,10 @@ static std::thread gThreadList[MAX_THREAD];
         Tee<<"end learning\n";
     }
 }
+#else
+namespace learner {
+    void learn() {
+        
+    }
+}
+#endif

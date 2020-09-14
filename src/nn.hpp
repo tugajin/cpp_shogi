@@ -1,6 +1,8 @@
 #ifndef NN_HPP
 #define NN_HPP
 
+#ifndef NO_GPU
+
 #include "common.hpp"
 #include "hand.hpp"
 #include "pos.hpp"
@@ -211,7 +213,7 @@ struct NetImpl : torch::nn::Module {
     }
 
     std::tuple<torch::Tensor,torch::Tensor> forward(torch::Tensor x) {
-
+        
         auto h1 = torch::relu(bn1(conv1->forward(x)));
         auto h2 = torch::relu(bn2(conv2->forward(h1)));
         auto h3 = torch::relu(bn3(conv3->forward(h2)) + h1);
@@ -301,6 +303,9 @@ TORCH_MODULE(Net);
 
 void make_feat(const Pos &pos, torch::Tensor &feat);
 MoveClassPos move_to_index(const Move mv, const Side sd);
+
+#endif
+
 void learn();
 
 namespace nn { 

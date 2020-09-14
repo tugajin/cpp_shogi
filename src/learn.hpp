@@ -1,6 +1,8 @@
 #ifndef LEARN_HPP
 #define LEARN_HPP
 
+#ifndef NO_GPU
+
 #include "game.hpp"
 #include "learn.hpp"
 #include "nn.hpp"
@@ -19,6 +21,7 @@ public:
 	void data_load(int batch_size);
 	void valid(torch::Device& device);
 };
+#endif
 
 namespace learner {
 	void learn();
