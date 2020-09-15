@@ -3,6 +3,7 @@
 #include "gen.hpp"
 #include "list.hpp"
 #include "sfen.hpp"
+#include "eval.hpp"
 
 static bool can_play(const Pos& pos) {
 	List list;
@@ -222,6 +223,86 @@ bool is_mate_with_pawn_drop(const Square to, const Pos& pos) {
 		}
 	}
 	return true;
+}
+
+static Square pick_lva(const Pos & pos, const Side sd, const Square to, const Bitboard &pieces) {
+
+	PIECE_FOREACH(pc){
+
+		auto froms = pos.pieces(pc, sd) & pieces & bit::piece_attacks(pc, sd, to, pieces);
+
+		for (auto b = froms; b;) {
+			Square from = b.lsb();
+			if (bit::line_is_empty(from, to, pieces)) return from;
+		}
+	}
+	return SQ_NONE;
+}
+
+
+
+static Score see_rec(const Pos & pos, const Side sd, const Square to, const Bitboard & pieces, const Piece cp) {
+
+	assert(cp != PieceNone);
+
+	Score bs = Score(0); // stand pat
+
+	Square from = pick_lva(pos, sd, to, pieces);
+
+	if (from != SQ_NONE) {
+
+		Piece pc = pos.piece(from);
+
+		Score sc = piece_material_ex(cp);
+		auto new_pieces = pieces;
+		new_pieces.clear(from);
+		if (cp != King) sc -= see_rec(pos, flip_turn(sd), to, new_pieces, pc);
+
+		if (sc > bs) bs = sc;
+	}
+
+	assert(bs >= 0);
+	return bs;
+}
+
+Score see_max(Move mv, const Pos & pos) {
+
+	Score sc = Score(0);
+	const auto cap = move::move_cap(mv);
+	if (move::move_is_cap(mv)) sc += piece_material_ex(cap);
+	const auto piece = move::move_piece(mv);
+	if (move::move_is_prom(mv)) sc += piece_material_pm(piece);
+
+	return sc;
+}
+
+Score see(const Move mv, const Pos & pos) {
+
+	assert(pos.is_ok());
+	assert(move::move_is_ok(mv,pos));
+
+	Square from = move::move_from(mv);
+	Square to   = move::move_to(mv);
+
+	Piece pc = move::move_piece(mv);
+	Side  sd = pos.turn();
+
+	Score sc = Score(0);
+	const auto cap = move::move_cap(mv);
+	if (move::move_is_cap(mv)) sc += piece_material_ex(cap);
+
+	if (move::move_is_prom(mv)) {
+		sc += piece_material_pm(pc);
+		pc = piece_prom(pc);
+	}
+	auto pieces = pos.pieces();
+	if (!move::move_is_drop(mv)) {
+		pieces.clear(from);
+	}
+
+	sc -= see_rec(pos, flip_turn(sd), to, pieces, pc);
+
+	return sc;
 }
 
 namespace attack {

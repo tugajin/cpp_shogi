@@ -1,7 +1,9 @@
 #include "search.hpp"
 #include "attack.hpp"
+#include "eval.hpp"
 #include "gen.hpp"
 #include "move.hpp"
+#include "score.hpp"
 #include "sfen.hpp"
 #include "list.hpp"
 #include "uct.hpp"
@@ -162,6 +164,151 @@ void SearchOutput::end() {
 double SearchOutput::time() const {
 	return this->timer_.elapsed();
 }
+
+template<Side sd> Score full_quies(const Pos &pos, Score alpha, Score beta, Ply ply) {
+
+	assert(pos.is_ok());	
+
+	const auto in_checked = in_check(pos);
+	auto best_score = -score::INF;
+
+	if(!in_checked) {
+		best_score = eval(pos);
+		if(best_score > alpha) {
+			alpha = best_score;
+			if(best_score >= beta) {
+				return best_score;
+			}
+		}
+	} 
+
+	if(ply >= PLY_MAX) {
+		return Score(0);
+	}
+
+	List list;
+	
+	if(in_checked) {
+		const auto chk = checks(pos);
+		gen_moves<EVASION,sd>(list,pos,&chk);
+	} else {
+		gen_moves<TACTICAL,sd>(list,pos,nullptr);
+	}
+	//auto old_score = alpha;
+	auto num = 0;
+	for(auto i = 0; i < list.size(); i++) {
+		const auto mv = list.move(i);
+		if(!move::pseudo_is_legal(mv,pos)) {
+			continue;
+		}
+		if(see(mv,pos) < Score(0)) {
+			continue;
+		}
+		num++;
+		const auto new_pos = pos.succ(mv);
+		const auto score = -full_quies<flip_turn(sd)>(new_pos,-beta,-alpha,ply+1);
+		if(score >  best_score) {
+			best_score = score;
+			alpha = score;
+			if(best_score >= beta) {
+				return best_score;
+			}
+		}
+	}
+	if(!num) {
+		return score::loss(ply);
+	}
+	return best_score;
+}
+
+template<Side sd>Score full(const Pos &pos, Score alpha, Score beta, Depth depth, Ply ply) {
+
+	assert(pos.is_ok());	
+
+	if(depth <= Depth(0)) {
+		return full_quies<sd>(pos,alpha,beta,ply);
+	}
+
+	if(ply >= PLY_MAX) {
+		return Score(0);
+	}
+
+	List list;
+	
+	if(in_check(pos)) {
+		const auto chk = checks(pos);
+		gen_moves<EVASION,sd>(list,pos,&chk);
+	} else {
+		gen_moves<TACTICAL,sd>(list,pos,nullptr);
+		gen_moves<QUIET,sd>(list,pos,nullptr);
+		gen_moves<DROP,sd>(list,pos,nullptr);
+	}
+	//auto old_score = alpha;
+	auto best_score = -score::INF;
+	auto num = 0;
+	for(auto i = 0; i < list.size(); i++) {
+		const auto mv = list.move(i);
+		if(!move::pseudo_is_legal(mv,pos)) {
+			continue;
+		}
+		num++;
+		const auto new_pos = pos.succ(mv);
+		auto new_depth = depth - DEPTH_ONE;
+		const auto score = -full<flip_turn(sd)>(new_pos,-beta,-alpha,new_depth,ply+1);
+		if(score >  best_score) {
+			best_score = score;
+			alpha = score;
+			if(best_score >= beta) {
+				//Tee<<"beta cut\n";
+				return best_score;
+			}
+		}
+	}
+	if(!num) {
+		return score::loss(ply);
+	}
+	return best_score;
+}
+
+static Score full(const Pos &pos, Score alpha, Score beta, Depth depth, Ply ply) {
+	return pos.turn() == BLACK ? full<BLACK>(pos,alpha,beta,depth,ply)
+							   : full<WHITE>(pos,alpha,beta,depth,ply);
+}
+
+static Score full_quies(const Pos &pos, Score alpha, Score beta, Depth depth, Ply ply) {
+	return pos.turn() == BLACK ? full_quies<BLACK>(pos,alpha,beta,ply)
+							   : full_quies<WHITE>(pos,alpha,beta,ply);
+}
+
+
+Move full_search(const Pos &pos) {
+
+	List list;
+	gen_legals(list,pos);
+	Score alpha, beta, best_score;
+	alpha = -score::INF;
+	beta = score::INF;
+	best_score = -score::INF;
+	Move best_move = move::MOVE_NONE;
+	Depth depth = Depth(5);
+	for(auto i = 0; i < list.size(); i++) {
+		auto new_pos = pos.succ(list.move(i));
+		const auto score = - full(new_pos,-beta,-alpha,depth,Ply(1));
+		if (score > best_score) {
+			best_score = score;
+			best_move = list.move(i);
+			if(best_score > alpha) {
+				if(best_score >= beta) {
+					break;
+				}
+				alpha = best_score;
+			}
+		}
+	}
+	return best_move;
+}
+
+
 template uint64 perft<BLACK, true>(const Pos& pos, const Ply ply);
 template uint64 perft<WHITE, true>(const Pos& pos, const Ply ply);
 template uint64 perft<BLACK, false>(const Pos& pos, const Ply ply);

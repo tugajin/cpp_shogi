@@ -73,6 +73,9 @@ namespace move {
 	inline bool move_is_drop(const Move mv) {
 		return move_from(mv) >= SQUARE_SIZE;
 	}
+	inline bool move_is_cap(const Move mv) {
+		return move_cap(mv) != PieceNone;
+	}
 
 	bool pseudo_is_legal(const Move mv, const Pos& pos);
 	bool pseudo_is_legal_debug(const Move mv, const Pos& pos);

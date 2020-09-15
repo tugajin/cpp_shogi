@@ -6,6 +6,7 @@
 #include "list.hpp"
 #include "gen.hpp"
 #include "sfen.hpp"
+#include "search.hpp"
 
 enum MatePoint {
     OR_POINT, //玉方
@@ -16,7 +17,7 @@ inline constexpr MatePoint flip_matepoint(const MatePoint p) {
     return (p == OR_POINT) ? AND_POINT : OR_POINT;
 }
 
-template<Side sd, MatePoint mp> bool search(const Pos &pos, const Ply ply) {
+template<Side sd, MatePoint mp> bool mate_search(const Pos &pos, const Ply ply, Line &pv) {
  
     assert(pos.is_ok());
 
@@ -35,6 +36,8 @@ template<Side sd, MatePoint mp> bool search(const Pos &pos, const Ply ply) {
         gen_moves<CHECK,sd>(list,pos,nullptr);
     }
     //Tee<<pos<<std::endl;
+    Line new_pv;
+    
     for(auto i = 0; i < list.size(); i++) {
         const auto mv = list.move(i);
         const auto new_pos = pos.succ(mv);
@@ -42,7 +45,8 @@ template<Side sd, MatePoint mp> bool search(const Pos &pos, const Ply ply) {
             continue;
         }
         //Tee<<int(ply)<<"try:"<<move::move_to_string(mv)<<std::endl;
-        const auto result = search<flip_turn(sd),flip_matepoint(mp)>(new_pos,ply-1);
+        const auto result = mate_search<flip_turn(sd),flip_matepoint(mp)>(new_pos,ply-1,new_pv);
+
         if(mp == OR_POINT) {
             if(!result) {
                 //Tee<<int(ply)<<"return OR false\n";
@@ -51,6 +55,7 @@ template<Side sd, MatePoint mp> bool search(const Pos &pos, const Ply ply) {
         } else {
             if(result) {
                 //Tee<<int(ply)<<"return AND true\n";
+                pv.concat(mv,new_pv);
                 return true;
             }
         }
@@ -71,19 +76,24 @@ template<Side sd> Move mate_search(const Pos &pos, const Ply ply) {
 
     List list;
     gen_moves<CHECK,sd>(list,pos,nullptr);
+    Line pv;
     //Tee<<"list:size:"<<list.size()<<std::endl;
     for(auto limit_ply = 1; limit_ply < ply; limit_ply++) {
         for(auto i = 0; i < list.size(); i++) {
             const auto mv = list.move(i);
             const auto new_pos = pos.succ(mv);
+            
             if(!is_legal(new_pos)) {
                 continue;
             }
+            Line new_pv;
             //Tee<<"root:"<<move::move_to_string(mv)<<std::endl;
-            const auto result = search<flip_turn(sd),OR_POINT>(new_pos,ply-1);
+            const auto result = mate_search<flip_turn(sd),OR_POINT>(new_pos,ply-1,new_pv);
             //Tee<<"root result:"<<result<<std::endl;
             
             if(result) {
+                pv.concat(mv,new_pv);
+                Tee<<"pv:"<<pv.to_usi()<<std::endl;
                 return mv;
             }
         }
@@ -113,7 +123,6 @@ namespace mate {
             mv = mate_search<BLACK>(pos,Ply(3));
             Tee<<move::move_to_string(mv)<<std::endl;
 		}
-
     }
 
 }

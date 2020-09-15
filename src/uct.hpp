@@ -5,7 +5,10 @@
 #include "move.hpp"
 #include "search.hpp"
 #include "thread.hpp"
+#include "nn.hpp"
 #include <vector>
+#include <queue>
+#include <utility>
 
 class UCTNode;
 
@@ -128,7 +131,7 @@ public:
 	SearchOutput* so_;
 	Time time_limits_;
 	Lockable tree_lock_;
-
+	
 	void think();
 	void init();
 	void allocate();
@@ -137,7 +140,7 @@ public:
 
 private:
 	template<Side sd> void think();
-	template<Side sd> UCTScore uct_search(const Pos& pos, UCTNode* node, const Ply ply, Line& pv);
+	template<Side sd> UCTScore uct_search(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode*, UCTNode*>>& uct_pv_list);
 	UCTNode* find_same_node(const Key key, const Key hand_key, const Side sd, const Ply ply);
 	UCTNode* find_empty_node(const Key key, const Key hand_key, const Side sd, const Ply ply);
 	template<Side sd> void expand_root(const Pos& pos);
@@ -145,13 +148,20 @@ private:
 	uint32 hash_use_rate() const;
 	bool is_full() const;
 	bool update_root_info(const uint64 loop, const Line& pv);
+	void enqueue_node(const Pos& pos, UCTNode* node);
+	void dequeue_node();
+	void eval_node();
 	void disp_info(const uint64 loop, const Line& pv, const UCTScore sc)const;
 	uint32 uct_nodes_size_;
 	uint32 uct_nondes_mask_;
 	uint32 use_node_num_;
 	UCTNode root_node_;
 	UCTNode* uct_nodes_ = nullptr;
-
+	Lockable queue_lock_;
+	//posではなくfeatにする。
+	std::queue< std::pair<torch::Tensor,UCTNode * > > node_queue_;
+	Net model_;
+	torch::DeviceType device_type_; 
 };
 
 void start_search(SearchOutput& so, const Pos& pos, const SearchInput& si);
