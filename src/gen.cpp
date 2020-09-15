@@ -420,8 +420,8 @@ template<Side sd>void add_discover_check(List& list, const Pos& pos) {
 				const auto to = (sd == BLACK) ? from + Inc_N : from + Inc_S;
 				if(is_valid_sq(to) && ray.is_set(to)) {
 					if (square_is_prom<sd>(to)) {
-						const auto direct_bb = get_gold_attack(xd,king) & target;
-						if(!direct_bb.is_set(to)) {
+						const auto direct_bb = (~get_gold_attack(xd,king)) & target;
+						if(direct_bb.is_set(to)) {
 							list.add(move::make_move(from, to, Pawn, pos.piece(to), true));
 						}
 					} else {
