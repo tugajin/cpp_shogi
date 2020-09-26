@@ -140,7 +140,7 @@ public:
 
 private:
 	template<Side sd> void think();
-	template<Side sd> UCTScore uct_search(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode*, UCTNode*>>& uct_pv_list);
+	template<Side sd> UCTScore uct_search(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode*, ChildNode*>>& uct_pv_list);
 	UCTNode* find_same_node(const Key key, const Key hand_key, const Side sd, const Ply ply);
 	UCTNode* find_empty_node(const Key key, const Key hand_key, const Side sd, const Ply ply);
 	template<Side sd> void expand_root(const Pos& pos);
@@ -165,6 +165,7 @@ private:
 };
 
 void start_search(SearchOutput& so, const Pos& pos, const SearchInput& si);
+void normalize_by_softmax(std::vector<UCTScore>& list);
 
 extern UCTSearcher gUCT;
 

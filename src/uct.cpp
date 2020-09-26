@@ -10,6 +10,7 @@
 #include "eval.hpp"
 #include "thread.hpp"
 #include "nn.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <torch/torch.h>
@@ -17,7 +18,7 @@
 UCTSearcher gUCT;
 
 void UCTSearcher::allocate() {
-	this->uct_nodes_size_ = (uint32(1) << 18);
+	this->uct_nodes_size_ = (uint32(1) << 14);
 	if (this->uct_nodes_ != nullptr) {
 		this->free();
 	}
@@ -80,7 +81,6 @@ void UCTSearcher::dequeue_node() {
 
 void UCTSearcher::eval_node() {
 	
-	Tee<<"queue pos"<<this->node_queue_.size()<<"\n";
 	torch::Tensor all_feat = torch::zeros({ this->node_queue_.size(), SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));            
 	std::vector<UCTNode *> node_list;
 	auto i = 0;
@@ -98,7 +98,37 @@ void UCTSearcher::eval_node() {
 	auto output = this->model_->forward(all_feat);
 	auto output_p = std::get<0>(output);
     auto output_v = std::get<1>(output);
-	Tee<<output_v<<std::endl;
+	for(auto i = 0; i < node_list.size(); i++) {
+		auto node = node_list[i];
+		auto child_node = node->child_;
+		std::vector<UCTScore> policy_list;
+		for(auto j = 0; j < node->child_num_; j++) {
+			auto move = child_node[j].move_;
+			auto index = move_to_index(move, node->turn_);
+			policy_list.emplace_back(static_cast<UCTScore>(output_p[i][index].item<float>()));
+		}
+
+		normalize_by_softmax(policy_list);
+
+		for(auto j = 0; j < node->child_num_; j++) {
+			child_node[j].policy_score_ = policy_list[j];
+		}
+		node->win_score_ = output_v[i][0].item<float>();
+
+		node->evaled_ = true;
+	}
+}
+
+void normalize_by_softmax(std::vector<UCTScore>& list) {
+	auto max_v = std::max_element(list.begin(), list.end());
+	UCTScore sum = 0.0f;
+	for(auto &x : list) {
+		x = static_cast<UCTScore>(expf(static_cast<float>(x) - static_cast<float>(*max_v)));
+		sum += x;
+	}
+	for(auto &x : list) {
+		x = x / sum;
+	}
 }
 
 void start_search(SearchOutput& so, const Pos& pos, const SearchInput& si) {
@@ -112,23 +142,50 @@ void start_search(SearchOutput& so, const Pos& pos, const SearchInput& si) {
 	Tee << "info think end\n";
 
 }
+
+static void update_result(ChildNode* child, float result, UCTNode* node) {
+	node->win_score_ += result;
+	node->po_num_ += 1;
+	child->win_score_ += result;
+	child->po_num_ += 1;
+}
+
 template<Side sd>void UCTSearcher::think() {
 
 	this->init();
 	this->expand_root<sd>(this->pos_);
 	auto loop = 0ull;
 	for (loop = 0ull; ; ++loop) {
-		std::vector<std::vector<std::pair<UCTNode *, UCTNode *>>> uct_pv_list; 
+		std::vector<std::vector<std::pair<UCTNode *, ChildNode *>>> uct_pv_list; 
 		UCTScore score = 0.0f;
 		Line pv;
 		
 		for (auto i = 0; i < 1; i++) {
 			pv.clear();
-			std::vector<std::pair<UCTNode *, UCTNode *>> uct_pv;
+			std::vector<std::pair<UCTNode *, ChildNode *>> uct_pv;
 			score = this->uct_search<sd>(this->pos_, &this->root_node_, Ply(0), pv, uct_pv);
+			uct_pv_list.emplace_back(uct_pv);
 		}
+
 		if (score == score::QUEUEING_SCORE) {
 			this->eval_node();
+			
+			auto result = -1.0f;
+
+			for(auto &uct_pv : uct_pv_list) {
+				for(auto i = static_cast<int>(uct_pv.size()-1); i >= 0; i--) {
+					auto node_info = uct_pv[i];
+					auto curr_node = node_info.first;
+					auto child = node_info.second;
+					assert(child != nullptr);
+					assert(curr_node != nullptr);
+					if(i == uct_pv.size()-1) {
+						result = -child->node_ptr_->win_score_;
+					}
+					update_result(child, result, curr_node);
+					result = -result;
+				}
+			}
 		}
 
 		if (this->update_root_info(loop, pv)) {
@@ -136,7 +193,7 @@ template<Side sd>void UCTSearcher::think() {
 			break;
 		}
 
-		if (loop % 5000 == 0) {
+		if (loop % 100 == 0) {
 			this->disp_info(loop, pv, score);
 		}
 	}
@@ -381,14 +438,9 @@ template<Side sd> void UCTSearcher::expand_root(const Pos& pos) {
 	}
 	this->root_node_.child_num_ = child_num;
 }
-static void update_result(ChildNode* child, float result, UCTNode* node) {
-	node->win_score_ += result;
-	node->po_num_ += 1;
-	child->win_score_ += result;
-	child->po_num_ += 1;
-}
 
-template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode *, UCTNode *>>& uct_pv_list) {
+
+template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode *, ChildNode *>>& uct_pv_list) {
 
 #ifdef DEBUG
 	if (!pos.is_ok()) {
@@ -470,7 +522,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 	auto result = -1.0f;
 	if (next_child->node_ptr_ == nullptr) {
 		auto new_node = expand_node<sd>(new_pos, ply);
-		auto uct_pv = std::make_pair(node, new_node);
+		auto uct_pv = std::make_pair(node, next_child);
 		uct_pv_list.emplace_back(uct_pv);
 
 		assert(new_pos.pos_key() == new_node->pos_key_);
@@ -488,7 +540,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 			result = 1.0f;
 		}
 		else {
-			new_node->evaled_ = true;
+			//new_node->evaled_ = true;
 			//return -(uct_eval<flip_turn(sd)>(new_pos));
 			enqueue_node(pos,node);
 			return score::QUEUEING_SCORE;
@@ -505,7 +557,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 			exit(1);
 		}
 #endif
-		auto uct_pv = std::make_pair(node, next_child->node_ptr_);
+		auto uct_pv = std::make_pair(node, next_child);
 		uct_pv_list.emplace_back(uct_pv);
 
 		result = -(this->uct_search<flip_turn(sd)>(new_pos, next_child->node_ptr_, ply + 1, pv, uct_pv_list));
@@ -547,5 +599,5 @@ template void UCTSearcher::expand_root<BLACK>(const Pos& pos);
 template void UCTSearcher::expand_root<WHITE>(const Pos& pos);
 template UCTNode* UCTSearcher::expand_node<BLACK>(const Pos& pos, Ply ply);
 template UCTNode* UCTSearcher::expand_node<WHITE>(const Pos& pos, Ply ply);
-template UCTScore UCTSearcher::uct_search<BLACK>(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode*, UCTNode*>>& uct_pv_list);
-template UCTScore UCTSearcher::uct_search<WHITE>(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode*, UCTNode*>>& uct_pv_list);
+template UCTScore UCTSearcher::uct_search<BLACK>(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode*, ChildNode*>>& uct_pv_list);
+template UCTScore UCTSearcher::uct_search<WHITE>(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode*, ChildNode*>>& uct_pv_list);
