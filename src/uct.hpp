@@ -84,6 +84,13 @@ public:
 	float win_score_;
 	float policy_score_;
 	UCTNode* node_ptr_;
+	friend std::ostream& operator<<(std::ostream& os, const ChildNode& node) {
+		os<<"move:"<<move::move_to_string(node.move_)<<std::endl;
+		os<<"po_num:"<<node.po_num_<<std::endl;
+		os<<"win_score:"<<node.win_score_<<std::endl;
+		os<<"policy_score:"<<node.win_score_<<std::endl;
+		return os;
+	}
 };
 
 
@@ -97,7 +104,6 @@ public:
 	Ply ply_;
 	int po_num_;
 	float win_score_;
-	float policy_score_;
 	UCTNodeState node_state_;
 	int child_num_;
 	bool evaled_;
@@ -112,7 +118,6 @@ public:
 		this->evaled_ = false;
 		this->is_draw_ = false;
 		this->node_state_ = UCTNode::NODE_UNKNOWN;
-		this->policy_score_ = 0.0f;
 		this->used_ = false;
 	}
 	void init(const Pos& pos, const Ply ply) {
@@ -122,6 +127,24 @@ public:
 		this->turn_ = pos.turn();
 		this->ply_ = ply;
 		this->used_ = true;
+	}
+	friend std::ostream& operator<<(std::ostream& os, const UCTNode& node) {
+		os<<"key:"<<static_cast<uint64>(node.pos_key_)<<std::endl;
+		os<<"hand:"<<static_cast<uint64>(node.hand_key_)<<std::endl;
+		os<<"turn:"<<static_cast<int>(node.turn_)<<std::endl;
+		os<<"ply:"<<static_cast<int>(node.ply_)<<std::endl;
+		os<<"used:"<<node.used_<<std::endl;
+		os<<"po_num:"<<node.po_num_<<std::endl;
+		os<<"win_score:"<<node.win_score_<<std::endl;
+		os<<"node_state:"<<static_cast<int>(node.node_state_)<<std::endl;
+		os<<"child_num:"<<node.child_num_<<std::endl;
+		os<<"evaled:"<<node.evaled_<<std::endl;
+		os<<"draw:"<<node.is_draw_<<std::endl;
+		os<<"children:\n";
+		for(auto i = 0; i < node.child_num_; i++) {
+			os<<node.child_[i]<<std::endl;
+		}
+		return os;
 	}
 };
 

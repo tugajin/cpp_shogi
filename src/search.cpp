@@ -275,7 +275,7 @@ static Score full(const Pos &pos, Score alpha, Score beta, Depth depth, Ply ply)
 							   : full<WHITE>(pos,alpha,beta,depth,ply);
 }
 
-static Score full_quies(const Pos &pos, Score alpha, Score beta, Depth depth, Ply ply) {
+static Score full_quies(const Pos &pos, Score alpha, Score beta, Ply ply) {
 	return pos.turn() == BLACK ? full_quies<BLACK>(pos,alpha,beta,ply)
 							   : full_quies<WHITE>(pos,alpha,beta,ply);
 }

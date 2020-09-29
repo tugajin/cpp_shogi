@@ -265,7 +265,7 @@ static Score see_rec(const Pos & pos, const Side sd, const Square to, const Bitb
 	return bs;
 }
 
-Score see_max(Move mv, const Pos & pos) {
+Score see_max(Move mv) {
 
 	Score sc = Score(0);
 	const auto cap = move::move_cap(mv);

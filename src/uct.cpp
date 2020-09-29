@@ -81,7 +81,7 @@ void UCTSearcher::dequeue_node() {
 
 void UCTSearcher::eval_node() {
 	
-	torch::Tensor all_feat = torch::zeros({ this->node_queue_.size(), SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));            
+	torch::Tensor all_feat = torch::zeros({ static_cast<int32>(this->node_queue_.size()), SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));            
 	std::vector<UCTNode *> node_list;
 	auto i = 0;
 	while(!this->node_queue_.empty()) {
@@ -98,7 +98,7 @@ void UCTSearcher::eval_node() {
 	auto output = this->model_->forward(all_feat);
 	auto output_p = std::get<0>(output);
     auto output_v = std::get<1>(output);
-	for(auto i = 0; i < node_list.size(); i++) {
+	for(auto i = 0u; i < node_list.size(); i++) {
 		auto node = node_list[i];
 		auto child_node = node->child_;
 		std::vector<UCTScore> policy_list;
@@ -179,7 +179,7 @@ template<Side sd>void UCTSearcher::think() {
 					auto child = node_info.second;
 					assert(child != nullptr);
 					assert(curr_node != nullptr);
-					if(i == uct_pv.size()-1) {
+					if(i == static_cast<int32>(uct_pv.size()-1)) {
 						result = -child->node_ptr_->win_score_;
 					}
 					update_result(child, result, curr_node);
@@ -277,7 +277,7 @@ bool UCTSearcher::update_root_info(const uint64 loop, const Line& pv) {
 	}
 	return this->is_full();
 }
-void UCTSearcher::disp_info(const uint64 loop, const Line& pv, const UCTScore sc) const {
+void UCTSearcher::disp_info(const uint64 loop, const Line& pv, const UCTScore /*sc*/) const {
 	double time = this->so_->time();
 	std::string line = "info";
 	if (time >= 0.001) {
@@ -305,7 +305,7 @@ void UCTSearcher::disp_info(const uint64 loop, const Line& pv, const UCTScore sc
 
 	}
 }
-ChildNode* select_child(UCTNode* node, const Pos& pos) {
+ChildNode* select_child(UCTNode* node, const Pos& /*pos*/) {
 
 	assert(node->child_num_ != 0);
 
@@ -507,13 +507,16 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 		//Tee << "win\n";
 		return 1.0f;
 	}
-	//Tee<<"select child\n";
-	//Tee<<pos<<std::endl;
+	
+	Tee<<*node<<std::endl;
+
 	auto* next_child = select_child(node, pos);
 	if (next_child == nullptr) {
 		node->node_state_ = UCTNode::NODE_LOSE;
 		return -1.0f;
 	}
+
+	Tee<<*next_child<<std::endl;
 
 	auto new_pos = pos.succ(next_child->move_);
 
