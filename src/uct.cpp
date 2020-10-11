@@ -160,7 +160,7 @@ template<Side sd>void UCTSearcher::think() {
 		UCTScore score = 0.0f;
 		Line pv;
 		
-		for (auto i = 0; i < 1; i++) {
+		for (auto i = 0; i < 3; i++) {
 			pv.clear();
 			std::vector<std::pair<UCTNode *, ChildNode *>> uct_pv;
 			score = this->uct_search<sd>(this->pos_, &this->root_node_, Ply(0), pv, uct_pv);

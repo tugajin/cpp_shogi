@@ -290,8 +290,9 @@ static void usi_loop(std::vector<std::string> arg) {
 			// bit::test();
 			// pos::test();
 		    //gen::test();
-			search::test_perft();
+			//search::test_perft();
 			//mate::test();
+			uct::test();
 		}
 		else if (command == "show") {
 			Tee << gGame.pos() << std::endl;
