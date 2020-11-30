@@ -4,7 +4,10 @@ from enum import Enum
 
 PIECE_NUM = 16
 SIDE_PIECE_NUM = 32
-SQUARE_SIZE = 81
+FILE_SIZE = 9
+RANK_SIZE = 9
+SQUARE_SIZE = FILE_SIZE * RANK_SIZE
+
 SFEN_SIDE_PIECE =  " . P L N S B R G K+P+L+N+S+B+R+G+. p l n s b r g k+p+l+n+s+b+r+g+k"
 
 SFEN_FILE = "987654321"
@@ -24,10 +27,10 @@ class Direction(Enum):
      DIR_NONE = 10
 
 def sq_to_file(sq):
-    return int(sq / 9)   
+    return int(sq / FILE_SIZE)   
 
 def sq_to_rank(sq):
-    return int(sq % 9)
+    return int(sq % RANK_SIZE)
 
 def flip_sq(sq) :
     return SQUARE_SIZE - sq - 1
@@ -43,7 +46,7 @@ def get_direction(move_from, move_to):
     if False:
         pass
     elif move_from_file == move_to_file and move_from_rank == move_to_rank:
-        return DIR_NONE
+        return Direction.DIR_NONE
     elif move_from_file == move_to_file and move_from_rank > move_to_rank:
         return Direction.DIR_DW
     elif move_from_file == move_to_file and move_from_rank < move_to_rank: 
@@ -242,7 +245,7 @@ class Action:
             to_file = self.sfen_to_file(s[2])
             to_rank = self.sfen_to_rank(s[3])
             self.move_to = self.make_square(to_file,to_rank)
-            self.piece =  State.sfen_to_side_piece(s[0])
+            self.piece =  SidePiece.from_sfen(s[0])
             self.piece = self.piece.to_piece()
 
             self.prom = False
@@ -333,6 +336,7 @@ class Action:
                     index = PC_DIRECTION_INDEX[direction] + my_to
                 else:
                     print("index error3!")
+        #print(index)
         return index
 
 class State:
@@ -425,7 +429,7 @@ class State:
         s += "\n"
         for index,p in enumerate(self.pos):
             s +=  p.to_sfen()
-            if (index + 1) % 9 == 0:
+            if (index + 1) % RANK_SIZE == 0:
                 s += "\n"
         for p in range(SidePiece.BPAWN.value,SidePiece.BGOLD.value+1):
             sp = SidePiece(p)
@@ -452,7 +456,7 @@ class State:
                 s += sfen.strip()
                 pos_num += 1
                 num = 0
-            if (pos_num) % 9 == 0:
+            if (pos_num) % RANK_SIZE == 0:
                 if num != 0:
                     s += str(num)
                 s += '/'
@@ -474,10 +478,8 @@ class State:
 
         return s
 
-    def to_tensor(self):
+    def to_array(self):
         
-        feat = np.zeros((112,9,9))
-
         F_HAND_PAWN_POS = 0
         E_HAND_PAWN_POS = F_HAND_PAWN_POS + 18
         F_HAND_LANCE_POS = E_HAND_PAWN_POS + 18
@@ -539,6 +541,8 @@ class State:
                          Piece.PSILVER : E_POS_PSILVER_POS, Piece.KING : E_POS_KING_POS, Piece.PBISHOP : E_POS_PBISHOP_POS,
                          Piece.PROOK : E_POS_PROOK_POS}
  
+        feat = np.zeros((POS_END_SIZE, FILE_SIZE, RANK_SIZE))
+
         if self.turn == Side.BLACK:
             me_turn = Side.BLACK
             opp_turn = Side.WHITE
@@ -566,11 +570,11 @@ class State:
                 if hp_side.side() == me_turn:
                     for num in range(hand_num + 1):
                         index = F_HAND_INDEX[hp] + num
-                        feat[index] = np.ones((9,9))
+                        feat[index] = np.ones((FILE_SIZE, RANK_SIZE))
                 else:
                     for num in range(hand_num + 1):
                         index = E_HAND_INDEX[hp] + num
-                        feat[index] = np.ones((9,9))
+                        feat[index] = np.ones((FILE_SIZE, RANK_SIZE))
 
         return feat
 
@@ -588,4 +592,4 @@ if  __name__ == '__main__':
     action.load_sfen("9a9b")
     print(action.to_index(Side.BLACK))
     print(action.to_index(Side.WHITE))
-    print(state.to_tensor())
+    print(state.to_array())
