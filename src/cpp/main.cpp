@@ -28,8 +28,6 @@
 #include "util.hpp"
 #include "uct.hpp"
 #include "var.hpp"
-#include "nn.hpp"
-#include "learn.hpp"
 #include "mate_search.hpp"
 
 const std::string EngineName{ "deep_sawa" };
@@ -48,8 +46,6 @@ int main(int argc, char** argv) {
 	pos::init();
 	var::init();
 	common::init();
-	//learner::learn();
-	//exit(0);
 	listen_input();
 	var::update();
 
@@ -75,15 +71,7 @@ int main(int argc, char** argv) {
 			arg_strings.push_back(str);
 		}
 	}
-	/*arg_strings.push_back("isready");
-	arg_strings.push_back("usinewgame");
-	arg_strings.push_back("position sfen lns2k3/3g5/ppppppp2/3l5/9/5B1P1/P1N1+lPP2/9/2G1Kg+p b 6pl2n3sb2rg");
-	arg_strings.push_back("show");
-	arg_strings.push_back("go infinite");
-	arg_strings.push_back("learn");
-	*/
 	usi_loop(arg_strings);
-	//#endif
 	return EXIT_SUCCESS;
 }
 
@@ -292,7 +280,8 @@ static void usi_loop(std::vector<std::string> arg) {
 		    //gen::test();
 			//search::test_perft();
 			//mate::test();
-			uct::test();
+			//uct::test();
+			eval::test();
 		}
 		else if (command == "show") {
 			Tee << gGame.pos() << std::endl;
@@ -313,9 +302,6 @@ static void usi_loop(std::vector<std::string> arg) {
 			gSelfPlay.free();
 			std::exit(EXIT_SUCCESS);			
 		} 
-		else if (command == "learn") {
-			learner::learn();
-		}
 		else if (command == "gameover") {
 			gUCT.free();
 			init_done = false;

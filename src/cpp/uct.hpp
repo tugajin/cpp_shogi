@@ -5,7 +5,6 @@
 #include "move.hpp"
 #include "search.hpp"
 #include "thread.hpp"
-#include "nn.hpp"
 #include <vector>
 #include <queue>
 #include <utility>
@@ -181,10 +180,6 @@ private:
 	UCTNode root_node_;
 	UCTNode* uct_nodes_ = nullptr;
 	Lockable queue_lock_;
-	//posではなくfeatにする。
-	std::queue< std::pair<torch::Tensor,UCTNode * > > node_queue_;
-	Net model_;
-	torch::DeviceType device_type_; 
 };
 
 void start_search(SearchOutput& so, const Pos& pos, const SearchInput& si);

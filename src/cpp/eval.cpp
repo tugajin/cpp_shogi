@@ -1,9 +1,12 @@
 #include "eval.hpp"
 #include "pos.hpp"
 #include "eval.hpp"
+#include "gen.hpp"
+#include "list.hpp"
+#include "sfen.hpp"
+#include "uct.hpp"
 #include <cmath>
 #include <random>
-#include <torch/torch.h>
 
 constexpr Score piece_value[] =
 { Score(0),  Score(100), Score(300), Score(300), Score(400), Score(700), Score(800), Score(500), Score(15000),
@@ -42,14 +45,14 @@ Score piece_material_pm(const Piece pc) {
 	return piece_value_pm[pc];
 }
 template<Side sd> UCTScore uct_eval(const Pos& pos) {
-	auto score = eval<sd>(pos);
+	auto score = evaluate<sd>(pos);
 	std::random_device rd;
-	score += Score(rd() % 30);
+	//score += Score(rd() % 30);
 	auto uct_score = tanh(double(score)/2000);
 	return uct_score;
 }
 
-template<Side sd> Score eval(const Pos& pos) {
+template<Side sd> Score evaluate(const Pos& pos) {
 	return material<sd>(pos);
 }
 template<Side sd> Score material(const Pos& pos) {
@@ -74,8 +77,8 @@ template<Side sd> Score material(const Pos& pos) {
 	score += Score(rd() % 30);
 	return (sd == BLACK) ? score : -score;
 }
-Score eval(const Pos& pos) {
-	return pos.turn() == BLACK ? eval<BLACK>(pos) : eval<WHITE>(pos);
+Score evaluate(const Pos& pos) {
+	return pos.turn() == BLACK ? evaluate<BLACK>(pos) : evaluate<WHITE>(pos);
 }
 Score material(const Pos& pos) {
 	return pos.turn() == BLACK ? material<BLACK>(pos) : material<WHITE>(pos);
@@ -84,3 +87,14 @@ UCTScore uct_eval(const Pos& pos) {
 	return pos.turn() == BLACK ? uct_eval<BLACK>(pos) : uct_eval<WHITE>(pos);
 }
 
+
+
+namespace eval {
+
+	void test() {
+
+
+	}
+
+
+}

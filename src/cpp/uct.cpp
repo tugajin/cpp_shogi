@@ -9,11 +9,9 @@
 #include "sfen.hpp"
 #include "eval.hpp"
 #include "thread.hpp"
-#include "nn.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <torch/torch.h>
 
 UCTSearcher gUCT;
 
@@ -25,21 +23,6 @@ void UCTSearcher::allocate() {
 	this->uct_nodes_ = new UCTNode[this->uct_nodes_size_];
 	assert(this->uct_nodes_ != nullptr);
 
-    if (torch::cuda::is_available()) {
-        Tee << "CUDA available! Training on GPU." << std::endl;
-        this->device_type_ = torch::kCUDA;
-    }
-    else {
-        Tee << "Training on CPU." << std::endl;
-        this->device_type_ = torch::kCPU;
-    }
-
-    torch::Device device(this->device_type_);
-	Tee<<"load model...\n";
-	torch::load(this->model_, "../model.pt");
-	this->model_->to(device);
-	this->model_->eval();
-	Tee<<"end\n";
 }
 void UCTSearcher::free() {
 	delete[] this->uct_nodes_;
@@ -66,57 +49,13 @@ void UCTSearcher::think() {
 }
 
 void UCTSearcher::enqueue_node(const Pos& pos, UCTNode* node) {
-	torch::Tensor feat = 
-		torch::zeros({ SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, 
-					torch::TensorOptions().dtype(torch::kFloat));
-	make_feat(pos, feat);
-	auto obj = std::make_pair(feat, node);
-	this->node_queue_.push(obj);
 }
 
 void UCTSearcher::dequeue_node() {
-	auto empty = std::queue<std::pair<torch::Tensor, UCTNode * >>();
-	std::swap(this->node_queue_, empty);
 }
 
 void UCTSearcher::eval_node() {
 	
-	torch::Tensor all_feat = torch::zeros({ static_cast<int32>(this->node_queue_.size()), SQUARE_SIZE , POS_END_SIZE, SQUARE_SIZE }, torch::TensorOptions().dtype(torch::kFloat));            
-	std::vector<UCTNode *> node_list;
-	auto i = 0;
-	while(!this->node_queue_.empty()) {
-		auto pair_info = this->node_queue_.front();
-		auto feat = pair_info.first;
-		auto node = pair_info.second;
-		all_feat[i++] = feat;
-		node_list.emplace_back(node);
-		this->node_queue_.pop();
-	}
-	all_feat = all_feat.view({ i, SQUARE_SIZE * POS_END_SIZE ,9,9 });
-    torch::Device device(this->device_type_);
-	all_feat = all_feat.to(device);
-	auto output = this->model_->forward(all_feat);
-	auto output_p = std::get<0>(output);
-    auto output_v = std::get<1>(output);
-	for(auto i = 0u; i < node_list.size(); i++) {
-		auto node = node_list[i];
-		auto child_node = node->child_;
-		std::vector<UCTScore> policy_list;
-		for(auto j = 0; j < node->child_num_; j++) {
-			auto move = child_node[j].move_;
-			auto index = move_to_index(move, node->turn_);
-			policy_list.emplace_back(static_cast<UCTScore>(output_p[i][index].item<float>()));
-		}
-
-		normalize_by_softmax(policy_list);
-
-		for(auto j = 0; j < node->child_num_; j++) {
-			child_node[j].policy_score_ = policy_list[j];
-		}
-		node->win_score_ = output_v[i][0].item<float>();
-
-		node->evaled_ = true;
-	}
 }
 
 void normalize_by_softmax(std::vector<UCTScore>& list) {
@@ -160,7 +99,7 @@ template<Side sd>void UCTSearcher::think() {
 		UCTScore score = 0.0f;
 		Line pv;
 		
-		for (auto i = 0; i < 3; i++) {
+		for (auto i = 0; i < 1; i++) {
 			pv.clear();
 			std::vector<std::pair<UCTNode *, ChildNode *>> uct_pv;
 			score = this->uct_search<sd>(this->pos_, &this->root_node_, Ply(0), pv, uct_pv);
@@ -508,7 +447,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 		return 1.0f;
 	}
 	
-	Tee<<*node<<std::endl;
+	//Tee<<*node<<std::endl;
 
 	auto* next_child = select_child(node, pos);
 	if (next_child == nullptr) {
@@ -516,7 +455,7 @@ template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node
 		return -1.0f;
 	}
 
-	Tee<<*next_child<<std::endl;
+	//Tee<<*next_child<<std::endl;
 
 	auto new_pos = pos.succ(next_child->move_);
 
@@ -594,8 +533,6 @@ namespace uct {
 		si.init();
 		si.type_ = LIMIT_DEPTH;
 		start_search(so, pos, si);
-		//Net model;
-		//torch::save(model, "./model.pt");
 	}
 }
 template void UCTSearcher::expand_root<BLACK>(const Pos& pos);

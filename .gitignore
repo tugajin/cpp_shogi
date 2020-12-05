@@ -1,0 +1,7 @@
+build/
+record/
+.vscode/
+__pycache__/
+*.pt
+*.sfen
+

@@ -173,7 +173,7 @@ template<Side sd> Score full_quies(const Pos &pos, Score alpha, Score beta, Ply 
 	auto best_score = -score::INF;
 
 	if(!in_checked) {
-		best_score = eval(pos);
+		best_score = evaluate(pos);
 		if(best_score > alpha) {
 			alpha = best_score;
 			if(best_score >= beta) {
