@@ -1,91 +1,35 @@
-#ifndef NO_GPU
+#include <cstring>
 
 #include "nn.hpp"
-#include "../cpp/pos.hpp"
-#include "../cpp/sfen.hpp"
-#include "../cpp/move.hpp"
+#include "pos.hpp"
+#include "sfen.hpp"
+#include "move.hpp"
 
-enum FeatPos : int { 
-    F_HAND_PAWN_POS = 0,
-    E_HAND_PAWN_POS = F_HAND_PAWN_POS + 18,
-    F_HAND_LANCE_POS = E_HAND_PAWN_POS + 18,
-    E_HAND_LANCE_POS = F_HAND_LANCE_POS + 4,
-    F_HAND_KNIGHT_POS = E_HAND_LANCE_POS + 4,
-    E_HAND_KNIGHT_POS = F_HAND_KNIGHT_POS + 4,
-    F_HAND_SILVER_POS = E_HAND_KNIGHT_POS + 4,
-    E_HAND_SILVER_POS = F_HAND_SILVER_POS + 4,
-    F_HAND_GOLD_POS = E_HAND_SILVER_POS + 4,
-    E_HAND_GOLD_POS = F_HAND_GOLD_POS + 4,
-    F_HAND_BISHOP_POS = E_HAND_GOLD_POS + 4,
-    E_HAND_BISHOP_POS = F_HAND_BISHOP_POS + 2,
-    F_HAND_ROOK_POS = E_HAND_BISHOP_POS + 2,
-    E_HAND_ROOK_POS = F_HAND_ROOK_POS + 2,
-    F_POS_PAWN_POS = E_HAND_ROOK_POS + 2,
-    
-    E_POS_PAWN_POS,
-    F_POS_LANCE_POS,
-    E_POS_LANCE_POS,
-    F_POS_KNIGHT_POS,
-    E_POS_KNIGHT_POS,
-    F_POS_SILVER_POS,
-    E_POS_SILVER_POS,
-    F_POS_GOLD_POS,
-    E_POS_GOLD_POS,
-    F_POS_BISHOP_POS,
-    E_POS_BISHOP_POS,
-    F_POS_ROOK_POS,
-    E_POS_ROOK_POS,
-    F_POS_KING_POS,
-    E_POS_KING_POS,
-    F_POS_PPAWN_POS,
-    E_POS_PPAWN_POS,
-    F_POS_PLANCE_POS,
-    E_POS_PLANCE_POS,
-    F_POS_PKNIGHT_POS,
-    E_POS_PKNIGHT_POS,
-    F_POS_PSILVER_POS,
-    E_POS_PSILVER_POS,
-    F_POS_PBISHOP_POS,
-    E_POS_PBISHOP_POS,
-    F_POS_PROOK_POS,
-    E_POS_PROOK_POS,
-    POS_END_SIZE,
-};
-
-enum MoveClassPos : int { 
-    CLS_UP,
-    CLS_UL = CLS_UP + SQUARE_SIZE,
-    CLS_LF = CLS_UL + SQUARE_SIZE,
-    CLS_DL = CLS_LF + SQUARE_SIZE,
-    CLS_DW = CLS_DL + SQUARE_SIZE,
-    CLS_DR = CLS_DW + SQUARE_SIZE, 
-    CLS_RG = CLS_DR + SQUARE_SIZE,
-    CLS_UR = CLS_RG + SQUARE_SIZE,
-    CLS_L_KNT = CLS_UR + SQUARE_SIZE,
-    CLS_R_KNT = CLS_L_KNT + SQUARE_SIZE,
-    CLS_UP_PROM = CLS_R_KNT + SQUARE_SIZE,
-    CLS_UL_PROM = CLS_UP_PROM + SQUARE_SIZE,
-    CLS_LF_PROM = CLS_UL_PROM + SQUARE_SIZE,
-    CLS_DL_PROM = CLS_LF_PROM + SQUARE_SIZE,
-    CLS_DW_PROM = CLS_DL_PROM + SQUARE_SIZE,
-    CLS_DR_PROM = CLS_DW_PROM + SQUARE_SIZE,
-    CLS_RG_PROM = CLS_DR_PROM + SQUARE_SIZE,
-    CLS_UR_PROM = CLS_RG_PROM + SQUARE_SIZE,
-    CLS_L_KNT_PROM = CLS_UR_PROM + SQUARE_SIZE,
-    CLS_R_KNT_PROM = CLS_L_KNT_PROM + SQUARE_SIZE,
-    CLS_HAND_PAWN = CLS_R_KNT_PROM + SQUARE_SIZE,
-    CLS_HAND_LANCE = CLS_HAND_PAWN + SQUARE_SIZE,
-    CLS_HAND_KNIGHT = CLS_HAND_LANCE + SQUARE_SIZE,
-    CLS_HAND_SILVER = CLS_HAND_KNIGHT + SQUARE_SIZE,
-    CLS_HAND_GOLD = CLS_HAND_SILVER + SQUARE_SIZE,
-    CLS_HAND_BISHOP = CLS_HAND_GOLD + SQUARE_SIZE,
-    CLS_HAND_ROOK = CLS_HAND_BISHOP + SQUARE_SIZE,
-    CLS_MOVE_END = CLS_HAND_ROOK + SQUARE_SIZE,
-};
+#include <boost/python/numpy.hpp>
 
 TeeStream Tee;
 
-void make_feat(const Pos& pos, float feat[POS_END_SIZE][SQUARE_SIZE]) {
+constexpr float ALL_ZERO_NN[FILE_SIZE][RANK_SIZE] = { {0,0,0,0,0,0,0,0,0},
+                                                      {0,0,0,0,0,0,0,0,0},
+                                                      {0,0,0,0,0,0,0,0,0},
+                                                      {0,0,0,0,0,0,0,0,0},
+                                                      {0,0,0,0,0,0,0,0,0},
+                                                      {0,0,0,0,0,0,0,0,0},
+                                                      {0,0,0,0,0,0,0,0,0},
+                                                      {0,0,0,0,0,0,0,0,0},
+                                                      {0,0,0,0,0,0,0,0,0}};
+                                                      
+constexpr float ALL_ONE_NN[FILE_SIZE][RANK_SIZE] = { {1,1,1,1,1,1,1,1,1},
+                                                     {1,1,1,1,1,1,1,1,1},
+                                                     {1,1,1,1,1,1,1,1,1},
+                                                     {1,1,1,1,1,1,1,1,1},
+                                                     {1,1,1,1,1,1,1,1,1},
+                                                     {1,1,1,1,1,1,1,1,1},
+                                                     {1,1,1,1,1,1,1,1,1},
+                                                     {1,1,1,1,1,1,1,1,1},
+                                                     {1,1,1,1,1,1,1,1,1}};
+
+void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
     
     const auto me = pos.turn();
     const auto opp = flip_turn(me);
@@ -122,14 +66,16 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][SQUARE_SIZE]) {
                 break;
             }
             //重ね合わせで表現してみる
-            for(auto all_index = 1; all_index <= num; ++all_index) {
-                //feat[king_sq][all_index + index] = torch::ones({ SQUARE_SIZE });
+            for(auto all_index = 0; all_index < num; ++all_index) {
+                std::memcpy(feat[all_index+index],ALL_ONE_NN,sizeof(ALL_ONE_NN));
             }
         }
         PIECE_FOREACH(pc) {
             auto piece = pos.pieces(pc, sd);
             while (piece) {
                 const auto sq = (me == BLACK) ? piece.lsb() : flip_sq(piece.lsb());
+                const auto file = square_file(sq);
+                const auto rank = square_rank(sq);
                 auto index = 0;
                 switch (pc) {
                 case Pawn:
@@ -178,17 +124,15 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][SQUARE_SIZE]) {
                     assert(false);
                     break;
                 }
-                feat[index][sq] = 1.0;
+                feat[index][file][rank] = 1.0;
             }
         }
     }
 }
-
-MoveClassPos move_to_index(const Move mv, const Side sd) {
-    
-    if (move::move_is_drop(mv)) {
-        const auto to = (sd == BLACK) ? move::move_to(mv) : flip_sq(move::move_to(mv));
-        const auto pc = move::move_piece(mv);
+MoveClassPos move_to_index(Square sq_from, Square sq_to, Piece pc, bool prom, Side sd) {
+   
+    if (sq_from >= SQUARE_SIZE) {
+        const auto to = (sd == BLACK) ? sq_to : flip_sq(sq_to);
         switch (pc) {
         case Pawn:
             return MoveClassPos(int(CLS_HAND_PAWN) + int(to));
@@ -206,12 +150,12 @@ MoveClassPos move_to_index(const Move mv, const Side sd) {
             return MoveClassPos(int(CLS_HAND_ROOK) + int(to));
         default:
             assert(false);
+            return MoveClassPos(0);
         }
     }
     else {
-        const auto from = (sd == BLACK) ? move::move_from(mv) : flip_sq(move::move_from(mv));
-        const auto to = (sd == BLACK) ? move::move_to(mv) : flip_sq(move::move_to(mv));
-        const auto prom = move::move_is_prom(mv);
+        const auto from = (sd == BLACK) ? sq_from : flip_sq(sq_from);
+        const auto to = (sd == BLACK) ? sq_to : flip_sq(sq_to);
         switch (get_direction(from,to)) {
         case DIR_UP:
             return (prom) ? MoveClassPos(int(CLS_UP_PROM) + int(to)) : MoveClassPos(int(CLS_UP) + int(to));
@@ -235,18 +179,16 @@ MoveClassPos move_to_index(const Move mv, const Side sd) {
             return (prom) ? MoveClassPos(int(CLS_R_KNT_PROM) + int(to)) : MoveClassPos(int(CLS_R_KNT) + int(to));
         default:
             assert(false);
+            return MoveClassPos(0); 
         }
     }
 }
-#endif
-
-int main() {
-
-	bit::init();
-	hash::init();
-	pos::init();
-	common::init();
-
-    Pos pos = pos_from_sfen(START_SFEN);
-    std::cout<<pos<<std::endl;
+MoveClassPos move_to_index(const Move mv, const Side sd) {
+    const auto from = move::move_from(mv);
+    const auto to = move::move_to(mv);
+    const auto piece = move::move_piece(mv);
+    const auto prom = move::move_is_prom(mv);
+    return move_to_index(from, to, piece, prom, sd);
 }
+
+

@@ -1,5 +1,3 @@
-from state import *
-
 import shogi
 import shogi.CSA
 
@@ -17,6 +15,7 @@ from torchvision import datasets, transforms
 
 from resnet import *
 
+import cpp_lib
 
 def append_csa_info(kif_list):
     pos_data = []
@@ -31,14 +30,9 @@ def append_csa_info(kif_list):
                 winner = kif['win']
         
                 for move in moves:
-                    # 局面データ、手のデータを追加
+                    # 局面データを追加
                     pos_data.append(board.sfen())
-                    if board.turn == 0:
-                        turn = 'b'
-                    else:
-                        turn = 'w'
-
-                    move_data.append((move, winner, turn))
+                    move_data.append((move, winner))
                     
                     # 次の局面へ移動
                     board.push(shogi.Move.from_usi(move))
@@ -54,7 +48,7 @@ class CSADataset(torch.utils.data.Dataset):
         print("start load")
 
         kif_list = glob.glob(csa_path)
-        
+        print("kif:",len(kif_list))
         cpu_num = min(10, len(kif_list))
 
         sep_kif_list = np.array_split(kif_list, cpu_num)
@@ -86,32 +80,26 @@ class CSADataset(torch.utils.data.Dataset):
 
 def pos_sfen_to_tensor(sfen_data):
 
-    data = []
-
-    for sfen in sfen_data:
-        state = State()
-        state.load_sfen(sfen)
-        state_array = state.to_array()
-        data.append(state_array)
+    data = np.zeros((len(sfen_data), 104, 9, 9))
+    cpp_lib.sfen_to_tensor(sfen_data, data)
     
-    return torch.tensor(np.array(data), dtype=torch.float32)
+    return torch.tensor(data, dtype=torch.float32)
 
 
-def move_sfen_to_tensor(sfen_data):
+def move_sfen_to_tensor(sfen_pos_str, sfen_move_str):
 
-    sfen_move = sfen_data[0]
-    sfen_result = sfen_data[1]
-    sfen_turn = sfen_data[2]
+    sfen_move = sfen_move_str[0]
+    sfen_result = sfen_move_str[1]
 
     # 手を変換
     move_list = []
-    for move, turn in zip(sfen_move, sfen_turn):
-        action = Action()
-        action.load_sfen(move)
-        side = Side.BLACK if turn == 'b'  else Side.WHITE
-        index = action.to_index(side)
+    for pos, move in zip(sfen_pos_str, sfen_move):
+        if ' b ' in pos:
+            turn = 'b'
+        else:
+            turn = 'w'
+        index = cpp_lib.move_to_index(move, turn)
         np_policy = np.full(2187, 0.0)
-
         np_policy[index] = 1.0
         move_list.append(np_policy)
     tensor_policy = torch.tensor(move_list, dtype=torch.float32)
@@ -134,9 +122,15 @@ def train(model, device, loader, optimizer, epoch):
     num = 0
     for batch_idx, (sfen_data, sfen_target) in enumerate(loader):
         # sfenを局面情報へ変換
-        data = pos_sfen_to_tensor(sfen_data)
-        # sfenを手と勝ち負け情報へ変換
-        policy_target, value_target = move_sfen_to_tensor(sfen_target)
+        # listに変換してやる必要がある
+        data = pos_sfen_to_tensor(list(sfen_data))
+        
+        policy_target, value_target = move_sfen_to_tensor(sfen_data, sfen_target)
+        
+        #board = shogi.Board(sfen=sfen_data[0])
+        #print(board.kif_str())
+        #print(policy_target)
+        #print(value_target)
 
         data, policy_target, value_target = data.to(device), policy_target.to(device), value_target.to(device)
 
@@ -153,13 +147,14 @@ def train(model, device, loader, optimizer, epoch):
         optimizer.step()
         all_loss += loss.item()
         num += 1
-        #if batch_idx % 16 == 0:
-        if False:
+        if batch_idx % 16 == 0:
+        #if False:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(loader.dataset),
                 100. * batch_idx / len(loader), loss.item()))
+    #if False:
     if epoch % 1 == 0:
-        print('Train Epoch: ',epoch, " loss:",all_loss / len(loader))
+        print('Train Epoch:',epoch, " loss:",all_loss / len(loader))
 
 def test(model, device, loader):
     model.eval()
@@ -187,7 +182,7 @@ def disp_test(model, device, dataset):
     tensor_list = []
     with torch.no_grad():
         #for i in range(len(dataset)):
-        for i in [0, 150, 300]:
+        for i in [1, 5]:
             sfen_data, sfen_target = dataset[i]
             # sfenを局面情報へ変換
             data = pos_sfen_to_tensor([sfen_data])
@@ -196,20 +191,17 @@ def disp_test(model, device, dataset):
             data = data.to(device)
             board = shogi.Board(sfen=sfen_data)
             print(board.kif_str())
-            action = Action()
-            action.load_sfen(sfen_target[0])
-            if board.turn == 0:
-                turn = Side.BLACK
+            if ' b ' in sfen_data:
+                turn = 'b'
             else:
-                turn = Side.WHITE
-            index = action.to_index(turn)
+                turn = 'w'
+            index = cpp_lib.move_to_index(sfen_target[0], turn)
             policy,value = model(data)
-            #print(policy[0])
             print("policy BEST:",policy[0][index])
-            print("policy_max:",torch.max(policy,1))
-            print("policy_min:",torch.min(policy,1).values)
-            print("policy_mean:",torch.mean(policy))
             print("policy_index",index)
+            print("policy_max:",torch.max(policy,1))
+            print("policy_min:",torch.min(policy,1))
+            print("policy_mean:",torch.mean(policy))
             print("value:",value[0])
 
 def save_model(model,epoch):
@@ -229,12 +221,12 @@ def main():
     train_loader = torch.utils.data.DataLoader(dataset, batch_size=256, shuffle=True)
 
     model = Net().to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-8)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-8)
 
     for epoch in range(1, 3000):
         train(model, device, train_loader, optimizer, epoch)
-        #if epoch % 100 == 0:
-        #    disp_test(model, device, dataset)
+        if epoch % 100 == 0:
+            disp_test(model, device, dataset)
         #test(model, device, test_loader())
         if epoch % 100 == 0:
             save_model(model, epoch)
