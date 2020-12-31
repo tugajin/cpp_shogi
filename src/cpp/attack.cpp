@@ -28,7 +28,7 @@ bool is_mate(const Pos& pos) {
 bool in_check(const Pos& pos) {
 	return bool(checks(pos));
 }
-template<bool skip_king, bool skip_pawn>bit::Bitboard attacks_to(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard pieces) {
+template<bool skip_king, bool skip_pawn>bit::Bitboard attacks_to(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard& pieces) {
 	Bitboard bb(0ull, 0ull);
 	Bitboard attack, piece;
 	const auto xd = flip_turn(sd);
@@ -73,6 +73,37 @@ template<bool skip_king, bool skip_pawn>bit::Bitboard attacks_to(const Pos& pos,
 	bb |= piece & attack;
 
 	return bb;
+}
+bit::Bitboard attack_from(const Pos& pos, const Side sd, const Square sq, const Piece pc, const bit::Bitboard& pieces) {
+	switch(pc) {
+		case Pawn:
+			return get_pawn_attack(sd, sq);
+		case Lance:
+			return get_lance_attack(sd, sq, pieces);
+		case Knight:
+			return get_knight_attack(sd, sq);
+		case Silver:
+			return get_silver_attack(sd, sq);
+		case Gold:
+		case PPawn:
+		case PLance:
+		case PKnight:
+		case PSilver:
+			return get_gold_attack(sd, sq);
+		case King:
+			return get_king_attack(sq);
+		case Rook:
+			return get_rook_attack(sq, pieces);
+		case Bishop:
+			return get_bishop_attack(sq, pieces);
+		case PRook:
+			return get_prook_attack(sq, pieces);
+		case PBishop:
+			return get_pbishop_attack(sq, pieces);
+		default:
+			assert(false);
+			return bit::Bitboard(0ull, 0ull);
+	}
 }
 bit::Bitboard checks(const Pos& pos) {
 	const auto xd = pos.turn();

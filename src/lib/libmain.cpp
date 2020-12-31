@@ -5,7 +5,6 @@
 
 #include <boost/python/numpy.hpp>
 
-
 namespace p = boost::python;
 namespace np = boost::python::numpy;
 
@@ -46,10 +45,10 @@ int lib_move_to_index(std::string sfen_move, std::string sfen_turn) {
 
 BOOST_PYTHON_MODULE(cpp_lib) {
 
-	bit::init();
-	hash::init();
-	pos::init();
-	common::init();
+    bit::init();
+    hash::init();
+    pos::init();
+    common::init();
 
     Py_Initialize();
     np::initialize();

@@ -4,6 +4,8 @@
 #include "pos.hpp"
 #include "sfen.hpp"
 #include "move.hpp"
+#include "attack.hpp"
+#include "common.hpp"
 
 #include <boost/python/numpy.hpp>
 
@@ -34,6 +36,7 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
     const auto me = pos.turn();
     const auto opp = flip_turn(me);
 
+    //pos
     SIDE_FOREACH(sd) {
         HAND_FOREACH(hp) {
             const auto num = hand_num(pos.hand(sd), hp);
@@ -124,6 +127,54 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
                     assert(false);
                     break;
                 }
+                feat[index][file][rank] = 1.0;
+            }
+        }
+    }
+
+    //盤上の利き
+    const auto occ = pos.pieces();
+    const int attack_num_per_piece[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE] = {};
+    SIDE_FOREACH(sd) {
+        PIECE_FOREACH(pc) {
+            //利きを数える
+            auto piece_bb = pos.pieces(pc, sd);
+            for (auto piece_bb = pos.pieces(pc, sd); piece_bb;) {
+                const auto from = piece_bb.lsb();
+                for(auto att_bb = attack_from(pos, sd, from, pc, occ); att_bb; ) {
+                    const auto to = att_bb.lsb();
+                    attack_num_per_piece[sd][pc][to]++;
+                }
+            }
+            //indexに変換
+            auto index = 0;
+
+            SQUARE_FOREACH(sq) {
+                const auto file = square_file(sq);
+                const auto rank = square_rank(sq);
+                //重ね合わせで表現してみる
+                for(auto all_index = 0; all_index < attack_num[sd][pc][sq]; ++all_index) {
+                    feat[all_index+index][file][rank] = 1.0;
+                }
+            }
+        }
+    }
+
+    //持ち駒王手できる位置
+
+    //王が動けるかどうか入れてみる
+    SIDE_FOREACH(sd) {
+        const auto king_sq = pos.king(sd);
+        const auto xd = flip_turn(sd);
+        auto index = 0;
+        auto occ = pos.pieces(sd);
+        occ.clear(king_sq);
+        occ = ~occ;
+        for(auto att_bb = attack_from(pos, sd, from, pc, occ) & occ; att_bb; ) {
+            const auto to = att_bb.lsb();
+            if(!has_attack(pos, xd, to, occ)) {
+                const auto file = square_file(to);
+                const auto rank = square_rank(to);
                 feat[index][file][rank] = 1.0;
             }
         }
