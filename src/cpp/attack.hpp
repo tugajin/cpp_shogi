@@ -30,6 +30,8 @@ bit::Bitboard attack_from(const Pos& pos, const Side sd, const Square sq, const 
 
 Score see(const Move mv, const Pos & pos);
 
+bit::Bitboard discover_attacks(const Square from, const Pos & pos);
+
 namespace attack {
 	void test();
 }

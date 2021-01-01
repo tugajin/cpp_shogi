@@ -336,9 +336,92 @@ Score see(const Move mv, const Pos & pos) {
 	return sc;
 }
 
+bit::Bitboard discover_attacks_rec(const Square from, const Pos & pos, const bit::Bitboard & direct_att, const bit::Bitboard & pseudo_att) {
+
+	const auto pc = pos.piece(from);
+	const auto sd = pos.turn();
+
+	if(!is_slider(pc)) {
+		return (attack_from(pos, sd, from, pc, pos.pieces()) & (~direct_att) & pseudo_att);
+	}
+	const auto occ = pos.pieces();
+	bit::Bitboard direct_attacks;
+	switch(pc) {
+		case Lance:
+			direct_attacks = get_lance_attack(sd, from, occ);
+			break;
+		case Rook:
+		case PRook:
+			direct_attacks = get_rook_attack(from, occ);
+			break;
+		case Bishop:
+		case PBishop:
+			direct_attacks = get_bishop_attack(from, occ);
+			break;
+	}
+	
+	direct_attacks.set(from);
+
+	auto last_att = direct_attacks & (~direct_att) & pseudo_att;
+	auto next_bb = last_att & pos.pieces(sd);
+	if(!next_bb) {
+		return last_att;
+	}
+	const auto next = next_bb.lsb();
+	return discover_attacks_rec(next,pos,direct_attacks,pseudo_att);
+}
+
+bit::Bitboard discover_attacks(const Square from, const Pos & pos) {
+
+	auto attacks = g_all_zero_bb;
+
+	const auto pc = pos.piece(from);
+	if(!is_slider(pc)) {
+		return attacks;
+	}
+
+	const auto sd = pos.turn();
+	const auto occ = pos.pieces();
+
+	bit::Bitboard pseudo_attacks, direct_attacks;
+	switch(pc) {
+		case Lance:
+			pseudo_attacks = get_pseudo_lance_attack(sd, from);
+			direct_attacks = get_lance_attack(sd, from, occ);
+			break;
+		case Rook:
+		case PRook:
+			pseudo_attacks = get_pseudo_rook_attack(from);
+			direct_attacks = get_rook_attack(from, occ);
+			break;
+		case Bishop:
+		case PBishop:
+			pseudo_attacks = get_pseudo_bishop_attack(from);
+			direct_attacks = get_bishop_attack(from, occ);
+			break;
+		default:
+			assert(false);
+			return attacks;
+	}
+
+	direct_attacks.set(from);
+
+	for(auto discover_bb = direct_attacks & pos.pieces(sd); discover_bb;) {
+		const auto next = discover_bb.lsb();
+		attacks |= discover_attacks_rec(next,pos,direct_attacks,pseudo_attacks);
+	}
+
+	return attacks;
+}
+
 namespace attack {
 	void test() {
 		{
+			Pos pos = pos_from_sfen("8k/4b4/9/4P4/9/9/4L4/1S2RR1G1/8K b");
+			Tee << pos << std::endl;
+			Tee<< discover_attacks(SQ_58, pos)<<std::endl;
+		}
+		/*{
 			Pos pos = pos_from_sfen("3gksR2/9/4+P4/9/9/9/9/9/4K4 b P");
 			Tee << pos << std::endl;
 			List list;
@@ -371,11 +454,11 @@ namespace attack {
 			List list;
 			gen_legals(list, pos);
 			Tee << list << std::endl;
-		}
+		}*/
 	}
 }
 
-template bit::Bitboard attacks_to<true, true>(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard pieces);
-template bit::Bitboard attacks_to<true, false>(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard pieces);
-template bit::Bitboard attacks_to<false, true>(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard pieces);
-template bit::Bitboard attacks_to<false, false>(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard pieces);
+template bit::Bitboard attacks_to<true, true>(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard & pieces);
+template bit::Bitboard attacks_to<true, false>(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard & pieces);
+template bit::Bitboard attacks_to<false, true>(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard & pieces);
+template bit::Bitboard attacks_to<false, false>(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard & pieces);

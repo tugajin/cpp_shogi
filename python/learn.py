@@ -127,11 +127,6 @@ def train(model, device, loader, optimizer, epoch):
         
         policy_target, value_target = move_sfen_to_tensor(sfen_data, sfen_target)
         
-        #board = shogi.Board(sfen=sfen_data[0])
-        #print(board.kif_str())
-        #print(policy_target)
-        #print(value_target)
-
         data, policy_target, value_target = data.to(device), policy_target.to(device), value_target.to(device)
 
         optimizer.zero_grad()
@@ -152,30 +147,48 @@ def train(model, device, loader, optimizer, epoch):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(loader.dataset),
                 100. * batch_idx / len(loader), loss.item()))
-    #if False:
-    if epoch % 1 == 0:
+    if False:
+    #if epoch % 1 == 0:
         print('Train Epoch:',epoch, " loss:",all_loss / len(loader))
 
 def test(model, device, loader):
     model.eval()
 
-    test_loss = 0
+    test_policy_loss = 0
+    test_value_loss = 0
     correct = 0
 
     with torch.no_grad():
-        for data, target in loader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
 
-            test_loss += F.null_loss(output, target, reduction = 'sum').item()
-            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-            correct += pred.eq(target.view_as(pred)).sum().item()
+        for (sfen_data, sfen_target) in loader:
+            # sfenを局面情報へ変換
+            # listに変換してやる必要がある
+            data = pos_sfen_to_tensor(list(sfen_data))
+        
+            policy_target, value_target = move_sfen_to_tensor(sfen_data, sfen_target)
+        
+            data, policy_target, value_target = data.to(device), policy_target.to(device), value_target.to(device)
 
-    test_loss /= len(loader.dataset)
+            policy_output, value_output = model(data)
 
-    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-            test_loss, correct, len(test_loader.dataset),
-            100. * correct / len(test_loader.dataset)))
+            m2 = nn.LogSoftmax(dim=1)
+
+            policy_loss = torch.sum(-(policy_target) * m2(policy_output))
+            value_loss = torch.sum((value_output - value_target) ** 2)
+            test_policy_loss += policy_loss.item()
+            test_value_loss += value_loss.item()
+            
+            policy_pred = policy_output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            polciy_target_index = policy_target.argmax(dim=1, keepdim=True)
+            
+            correct += policy_pred.eq(polciy_target_index.view_as(policy_pred)).sum().item()
+
+    test_policy_loss /= len(loader.dataset)
+    test_value_loss /= len(loader.dataset)
+
+    print('\nTest set: Average policy_loss: {:.4f} value_loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+            test_policy_loss, test_value_loss, correct, len(loader.dataset),
+            100. * correct / len(loader.dataset)))
 
 def disp_test(model, device, dataset):
     model.eval()
@@ -223,13 +236,10 @@ def main():
     model = Net().to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-8)
 
-    for epoch in range(1, 3000):
+    for epoch in range(1, 50):
         train(model, device, train_loader, optimizer, epoch)
-        if epoch % 100 == 0:
-            disp_test(model, device, dataset)
-        #test(model, device, test_loader())
-        if epoch % 100 == 0:
-            save_model(model, epoch)
+        test(model, device, train_loader)
+        save_model(model, epoch)
 
 if __name__ == '__main__':
     main()

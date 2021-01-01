@@ -132,45 +132,126 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
         }
     }
 
-    //盤上の利き
+    //盤上の直接利き
+    //どこに誰の利きが聞いているか？
+    //自分と敵の利きの数
+    
+    //間接利き
     const auto occ = pos.pieces();
-    const int attack_num_per_piece[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE] = {};
+    int direct_attack_num_per_piece[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE] = {};
+    int direct_attack_num[SIDE_SIZE][SQUARE_SIZE] = {};
+    int discover_attack_num_per_piece[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE] = {};
     SIDE_FOREACH(sd) {
         PIECE_FOREACH(pc) {
-            //利きを数える
+            //直接、間接利きを数える
             auto piece_bb = pos.pieces(pc, sd);
             for (auto piece_bb = pos.pieces(pc, sd); piece_bb;) {
                 const auto from = piece_bb.lsb();
                 for(auto att_bb = attack_from(pos, sd, from, pc, occ); att_bb; ) {
                     const auto to = att_bb.lsb();
-                    attack_num_per_piece[sd][pc][to]++;
+                    direct_attack_num_per_piece[sd][pc][to]++;
+                    direct_attack_num[sd][to]++;
                 }
-            }
-            //indexに変換
-            auto index = 0;
-
-            SQUARE_FOREACH(sq) {
-                const auto file = square_file(sq);
-                const auto rank = square_rank(sq);
-                //重ね合わせで表現してみる
-                for(auto all_index = 0; all_index < attack_num[sd][pc][sq]; ++all_index) {
-                    feat[all_index+index][file][rank] = 1.0;
+                for(auto discover_bb = discover_attacks(from, pos); discover_bb; ) {
+                    const auto to = discover_bb.lsb();
+                    discover_attack_num_per_piece[sd][pc][to]++;
                 }
             }
         }
     }
+    //利きの数、勝ち負け
+    SQUARE_FOREACH(sq) {
+        auto me_attack_num = direct_attack_num[me][sq];
+        auto opp_attack_num = direct_attack_num[opp][sq];
+        const auto file = square_file(sq);
+        const auto rank = square_rank(sq);
+        //勝ち負け
+        if(me_attack_num > opp_attack_num) {
+            feat[F_ATTACK_WINNER_POS][file][rank] = 1.0;
+        } else if (me_attack_num < opp_attack_num) {
+            feat[F_ATTACK_LOSER_POS][file][rank] = 1.0;
+        } else {
+            feat[F_ATTACK_DRAW_POS][file][rank] = 1.0;
+        }
+        me_attack_num = std::min(me_attack_num, 3);
+        opp_attack_num = std::min(opp_attack_num, 3);
+        //利きの数
+        for(auto num = 0; num < me_attack_num; num++) {
+            feat[F_ATTACK_NUM_POS + num][file][rank] = 1.0;
+        }
+        for(auto num = 0; num < opp_attack_num; num++) {
+            feat[E_ATTACK_NUM_POS + num][file][rank] = 1.0;
+        }
+        //各駒の直接利きがあるか？
+        #define TO_FEAT_DIRECT_ATT(piece1, piece2) do { \
+        if (direct_attack_num_per_piece[me][piece1][sq]) {\
+            feat[F_DIRECT_ATTACK_##piece2##_POS][file][rank] = 1.0;\
+        }\
+        if (direct_attack_num_per_piece[opp][piece1][sq]) {\
+            feat[E_DIRECT_ATTACK_##piece2##_POS][file][rank] = 1.0;\
+        }}while(0)\
 
-    //持ち駒王手できる位置
+        TO_FEAT_DIRECT_ATT(Pawn,PAWN);
+        TO_FEAT_DIRECT_ATT(Lance,LANCE);
+        TO_FEAT_DIRECT_ATT(Knight,KNIGHT);
+        TO_FEAT_DIRECT_ATT(Silver,SILVER);
+        TO_FEAT_DIRECT_ATT(Gold,GOLD);
+        TO_FEAT_DIRECT_ATT(Bishop,BISHOP);
+        TO_FEAT_DIRECT_ATT(Rook,ROOK);
+        TO_FEAT_DIRECT_ATT(King,KING);
+        TO_FEAT_DIRECT_ATT(PPawn,PPAWN);
+        TO_FEAT_DIRECT_ATT(PLance,PLANCE);
+        TO_FEAT_DIRECT_ATT(PKnight,PKNIGHT);
+        TO_FEAT_DIRECT_ATT(PSilver,PSILVER);
+        TO_FEAT_DIRECT_ATT(PBishop,PBISHOP);
+        TO_FEAT_DIRECT_ATT(PRook,PROOK);
 
-    //王が動けるかどうか入れてみる
+        #undef TO_FEAT_DIRECT_ATT
+
+        //各駒の間接利きがあるか？
+        #define TO_FEAT_DISCOVER_ATT(piece1, piece2) do { \
+        if (discover_attack_num_per_piece[me][piece1][sq]) {\
+            feat[F_DISCOVER_ATTACK_##piece2##_POS][file][rank] = 1.0;\
+        }\
+        if (direct_attack_num_per_piece[opp][piece1][sq]) {\
+            feat[E_DISCOVER_ATTACK_##piece2##_POS][file][rank] = 1.0;\
+        }}while(0)\
+
+        TO_FEAT_DISCOVER_ATT(Lance,LANCE);
+        TO_FEAT_DISCOVER_ATT(Bishop,BISHOP);
+        TO_FEAT_DISCOVER_ATT(Rook,ROOK);
+        TO_FEAT_DISCOVER_ATT(PBishop,BISHOP);
+        TO_FEAT_DISCOVER_ATT(PRook,ROOK);
+
+        #undef TO_FEAT_DISCOVER_ATT
+
+    }
+
+    //pinされているコマ(自分)
+    for(auto pinned_bb_me = pins(pos, me) & pos.pieces(me); pinned_bb_me; ) {
+        const auto sq = pinned_bb_me.lsb();
+        const auto file = square_file(sq);
+        const auto rank = square_rank(sq);
+        feat[F_PIN_POS][file][rank] = 1.0;
+    }
+
+    //pinになっているコマ（敵）
+    for(auto pinned_bb_opp = pins(pos, opp) & pos.pieces(opp); pinned_bb_opp; ) {
+        const auto sq = pinned_bb_opp.lsb();
+        const auto file = square_file(sq);
+        const auto rank = square_rank(sq);
+        feat[E_PIN_POS][file][rank] = 1.0;
+    }
+
+    //王が動けるかどうか
     SIDE_FOREACH(sd) {
         const auto king_sq = pos.king(sd);
         const auto xd = flip_turn(sd);
-        auto index = 0;
+        auto index = (sd == me) ? F_KING_ESCAPE_POS : E_KING_ESCAPE_POS;
         auto occ = pos.pieces(sd);
         occ.clear(king_sq);
         occ = ~occ;
-        for(auto att_bb = attack_from(pos, sd, from, pc, occ) & occ; att_bb; ) {
+        for(auto att_bb = get_king_attack(king_sq) & occ; att_bb; ) {
             const auto to = att_bb.lsb();
             if(!has_attack(pos, xd, to, occ)) {
                 const auto file = square_file(to);

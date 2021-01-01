@@ -128,6 +128,10 @@ inline constexpr bool piece_can_prom(const Piece p) {
 	}
 }
 
+inline constexpr bool is_slider(const Piece p) {
+	return (p == Lance || p == Rook || p == Bishop || p == PRook || p == PBishop);
+}
+
 OverloadEnumOperators(Square)
 OverloadEnumOperators(File)
 OverloadEnumOperators(Rank)
