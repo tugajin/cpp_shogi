@@ -19,6 +19,7 @@
 #include "list.hpp"
 #include "math.hpp"
 #include "move.hpp"
+#include "nn.hpp"
 #include "pos.hpp"
 #include "search.hpp"
 #include "sort.hpp"
@@ -281,7 +282,9 @@ static void usi_loop(std::vector<std::string> arg) {
 			//search::test_perft();
 			//mate::test();
 			//uct::test();
-			eval::test();
+			//eval::test();
+			//attack::test();
+			nn::test();
 		}
 		else if (command == "show") {
 			Tee << gGame.pos() << std::endl;

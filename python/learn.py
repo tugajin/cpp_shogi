@@ -80,7 +80,7 @@ class CSADataset(torch.utils.data.Dataset):
 
 def pos_sfen_to_tensor(sfen_data):
 
-    data = np.zeros((len(sfen_data), 104, 9, 9))
+    data = np.zeros((len(sfen_data), 131, 9, 9))
     cpp_lib.sfen_to_tensor(sfen_data, data)
     
     return torch.tensor(data, dtype=torch.float32)

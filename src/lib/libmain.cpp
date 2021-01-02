@@ -8,6 +8,8 @@
 namespace p = boost::python;
 namespace np = boost::python::numpy;
 
+TeeStream Tee;
+
 void lib_sfen_to_tensor(boost::python::list &sfen_list, boost::python::numpy::ndarray &numpy_feat) {
     const auto len = boost::python::len(sfen_list);
     for(auto batch_index = 0; batch_index < len; batch_index++) {

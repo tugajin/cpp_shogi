@@ -2,6 +2,7 @@ build/
 record/
 .vscode/
 __pycache__/
+.ipynb_checkpoints/
 *.pt
 *.sfen
 *.csa

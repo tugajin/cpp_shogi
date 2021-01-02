@@ -99,15 +99,18 @@ enum FeatPos : int {
     //利きの数が1個なら該当の特徴が1
     //特徴は重ね合わせる
     //利きが3つだったら、1、2、3の特徴が1になる 
-    F_ATTACK_NUM_POS,
-    E_ATTACK_NUM_POS = F_ATTACK_NUM_POS + 3,
-    
+    F_DIRECT_ATTACK_NUM_POS,
+    E_DIRECT_ATTACK_NUM_POS = F_DIRECT_ATTACK_NUM_POS + 3,
+    F_DISCOVER_ATTACK_NUM_POS = E_DIRECT_ATTACK_NUM_POS + 3,
+    E_DISCOVER_ATTACK_NUM_POS = F_DISCOVER_ATTACK_NUM_POS + 3,
+
     //利きの勝ち負け
     //利きの数が勝っているか、引き分けか、負けているか
     //この特徴は自分から見ればいいのでEは不要
-    F_ATTACK_WINNER_POS = E_ATTACK_NUM_POS + 3,
-    F_ATTACK_LOSER_POS,
-    F_ATTACK_DRAW_POS,
+    F_DIRECT_ATTACK_WINNER_POS = E_DISCOVER_ATTACK_NUM_POS + 3,
+    F_DIRECT_ATTACK_LOSER_POS,
+    F_DIRECT_ATTACK_DRAW_POS,
+
     //pin
     //ピンだったら1
     F_PIN_POS,
@@ -155,4 +158,9 @@ class Pos;
 void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]);
 MoveClassPos move_to_index(const Move mv, const Side sd);
 MoveClassPos move_to_index(Square sq_from, Square sq_to, Piece pc, bool prom, Side sd);
+
+namespace nn {
+    void test();
+}
+
 #endif

@@ -7,7 +7,7 @@ HIDDEN_LAYER_NUM = 128
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv0 = nn.Conv2d(104, HIDDEN_LAYER_NUM, kernel_size= 3, padding= 1)
+        self.conv0 = nn.Conv2d(131, HIDDEN_LAYER_NUM, kernel_size= 3, padding= 1)
         self.conv1  = nn.Conv2d(HIDDEN_LAYER_NUM, HIDDEN_LAYER_NUM, kernel_size=3, padding= 1)
         self.conv2  = nn.Conv2d(HIDDEN_LAYER_NUM, HIDDEN_LAYER_NUM, kernel_size=3, padding= 1)
         self.conv3  = nn.Conv2d(HIDDEN_LAYER_NUM, HIDDEN_LAYER_NUM, kernel_size=3, padding= 1)

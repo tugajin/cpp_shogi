@@ -7,10 +7,6 @@
 #include "attack.hpp"
 #include "common.hpp"
 
-#include <boost/python/numpy.hpp>
-
-TeeStream Tee;
-
 constexpr float ALL_ZERO_NN[FILE_SIZE][RANK_SIZE] = { {0,0,0,0,0,0,0,0,0},
                                                       {0,0,0,0,0,0,0,0,0},
                                                       {0,0,0,0,0,0,0,0,0},
@@ -39,7 +35,7 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
     //pos
     SIDE_FOREACH(sd) {
         HAND_FOREACH(hp) {
-            const auto num = hand_num(pos.hand(sd), hp);
+            auto num = hand_num(pos.hand(sd), hp);
             if(!num) { continue; }
             auto index = 0;
             switch (hp) {
@@ -68,6 +64,8 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
                 assert(false);
                 break;
             }
+            //4枚以上は同じ扱い
+            num = std::min(num, 4);
             //重ね合わせで表現してみる
             for(auto all_index = 0; all_index < num; ++all_index) {
                 std::memcpy(feat[all_index+index],ALL_ONE_NN,sizeof(ALL_ONE_NN));
@@ -141,6 +139,8 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
     int direct_attack_num_per_piece[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE] = {};
     int direct_attack_num[SIDE_SIZE][SQUARE_SIZE] = {};
     int discover_attack_num_per_piece[SIDE_SIZE][PIECE_SIZE][SQUARE_SIZE] = {};
+    int discover_attack_num[SIDE_SIZE][SQUARE_SIZE] = {};
+
     SIDE_FOREACH(sd) {
         PIECE_FOREACH(pc) {
             //直接、間接利きを数える
@@ -154,7 +154,9 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
                 }
                 for(auto discover_bb = discover_attacks(from, pos); discover_bb; ) {
                     const auto to = discover_bb.lsb();
+                    assert(is_slider(pc));
                     discover_attack_num_per_piece[sd][pc][to]++;
+                    discover_attack_num[sd][to]++;
                 }
             }
         }
@@ -167,20 +169,31 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
         const auto rank = square_rank(sq);
         //勝ち負け
         if(me_attack_num > opp_attack_num) {
-            feat[F_ATTACK_WINNER_POS][file][rank] = 1.0;
+            feat[F_DIRECT_ATTACK_WINNER_POS][file][rank] = 1.0;
         } else if (me_attack_num < opp_attack_num) {
-            feat[F_ATTACK_LOSER_POS][file][rank] = 1.0;
+            feat[F_DIRECT_ATTACK_LOSER_POS][file][rank] = 1.0;
         } else {
-            feat[F_ATTACK_DRAW_POS][file][rank] = 1.0;
+            feat[F_DIRECT_ATTACK_DRAW_POS][file][rank] = 1.0;
         }
         me_attack_num = std::min(me_attack_num, 3);
         opp_attack_num = std::min(opp_attack_num, 3);
         //利きの数
         for(auto num = 0; num < me_attack_num; num++) {
-            feat[F_ATTACK_NUM_POS + num][file][rank] = 1.0;
+            feat[F_DIRECT_ATTACK_NUM_POS + num][file][rank] = 1.0;
         }
         for(auto num = 0; num < opp_attack_num; num++) {
-            feat[E_ATTACK_NUM_POS + num][file][rank] = 1.0;
+            feat[E_DIRECT_ATTACK_NUM_POS + num][file][rank] = 1.0;
+        }
+        //間接利きの数
+        auto me_discover_attack_num = discover_attack_num[me][sq];
+        auto opp_discover_attack_num = discover_attack_num[opp][sq];
+        me_discover_attack_num = std::min(me_discover_attack_num, 3);
+        opp_discover_attack_num = std::min(opp_discover_attack_num, 3);
+        for(auto num = 0; num < me_discover_attack_num; num++) {
+            feat[F_DISCOVER_ATTACK_NUM_POS + num][file][rank] = 1.0;
+        }
+        for(auto num = 0; num < opp_discover_attack_num; num++) {
+            feat[E_DISCOVER_ATTACK_NUM_POS + num][file][rank] = 1.0;
         }
         //各駒の直接利きがあるか？
         #define TO_FEAT_DIRECT_ATT(piece1, piece2) do { \
@@ -322,5 +335,38 @@ MoveClassPos move_to_index(const Move mv, const Side sd) {
     const auto prom = move::move_is_prom(mv);
     return move_to_index(from, to, piece, prom, sd);
 }
+void disp_feat(const int index, const float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
+    RANK_FOREACH(r) {
+        FILE_FOREACH_REV(f) {
+            Tee<<feat[index][f][r]<<",";
+        }
+        Tee<<std::endl;
+    }
+}
+namespace nn {
 
+    void test() {
+        {
+			Pos pos = pos_from_sfen("8k/4b4/9/4P4/9/9/4L4/1S2RR1G1/8K b");
+			Tee << pos << std::endl;
+			float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE] = {};
+            make_feat(pos, feat);
+            disp_feat(F_KING_ESCAPE_POS,feat);
+		}
+        {
+			Pos pos = pos_from_sfen(START_SFEN);
+			Tee << pos << std::endl;
+			float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE] = {};
+            make_feat(pos, feat);
+            disp_feat(F_DIRECT_ATTACK_PAWN_POS,feat);
+		}
+        {
+			Pos pos = pos_from_sfen(START_SFEN);
+			Tee << pos << std::endl;
+			float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE] = {};
+            make_feat(pos, feat);
+            disp_feat(F_DISCOVER_ATTACK_ROOK_POS,feat);
+		}
+    }
 
+}
