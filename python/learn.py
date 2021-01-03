@@ -4,8 +4,7 @@ import shogi.CSA
 import numpy as np
 import time
 import glob
-from multiprocessing import Pool
-import multiprocessing as multi
+import sqlite3
 
 import torch
 import torch.nn as nn
@@ -17,64 +16,31 @@ from resnet import *
 
 import cpp_lib
 
-def append_csa_info(kif_list):
-    pos_data = []
-    move_data = []
-
-    for _,path in enumerate(kif_list):
-        try:
-            kif_info_list = shogi.CSA.Parser.parse_file(path)
-            for kif in kif_info_list: 
-                board = shogi.Board(sfen=kif['sfen'])
-                moves = kif['moves']
-                winner = kif['win']
-        
-                for move in moves:
-                    # 局面データを追加
-                    pos_data.append(board.sfen())
-                    move_data.append((move, winner))
-                    
-                    # 次の局面へ移動
-                    board.push(shogi.Move.from_usi(move))
-
-        except:
-            print("error:"+path)
-    return (pos_data, move_data)
 
 class CSADataset(torch.utils.data.Dataset):
 
-    def __init__(self, csa_path):
-
-        print("start load")
-
-        kif_list = glob.glob(csa_path)
-        print("kif:",len(kif_list))
-        cpu_num = min(10, len(kif_list))
-
-        sep_kif_list = np.array_split(kif_list, cpu_num)
-        pos_data = []
-        move_data = []
-
-        # 並列に棋譜を変換
-        with Pool(cpu_num) as p:
-            result_list = p.map(append_csa_info,sep_kif_list)
-            for conv_tpl in result_list:
-                pos_data.extend(conv_tpl[0])
-                move_data.extend(conv_tpl[1])              
-        
-        self.datanum = len(pos_data)
-        self.data = pos_data
-        self.label = move_data
-        print("datanum:",self.datanum)
+    def __init__(self, db_path):
+        self.conn = sqlite3.connect(db_path)
+        c = self.conn.cursor()
+        c.execute('SELECT count(1) FROM csa_record')
+        row = c.fetchone()
+        self.datanum = row[0]
+        print("datanum:", self.datanum)
         print("end load")
+    
+    def __del__(self):
+        self.conn.commit()
+        self.conn.close()
 
     def __len__(self):
         return self.datanum
 
     def __getitem__(self, idx):
-        out_data = self.data[idx]
-        out_label = self.label[idx]
-
+        c = self.conn.cursor()
+        c.execute('SELECT sfen_pos, sfen_move, winner FROM csa_record where id = ?',((idx+1),))
+        row = c.fetchone()
+        out_data = row[0]
+        out_label = (row[1],row[2])
         return out_data, out_label
 
 
@@ -228,17 +194,20 @@ def main():
     torch.manual_seed(0)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
 
-    dataset = CSADataset("../record/train/*.csa")
+    test_dataset = CSADataset("/media/tugajin/HD-LDF-A/db/record.sqlite3")
+    train_dataset = CSADataset("/media/tugajin/HD-LDF-A/db/record_test.sqlite3")
 
-    train_loader = torch.utils.data.DataLoader(dataset, batch_size=256, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=512, shuffle=True)
 
     model = Net().to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-8)
 
     for epoch in range(1, 50):
         train(model, device, train_loader, optimizer, epoch)
-        test(model, device, train_loader)
+        test(model, device, test_loader)
         save_model(model, epoch)
 
 if __name__ == '__main__':
