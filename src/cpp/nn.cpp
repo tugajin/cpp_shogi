@@ -354,8 +354,10 @@ void disp_feat(const int index, const float feat[POS_END_SIZE][FILE_SIZE][RANK_S
 }
 namespace nn {
     boost::python::object g_main_ns;
+    boost::python::object g_model;
     boost::python::object load_model_func;
     boost::python::object forward_func;
+    
     void init() {
         //Python、numpyモジュールの初期化
         try {
@@ -365,16 +367,7 @@ namespace nn {
             py::exec_file("../py_module.py", g_main_ns);
             load_model_func = g_main_ns["load_model"];
             forward_func = g_main_ns["forward"];
-            auto obj = load_model_func();
-            float feat[4][3][2] = {{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}},{{13,14},{15,16},{17,18}},{{19,20},{21,22},{23,24}}};
-            
-            py::tuple shape = py::make_tuple(4,3,2);
-            py::tuple stride = py::make_tuple(sizeof(float)*3*2,sizeof(float)*2,sizeof(float));
-            np::dtype dt = np::dtype::get_builtin<float>();
-            np::ndarray output = np::from_data(feat, dt, shape, stride, py::object());
-            np::ndarray output_array = output.copy();
-
-            auto obj2 = forward_func(obj, output_array);
+            g_model = load_model_func();
         } catch(...) {
             PyErr_Print();
             std::exit(EXIT_FAILURE);
@@ -382,6 +375,30 @@ namespace nn {
     }
 
     void test() {
+        {
+            try {
+                float feat[1][POS_END_SIZE][FILE_SIZE][RANK_SIZE] = {};
+                Pos pos = pos_from_sfen(START_SFEN);
+                make_feat(pos,&feat[0][0]);
+                py::tuple shape = py::make_tuple(1,int(POS_END_SIZE),int(FILE_SIZE),int(RANK_SIZE));
+                py::tuple stride = py::make_tuple(sizeof(float)*int(POS_END_SIZE*FILE_SIZE*RANK_SIZE),sizeof(float)*int(FILE_SIZE*RANK_SIZE),sizeof(float)*int(RANK_SIZE),sizeof(float));
+                np::dtype dt = np::dtype::get_builtin<float>();
+                np::ndarray np_feat = np::from_data(feat, dt, shape, stride, py::object());
+                np::ndarray np_feat_output = np_feat.copy();
+
+                py::object result = forward_func(g_model,np_feat_output);
+                py::tuple result_tuple = py::extract<py::tuple>(result);
+                np::ndarray ndarray_policy_score = py::extract<np::ndarray>(result_tuple[0]);
+                np::ndarray ndarray_value_score = py::extract<np::ndarray>(result_tuple[1]);
+                for(auto i = 0; i < 10; i++) {
+                    std::cout<<py::extract<float>(ndarray_policy_score[0][i])<<std::endl;
+                }
+                std::cout<<py::extract<float>(ndarray_value_score[0][0])<<std::endl;
+            } catch(...) {
+                PyErr_Print();
+                std::exit(EXIT_FAILURE);
+            }
+        }
         {
 			Pos pos = pos_from_sfen("8k/4b4/9/4P4/9/9/4L4/1S2RR1G1/8K b");
 			Tee << pos << std::endl;

@@ -17,8 +17,16 @@ def load_model():
     return model, device
 
 def forward(model_tuple, feat):
-    print(model_tuple[0])
-    print(model_tuple[1])
-    print(type(feat))
-    print(feat)
-    return [1.0,-2.0,3.0]
+    model = model_tuple[0]
+    device = model_tuple[1]
+    feat = torch.tensor(feat, dtype=torch.float32)
+    feat = feat.to(device)
+    output = model(feat)
+    policy_score = output[0].cpu().detach().numpy()
+    value_score = output[1].cpu().detach().numpy()
+    print(policy_score)
+    print(value_score)
+    print((policy_score.shape))
+    print((value_score.shape))
+    
+    return (policy_score, value_score)
