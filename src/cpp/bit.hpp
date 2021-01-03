@@ -26,6 +26,9 @@ namespace bit {
 		Bitboard(uint64 u0, uint64 u1) {
 			this->set(u0, u1);
 		}
+		Bitboard(const Bitboard& rhs) { 
+			_mm_store_si128(&this->m_, rhs.m_); 
+		}
 		Bitboard& operator = (const Bitboard& rhs) {
 			_mm_store_si128(&this->m_, rhs.m_);
 			return *this;

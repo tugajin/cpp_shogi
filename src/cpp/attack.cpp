@@ -74,7 +74,7 @@ template<bool skip_king, bool skip_pawn>bit::Bitboard attacks_to(const Pos& pos,
 
 	return bb;
 }
-bit::Bitboard attack_from(const Pos& pos, const Side sd, const Square sq, const Piece pc, const bit::Bitboard& pieces) {
+bit::Bitboard attack_from(const Side sd, const Square sq, const Piece pc, const bit::Bitboard& pieces) {
 	switch(pc) {
 		case Pawn:
 			return get_pawn_attack(sd, sq);
@@ -124,7 +124,7 @@ bool move_is_win(const Move /*mv*/, const Pos&/*pos*/) {
 bool has_attack(const Pos& pos, const Side sd, const Square sq) {
 	return has_attack(pos, sd, sq, pos.pieces());
 }
-bool has_attack(const Pos& pos, const Side sd, const Square sq, bit::Bitboard pieces) {
+bool has_attack(const Pos& pos, const Side sd, const Square sq, const bit::Bitboard& pieces) {
 	Bitboard attack, piece;
 	const auto xd = flip_turn(sd);
 	//gold
@@ -342,7 +342,7 @@ bit::Bitboard discover_attacks_rec(const Square from, const Pos & pos, const bit
 	const auto sd = pos.turn();
 
 	if(!is_slider(pc)) {
-		return (attack_from(pos, sd, from, pc, pos.pieces()) & (~direct_att) & pseudo_att);
+		return (attack_from(sd, from, pc, pos.pieces()) & (~direct_att) & pseudo_att);
 	}
 	const auto occ = pos.pieces();
 	bit::Bitboard direct_attacks;
@@ -357,6 +357,9 @@ bit::Bitboard discover_attacks_rec(const Square from, const Pos & pos, const bit
 		case Bishop:
 		case PBishop:
 			direct_attacks = get_bishop_attack(from, occ);
+			break;
+		default:
+			assert(false);
 			break;
 	}
 	

@@ -48,7 +48,7 @@ void UCTSearcher::think() {
 		: this->think<WHITE>();
 }
 
-void UCTSearcher::enqueue_node(const Pos& pos, UCTNode* node) {
+void UCTSearcher::enqueue_node(const Pos& /*pos*/, UCTNode* /*node*/) {
 }
 
 void UCTSearcher::dequeue_node() {

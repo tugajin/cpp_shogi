@@ -1,11 +1,21 @@
 #include <cstring>
 
+#include <boost/python.hpp>
+#include <boost/stacktrace.hpp>
+#include <typeinfo>
+
 #include "nn.hpp"
 #include "pos.hpp"
 #include "sfen.hpp"
 #include "move.hpp"
 #include "attack.hpp"
 #include "common.hpp"
+
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+//placeholdersの衝突を回避するため(要調査)
+#include <boost/python/numpy.hpp>
+namespace py = boost::python;
+namespace np = boost::python::numpy;
 
 constexpr float ALL_ZERO_NN[FILE_SIZE][RANK_SIZE] = { {0,0,0,0,0,0,0,0,0},
                                                       {0,0,0,0,0,0,0,0,0},
@@ -144,10 +154,9 @@ void make_feat(const Pos& pos, float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE]) {
     SIDE_FOREACH(sd) {
         PIECE_FOREACH(pc) {
             //直接、間接利きを数える
-            auto piece_bb = pos.pieces(pc, sd);
             for (auto piece_bb = pos.pieces(pc, sd); piece_bb;) {
                 const auto from = piece_bb.lsb();
-                for(auto att_bb = attack_from(pos, sd, from, pc, occ); att_bb; ) {
+                for(auto att_bb = attack_from(sd, from, pc, occ); att_bb; ) {
                     const auto to = att_bb.lsb();
                     direct_attack_num_per_piece[sd][pc][to]++;
                     direct_attack_num[sd][to]++;
@@ -344,6 +353,33 @@ void disp_feat(const int index, const float feat[POS_END_SIZE][FILE_SIZE][RANK_S
     }
 }
 namespace nn {
+    boost::python::object g_main_ns;
+    boost::python::object load_model_func;
+    boost::python::object forward_func;
+    void init() {
+        //Python、numpyモジュールの初期化
+        try {
+            Py_Initialize();
+            np::initialize();
+            g_main_ns = boost::python::import("__main__").attr("__dict__");
+            py::exec_file("../py_module.py", g_main_ns);
+            load_model_func = g_main_ns["load_model"];
+            forward_func = g_main_ns["forward"];
+            auto obj = load_model_func();
+            float feat[4][3][2] = {{{1,2},{3,4},{5,6}},{{7,8},{9,10},{11,12}},{{13,14},{15,16},{17,18}},{{19,20},{21,22},{23,24}}};
+            
+            py::tuple shape = py::make_tuple(4,3,2);
+            py::tuple stride = py::make_tuple(sizeof(float)*3*2,sizeof(float)*2,sizeof(float));
+            np::dtype dt = np::dtype::get_builtin<float>();
+            np::ndarray output = np::from_data(feat, dt, shape, stride, py::object());
+            np::ndarray output_array = output.copy();
+
+            auto obj2 = forward_func(obj, output_array);
+        } catch(...) {
+            PyErr_Print();
+            std::exit(EXIT_FAILURE);
+        }
+    }
 
     void test() {
         {

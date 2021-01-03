@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
 	pos::init();
 	var::init();
 	common::init();
+	nn::init();
 	listen_input();
 	var::update();
 

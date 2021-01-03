@@ -160,6 +160,7 @@ MoveClassPos move_to_index(const Move mv, const Side sd);
 MoveClassPos move_to_index(Square sq_from, Square sq_to, Piece pc, bool prom, Side sd);
 
 namespace nn {
+    void init();
     void test();
 }
 
