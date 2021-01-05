@@ -109,13 +109,9 @@ def train(model, device, loader, optimizer, epoch):
         all_loss += loss.item()
         num += 1
         if batch_idx % 16 == 0:
-        #if False:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(loader.dataset),
                 100. * batch_idx / len(loader), loss.item()))
-    if False:
-    #if epoch % 1 == 0:
-        print('Train Epoch:',epoch, " loss:",all_loss / len(loader))
 
 def test(model, device, loader):
     model.eval()
@@ -196,13 +192,16 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
 
-    test_dataset = CSADataset("/media/tugajin/HD-LDF-A/db/record.sqlite3")
-    train_dataset = CSADataset("/media/tugajin/HD-LDF-A/db/record_test.sqlite3")
+    test_dataset = CSADataset("record.sqlite3")
+    train_dataset = CSADataset("record_test.sqlite3")
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=512, shuffle=True)
-
     model = Net().to(device)
+
+    model_path = 'model.pt'
+    model.load_state_dict(torch.load(model_path))
+
     optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-8)
 
     for epoch in range(1, 50):
