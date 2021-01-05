@@ -5,6 +5,7 @@ import numpy as np
 import time
 import glob
 import sqlite3
+import os
 
 import torch
 import torch.nn as nn
@@ -84,6 +85,7 @@ def move_sfen_to_tensor(sfen_pos_str, sfen_move_str):
 
 def train(model, device, loader, optimizer, epoch):
     model.train()
+    scaler = torch.cuda.amp.GradScaler()
     all_loss = 0
     num = 0
     for batch_idx, (sfen_data, sfen_target) in enumerate(loader):
@@ -93,19 +95,20 @@ def train(model, device, loader, optimizer, epoch):
         
         policy_target, value_target = move_sfen_to_tensor(sfen_data, sfen_target)
         
-        data, policy_target, value_target = data.to(device), policy_target.to(device), value_target.to(device)
+        data, policy_target, value_target = data.to(device, non_blocking=True), policy_target.to(device, non_blocking=True), value_target.to(device, non_blocking=True)
 
         optimizer.zero_grad()
-        policy_output, value_output = model(data)
-
         m2 = nn.LogSoftmax(dim=1)
 
-        policy_loss = torch.sum(-(policy_target) * m2(policy_output)) / len(sfen_data)
-        value_loss = torch.sum((value_output - value_target) ** 2) / len(sfen_data)
-        loss = policy_loss + value_loss
+        with torch.cuda.amp.autocast():
+            policy_output, value_output = model(data)
+            policy_loss = torch.sum(-(policy_target) * m2(policy_output)) / len(sfen_data)
+            value_loss = torch.sum((value_output - value_target) ** 2) / len(sfen_data)
+            loss = policy_loss + value_loss
 
-        loss.backward()
-        optimizer.step()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         all_loss += loss.item()
         num += 1
         if batch_idx % 16 == 0:
@@ -129,7 +132,7 @@ def test(model, device, loader):
         
             policy_target, value_target = move_sfen_to_tensor(sfen_data, sfen_target)
         
-            data, policy_target, value_target = data.to(device), policy_target.to(device), value_target.to(device)
+            data, policy_target, value_target = data.to(device, non_blocking=True), policy_target.to(device, non_blocking=True), value_target.to(device, non_blocking=True)
 
             policy_output, value_output = model(data)
 
@@ -186,8 +189,10 @@ def save_model(model,epoch):
     torch.save(model.state_dict(), model_history_path)
 
 def main():
-    
+    # 真似できそうなところを真似
+    # https://qiita.com/sugulu_Ogawa_ISID/items/62f5f7adee083d96a587
     torch.manual_seed(0)
+    torch.backends.cudnn.benchmark = True
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
@@ -195,8 +200,8 @@ def main():
     test_dataset = CSADataset("record.sqlite3")
     train_dataset = CSADataset("record_test.sqlite3")
 
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=512, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=512, shuffle=True, num_workers=os.cpu_count(), pin_memory=True)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=512, shuffle=True, num_workers=os.cpu_count(), pin_memory=True)
     model = Net().to(device)
 
     model_path = 'model.pt'
