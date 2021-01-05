@@ -89,6 +89,8 @@ def train(model, device, loader, optimizer, epoch):
     all_loss = 0
     num = 0
     for batch_idx, (sfen_data, sfen_target) in enumerate(loader):
+        if batch_idx % 16 == 0:
+             start = time.time()
         # sfenを局面情報へ変換
         # listに変換してやる必要がある
         data = pos_sfen_to_tensor(list(sfen_data))
@@ -112,9 +114,9 @@ def train(model, device, loader, optimizer, epoch):
         all_loss += loss.item()
         num += 1
         if batch_idx % 16 == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} sec: {:.2f}s'.format(
                 epoch, batch_idx * len(data), len(loader.dataset),
-                100. * batch_idx / len(loader), loss.item()))
+                100. * batch_idx / len(loader), loss.item(),(time.time()-start)))
 
 def test(model, device, loader):
     model.eval()
