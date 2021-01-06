@@ -90,6 +90,8 @@ def train(model, device, loader, optimizer, epoch):
     start = time.time()
 
     for batch_idx, (sfen_data, sfen_target) in enumerate(loader):
+        if batch_idx % 16 == 0:
+             start = time.time()
         # sfenを局面情報へ変換
         # listに変換してやる必要がある
         data = pos_sfen_to_tensor(list(sfen_data))
