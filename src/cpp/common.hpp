@@ -125,6 +125,7 @@ inline constexpr bool piece_can_prom(const Piece p) {
 			return false;		
 		default:
 			assert(false);
+			return false;
 	}
 }
 
