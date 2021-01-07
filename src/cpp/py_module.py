@@ -11,16 +11,13 @@ def load_model():
     print("load model .... ",end="",flush=True)
     model.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.abspath('__file__')),'../../../python/model.pt')))
     print("end")
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device is", device)
     model = model.to(device)
     return model, device
 
 def my_close(model_tuple):
     model = model_tuple[0]
-    device = model_tuple[1]
-    
     new_device = torch.device("cpu")
     model = model.to(new_device)
     return model, new_device
