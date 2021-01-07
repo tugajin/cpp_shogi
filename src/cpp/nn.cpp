@@ -357,6 +357,7 @@ namespace nn {
     boost::python::object g_model;
     boost::python::object load_model_func;
     boost::python::object forward_func;
+    boost::python::object my_close_func;
     
     void init() {
         //Python、numpyモジュールの初期化
@@ -367,11 +368,16 @@ namespace nn {
             py::exec_file("../py_module.py", g_main_ns);
             load_model_func = g_main_ns["load_model"];
             forward_func = g_main_ns["forward"];
+            my_close_func = g_main_ns["my_close"];
             g_model = load_model_func();
         } catch(...) {
             PyErr_Print();
             std::exit(EXIT_FAILURE);
         }
+    }
+
+    void my_close() {
+        g_model = my_close_func(g_model);
     }
 
     void test() {

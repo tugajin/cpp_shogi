@@ -277,15 +277,29 @@ static void usi_loop(std::vector<std::string> arg) {
 			//no-op
 		}
 		else if (command == "test") {
-			// bit::test();
-			// pos::test();
-		    //gen::test();
-			//search::test_perft();
-			//mate::test();
-			//uct::test();
-			//eval::test();
-			//attack::test();
-			nn::test();
+			std::string arg;
+			while (ss >> arg) {
+				ss >> arg;
+				if(arg == "bit") {
+					bit::test();
+				} else if (arg == "pos") {
+					pos::test();
+				} else if (arg == "gen") {
+					gen::test();
+				} else if (arg == "search") {
+					search::test();
+				} else if (arg == "mate") {
+					mate::test();
+				} else if (arg == "uct") {
+					uct::test();
+				} else if (arg == "eval") {
+					eval::test();
+				} else if (arg == "attack") {
+					attack::test();
+				} else if (arg == "nn") {
+					nn::test();
+				}
+			}
 		}
 		else if (command == "show") {
 			Tee << gGame.pos() << std::endl;
@@ -312,6 +326,7 @@ static void usi_loop(std::vector<std::string> arg) {
 		}
 		else if (command == "quit") {
 			GThread.join();
+			nn::my_close();
 			std::exit(EXIT_SUCCESS);
 		}
 	}

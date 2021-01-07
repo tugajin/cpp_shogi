@@ -2,6 +2,7 @@
 #define NN_HPP
 
 #include "common.hpp"
+#include <boost/python.hpp>
 
 extern TeeStream Tee;
 
@@ -160,8 +161,16 @@ MoveClassPos move_to_index(const Move mv, const Side sd);
 MoveClassPos move_to_index(Square sq_from, Square sq_to, Piece pc, bool prom, Side sd);
 
 namespace nn {
+    extern boost::python::object g_main_ns;
+    extern boost::python::object g_model;
+    extern boost::python::object load_model_func;
+    extern boost::python::object forward_func;
+    extern boost::python::object my_close_func;
+    
     void init();
     void test();
+    void my_close();
+    
 }
 
 #endif

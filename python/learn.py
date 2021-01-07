@@ -45,11 +45,13 @@ class CSADataset(torch.utils.data.Dataset):
 
 
 def pos_sfen_to_tensor(sfen_data):
-
     data = cpp_lib.sfen_to_tensor2(sfen_data)
-
     return torch.tensor(data, dtype=torch.float32)
 
+def label_smoothing(label, alpha = 0.8):
+    alpha_list = np.ones(label.shape)
+    smoothing_label = (alpha_list * ((1-alpha) / (alpha_list.shape[-1]-1) )) + (label * alpha)
+    return smoothing_label
 
 def move_sfen_to_tensor(sfen_pos_str, sfen_move_str):
 
@@ -64,10 +66,15 @@ def move_sfen_to_tensor(sfen_pos_str, sfen_move_str):
         else:
             turn = 'w'
         index = cpp_lib.move_to_index(move, turn)
-        np_policy = np.full(2187, 0.0)
+        # label smoothing 
+        np_policy = np.zeros(2187)
         np_policy[index] = 1.0
         move_list.append(np_policy)
-    tensor_policy = torch.tensor(move_list, dtype=torch.float32)
+
+    # label smoothing
+    move_list = np.array(move_list)
+    smoothing_label = label_smoothing(move_list)
+    tensor_policy = torch.tensor(smoothing_label, dtype=torch.float32)
 
     # 勝敗を変換
     result_list = []
@@ -114,7 +121,7 @@ def train(model, device, loader, optimizer, epoch):
         scaler.update()
         all_loss += loss.item()
         num += 1
-        if batch_idx % 16 == 0:
+        if batch_idx % 32 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f} sec: {:.2f}s'.format(
                 epoch, batch_idx * len(data), len(loader.dataset),
                 100. * batch_idx / len(loader), loss.item(),(time.time()-start)))
