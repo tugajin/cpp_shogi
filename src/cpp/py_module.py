@@ -12,6 +12,8 @@ def load_model():
     model.load_state_dict(torch.load(os.path.join(os.path.dirname(os.path.abspath('__file__')),'../../../python/model.pt')))
     print("end")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cpu")
+
     print("device is", device)
     model = model.to(device)
     return model, device
@@ -30,9 +32,5 @@ def forward(model_tuple, feat):
     output = model(feat)
     policy_score = output[0].cpu().detach().numpy()
     value_score = output[1].cpu().detach().numpy()
-    print(policy_score)
-    print(value_score)
-    print((policy_score.shape))
-    print((value_score.shape))
     
     return (policy_score, value_score)

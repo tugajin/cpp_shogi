@@ -10,6 +10,8 @@
 #include "move.hpp"
 #include "attack.hpp"
 #include "common.hpp"
+#include "list.hpp"
+#include "gen.hpp"
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 //placeholdersの衝突を回避するため(要調査)
@@ -384,7 +386,9 @@ namespace nn {
         {
             try {
                 float feat[1][POS_END_SIZE][FILE_SIZE][RANK_SIZE] = {};
-                Pos pos = pos_from_sfen(START_SFEN);
+                //Pos pos = pos_from_sfen(START_SFEN);
+                Pos pos = pos_from_sfen("4k4/9/4P4/9/9/9/9/9/8K b G - 1");
+                Tee<<pos<<std::endl;
                 make_feat(pos,&feat[0][0]);
                 py::tuple shape = py::make_tuple(1,int(POS_END_SIZE),int(FILE_SIZE),int(RANK_SIZE));
                 py::tuple stride = py::make_tuple(sizeof(float)*int(POS_END_SIZE*FILE_SIZE*RANK_SIZE),sizeof(float)*int(FILE_SIZE*RANK_SIZE),sizeof(float)*int(RANK_SIZE),sizeof(float));
@@ -396,8 +400,12 @@ namespace nn {
                 py::tuple result_tuple = py::extract<py::tuple>(result);
                 np::ndarray ndarray_policy_score = py::extract<np::ndarray>(result_tuple[0]);
                 np::ndarray ndarray_value_score = py::extract<np::ndarray>(result_tuple[1]);
-                for(auto i = 0; i < 10; i++) {
-                    std::cout<<py::extract<float>(ndarray_policy_score[0][i])<<std::endl;
+                List list;
+                gen_legals(list, pos);
+                for(auto i = 0; i < list.size(); i++) {
+                    auto move = list.move(i);
+                    auto index = (int)move_to_index(move,BLACK);
+                    Tee<<move::move_to_string(move)<<":"<<py::extract<float>(ndarray_policy_score[0][index])<<std::endl;
                 }
                 std::cout<<py::extract<float>(ndarray_value_score[0][0])<<std::endl;
             } catch(...) {
@@ -405,7 +413,7 @@ namespace nn {
                 std::exit(EXIT_FAILURE);
             }
         }
-        {
+        /*{
 			Pos pos = pos_from_sfen("8k/4b4/9/4P4/9/9/4L4/1S2RR1G1/8K b");
 			Tee << pos << std::endl;
 			float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE] = {};
@@ -425,7 +433,7 @@ namespace nn {
 			float feat[POS_END_SIZE][FILE_SIZE][RANK_SIZE] = {};
             make_feat(pos, feat);
             disp_feat(F_DISCOVER_ATTACK_ROOK_POS,feat);
-		}
+		}*/
     }
 
 }

@@ -9,9 +9,17 @@
 #include "sfen.hpp"
 #include "eval.hpp"
 #include "thread.hpp"
+#include "nn.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <boost/stacktrace.hpp>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+//placeholdersの衝突を回避するため(要調査)
+#include <boost/python.hpp>
+#include <boost/python/numpy.hpp>
+namespace py = boost::python;
+namespace np = boost::python::numpy;
 
 UCTSearcher gUCT;
 
@@ -34,6 +42,7 @@ void UCTSearcher::init() {
 	for (auto i = 0u; i < this->uct_nodes_size_; ++i) {
 		this->uct_nodes_[i].clear();
 	}
+	this->eval_node_list_.curr = 0;
 	Tee << "uct size:" << this->uct_nodes_size_ << std::endl;
 }
 uint32 UCTSearcher::hash_use_rate() const {
@@ -48,14 +57,59 @@ void UCTSearcher::think() {
 		: this->think<WHITE>();
 }
 
-void UCTSearcher::enqueue_node(const Pos& /*pos*/, UCTNode* /*node*/) {
+void UCTSearcher::enqueue_node(const Pos& pos, UCTNode* node) {
+	Tee<<"start\n";
+	const auto len = this->eval_node_list_.curr;
+	make_feat(pos, this->eval_node_list_.feat[len]);
+	this->eval_node_list_.node_list[len] = node;
+	++this->eval_node_list_.curr;
+	Tee<<"end"<<len<<std::endl;
 }
 
-void UCTSearcher::dequeue_node() {
+void UCTSearcher::reset_queue() {
+	this->eval_node_list_.curr = 0;
 }
 
 void UCTSearcher::eval_node() {
+	const auto len = this->eval_node_list_.curr;
 	
+	py::tuple shape = py::make_tuple(len,
+									 int(POS_END_SIZE),
+									 int(FILE_SIZE),
+									 int(RANK_SIZE));
+    py::tuple stride = py::make_tuple(sizeof(float)*int(POS_END_SIZE*FILE_SIZE*RANK_SIZE),
+									  sizeof(float)*int(FILE_SIZE*RANK_SIZE),
+									  sizeof(float)*int(RANK_SIZE),
+									  sizeof(float));
+    np::dtype dt = np::dtype::get_builtin<float>();
+    np::ndarray np_feat = np::from_data(this->eval_node_list_.feat, dt, shape, stride, py::object());
+    np::ndarray np_feat_output = np_feat.copy();
+	
+	py::object result = nn::forward_func(nn::g_model,np_feat_output);
+    py::tuple result_tuple = py::extract<py::tuple>(result);
+    np::ndarray ndarray_policy_score = py::extract<np::ndarray>(result_tuple[0]);
+    np::ndarray ndarray_value_score = py::extract<np::ndarray>(result_tuple[1]);
+
+	for(auto i = 0u; i < len; i++) {
+		auto node = this->eval_node_list_.node_list[i];
+		auto child = node->child_;
+		std::vector<UCTScore> policy_list;
+		for(auto j = 0; j < node->child_num_; j++) {
+			const auto move = child[j].move_;
+			const auto index = (int)move_to_index(move, node->turn_);
+			const UCTScore p = (UCTScore)py::extract<float>(ndarray_policy_score[i][index]);
+			policy_list.emplace_back(p);
+		}
+		normalize_by_softmax(policy_list);
+
+		for(auto j = 0; j < node->child_num_; j++) {
+			child[j].policy_score_ = policy_list[j];
+		}
+		node->win_score_ = py::extract<float>(ndarray_value_score[i][0]);
+		
+		node->evaled_ = true;
+	}
+	this->reset_queue();
 }
 
 void normalize_by_softmax(std::vector<UCTScore>& list) {
@@ -99,7 +153,7 @@ template<Side sd>void UCTSearcher::think() {
 		UCTScore score = 0.0f;
 		Line pv;
 		
-		for (auto i = 0; i < 1; i++) {
+		for (auto i = 0; i < 2; i++) {
 			pv.clear();
 			std::vector<std::pair<UCTNode *, ChildNode *>> uct_pv;
 			score = this->uct_search<sd>(this->pos_, &this->root_node_, Ply(0), pv, uct_pv);
@@ -380,7 +434,7 @@ template<Side sd> void UCTSearcher::expand_root(const Pos& pos) {
 
 
 template<Side sd> UCTScore UCTSearcher::uct_search(const Pos& pos, UCTNode* node, const Ply ply, Line& pv, std::vector<std::pair<UCTNode *, ChildNode *>>& uct_pv_list) {
-
+	
 #ifdef DEBUG
 	if (!pos.is_ok()) {
 		Tee << "uct error\n";

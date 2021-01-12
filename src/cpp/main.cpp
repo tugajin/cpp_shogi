@@ -148,8 +148,7 @@ static void usi_loop(std::vector<std::string> arg) {
 				}
 			}
 			if (false) {
-			}
-			else {
+			} else {
 				var::set(name, value);
 				var::update();
 			}

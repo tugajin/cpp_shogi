@@ -5,6 +5,7 @@
 #include "move.hpp"
 #include "search.hpp"
 #include "thread.hpp"
+#include "nn.hpp"
 #include <vector>
 #include <queue>
 #include <utility>
@@ -147,6 +148,13 @@ public:
 	}
 };
 
+struct EvalNodeList {
+	static constexpr uint32 LIST_SIZE = 512;
+	float feat[LIST_SIZE][POS_END_SIZE][FILE_SIZE][RANK_SIZE];
+	UCTNode* node_list[LIST_SIZE];
+	uint32 curr;
+};
+
 class UCTSearcher {
 public:
 	Pos pos_;
@@ -171,7 +179,7 @@ private:
 	bool is_full() const;
 	bool update_root_info(const uint64 loop, const Line& pv);
 	void enqueue_node(const Pos& pos, UCTNode* node);
-	void dequeue_node();
+	void reset_queue();
 	void eval_node();
 	void disp_info(const uint64 loop, const Line& pv, const UCTScore sc)const;
 	uint32 uct_nodes_size_;
@@ -179,7 +187,8 @@ private:
 	uint32 use_node_num_;
 	UCTNode root_node_;
 	UCTNode* uct_nodes_ = nullptr;
-	Lockable queue_lock_;
+	//Lockable eval_node_lock_;
+	EvalNodeList eval_node_list_;
 };
 
 void start_search(SearchOutput& so, const Pos& pos, const SearchInput& si);
